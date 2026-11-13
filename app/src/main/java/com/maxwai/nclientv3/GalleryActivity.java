@@ -241,12 +241,12 @@ public class GalleryActivity extends BaseActivity {
             if (expanded) {
                 title.setMaxLines(2);
                 title.setEllipsize(TextUtils.TruncateAt.END);
-                button.setText("\u5c55\u5f00");
+                button.setText(R.string.gallery_expand);
                 expanded = false;
             } else {
                 title.setMaxLines(Integer.MAX_VALUE);
                 title.setEllipsize(null);
-                button.setText("\u6536\u8d77");
+                button.setText(R.string.gallery_collapse);
                 expanded = true;
             }
         }

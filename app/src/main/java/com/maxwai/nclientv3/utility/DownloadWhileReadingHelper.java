@@ -1,5 +1,6 @@
 package com.maxwai.nclientv3.utility;
 // Modified/Added for NClientV3 Modern under Apache-2.0 (a derivative of NClientV3 by maxwai and contributors); see docs/PATCHED_FILES.md
+import com.maxwai.nclientv3.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -58,7 +59,7 @@ public class DownloadWhileReadingHelper {
         SharedPreferences sp = getPrefs(context);
         if (!sp.getBoolean(PREF_TRIGGER_READ, true)) return;
 
-        performDownload(context, gallery, currentPage, "点击阅读");
+        performDownload(context, gallery, currentPage, context.getString(R.string.dwr_trigger_tap_read));
     }
 
     /**
@@ -76,7 +77,7 @@ public class DownloadWhileReadingHelper {
         } catch (Throwable ignored) {}
         int curPage = (lastPage > 0) ? lastPage - 1 : 0;
 
-        performDownload(context, gallery, curPage, "收藏(爱心)");
+        performDownload(context, gallery, curPage, context.getString(R.string.dwr_trigger_favorite));
     }
 
     /**
@@ -98,7 +99,7 @@ public class DownloadWhileReadingHelper {
             if (sp.getBoolean(PREF_TRIGGER_FINISH, false)) {
                 if (!sFinishedTriggered.contains(galleryId)) {
                     sFinishedTriggered.add(galleryId);
-                    performDownload(context, gallery, pageIndex, "读完");
+                    performDownload(context, gallery, pageIndex, context.getString(R.string.dwr_trigger_finished));
                     return;
                 }
             }
@@ -112,7 +113,7 @@ public class DownloadWhileReadingHelper {
                 int lastEnd = (lastEndObj != null) ? lastEndObj.intValue() : -1;
                 // 当阅读进度接近上次下载范围末尾(倒数 2 页以内)，且未达到整本末尾时，触发后续下载
                 if (lastEnd >= 0 && pageIndex >= lastEnd - 2 && lastEnd < totalPages - 1) {
-                    performDownload(context, gallery, pageIndex, "阅读推进");
+                    performDownload(context, gallery, pageIndex, context.getString(R.string.dwr_trigger_progress));
                 }
             }
         }
@@ -126,13 +127,13 @@ public class DownloadWhileReadingHelper {
         if (gallery.isLocal()) return;
 
         if (!isNetworkAvailable(context)) {
-            showToast(context, "边看边下(" + triggerLabel + "): 当前无网络，未开始下载");
+            showToast(context, context.getString(R.string.dwr_toast_no_network, triggerLabel));
             return;
         }
 
         int totalPages = gallery.getPageCount();
         if (totalPages <= 0) {
-            startDownload(context, gallery, 0, -1, triggerLabel, "整本");
+            startDownload(context, gallery, 0, -1, triggerLabel, context.getString(R.string.dwr_scope_whole));
             return;
         }
 
@@ -141,20 +142,20 @@ public class DownloadWhileReadingHelper {
 
         int start = 0;
         int end = totalPages - 1;
-        String scopeDesc = "整本(" + totalPages + "P)";
+        String scopeDesc = context.getString(R.string.dwr_scope_whole_pages, totalPages);
 
         if (MODE_CURRENT.equals(mode)) {
             end = Math.max(0, Math.min(totalPages - 1, currentPage));
-            scopeDesc = "当前进度(前" + (end + 1) + "P)";
+            scopeDesc = context.getString(R.string.dwr_scope_current_pages, end + 1);
         } else if (MODE_PERCENT.equals(mode)) {
             int percent = sp.getInt(PREF_FORWARD_PERCENT, 25);
             int delta = Math.max(1, Math.round(totalPages * (percent / 100.0f)));
             end = Math.max(0, Math.min(totalPages - 1, currentPage + delta));
-            scopeDesc = "向后推" + percent + "%(前" + (end + 1) + "P)";
+            scopeDesc = context.getString(R.string.dwr_scope_percent_pages, percent, end + 1);
         } else if (MODE_PAGES.equals(mode)) {
             int pagesAhead = sp.getInt(PREF_FORWARD_PAGES, 10);
             end = Math.max(0, Math.min(totalPages - 1, currentPage + pagesAhead));
-            scopeDesc = "向后推" + pagesAhead + "页(前" + (end + 1) + "P)";
+            scopeDesc = context.getString(R.string.dwr_scope_ahead_pages, pagesAhead, end + 1);
         }
 
         startDownload(context, gallery, start, end, triggerLabel, scopeDesc);
@@ -179,11 +180,11 @@ public class DownloadWhileReadingHelper {
             if (end >= 0) {
                 sGalleryDownloadedEnd.put(gallery.getId(), Integer.valueOf(end));
             }
-            showToast(context, "边看边下(" + triggerLabel + "): 已启动后台下载 " + scopeDesc);
+            showToast(context, context.getString(R.string.dwr_toast_started, triggerLabel, scopeDesc));
             return true;
         } catch (Throwable t) {
             t.printStackTrace();
-            showToast(context, "边看边下(" + triggerLabel + "): 启动下载失败");
+            showToast(context, context.getString(R.string.dwr_toast_failed, triggerLabel));
             return false;
         }
     }
@@ -268,28 +269,28 @@ public class DownloadWhileReadingHelper {
         if (pref == null || sp == null) return;
 
         StringBuilder sbTriggers = new StringBuilder();
-        if (sp.getBoolean(PREF_TRIGGER_READ, true)) sbTriggers.append("阅读, ");
-        if (sp.getBoolean(PREF_TRIGGER_FAVORITE, false)) sbTriggers.append("收藏, ");
-        if (sp.getBoolean(PREF_TRIGGER_FINISH, false)) sbTriggers.append("读完, ");
+        if (sp.getBoolean(PREF_TRIGGER_READ, true)) sbTriggers.append(pref.getContext().getString(R.string.dwr_sum_trigger_read)).append(pref.getContext().getString(R.string.dwr_sum_separator));
+        if (sp.getBoolean(PREF_TRIGGER_FAVORITE, false)) sbTriggers.append(pref.getContext().getString(R.string.dwr_sum_trigger_favorite)).append(pref.getContext().getString(R.string.dwr_sum_separator));
+        if (sp.getBoolean(PREF_TRIGGER_FINISH, false)) sbTriggers.append(pref.getContext().getString(R.string.dwr_sum_trigger_finish)).append(pref.getContext().getString(R.string.dwr_sum_separator));
 
         String trigStr;
         if (sbTriggers.length() > 2) {
             trigStr = sbTriggers.substring(0, sbTriggers.length() - 2);
         } else {
-            trigStr = "未开启任何触发";
+            trigStr = pref.getContext().getString(R.string.dwr_sum_no_trigger);
         }
 
         String mode = sp.getString(PREF_QUANTITY_MODE, MODE_ALL);
-        String scopeStr = "整本";
+        String scopeStr = pref.getContext().getString(R.string.dwr_sum_scope_whole);
         if (MODE_CURRENT.equals(mode)) {
-            scopeStr = "当前进度";
+            scopeStr = pref.getContext().getString(R.string.dwr_sum_scope_current);
         } else if (MODE_PERCENT.equals(mode)) {
-            scopeStr = "向后推 " + sp.getInt(PREF_FORWARD_PERCENT, 25) + "%";
+            scopeStr = pref.getContext().getString(R.string.dwr_sum_scope_percent, sp.getInt(PREF_FORWARD_PERCENT, 25));
         } else if (MODE_PAGES.equals(mode)) {
-            scopeStr = "向后推 " + sp.getInt(PREF_FORWARD_PAGES, 10) + " 页";
+            scopeStr = pref.getContext().getString(R.string.dwr_sum_scope_pages, sp.getInt(PREF_FORWARD_PAGES, 10));
         }
 
-        pref.setSummary("触发: " + trigStr + " | 范围: " + scopeStr);
+        pref.setSummary(pref.getContext().getString(R.string.dwr_sum_format, trigStr, scopeStr));
     }
 
     public static void showConfigDialog(final Context context, final Preference pref) {
@@ -309,24 +310,24 @@ public class DownloadWhileReadingHelper {
 
         // 1. 触发时机区域
         android.widget.TextView tvTitle1 = new android.widget.TextView(context);
-        tvTitle1.setText("一、触发时机（可多选）");
+        tvTitle1.setText(R.string.dwr_cfg_section_trigger);
         tvTitle1.setTextSize(14f);
         tvTitle1.setTypeface(null, android.graphics.Typeface.BOLD);
         tvTitle1.setPadding(0, p8, 0, p4);
         root.addView(tvTitle1);
 
         final android.widget.CheckBox cbRead = new android.widget.CheckBox(context);
-        cbRead.setText("点击图片开始阅读后下载");
+        cbRead.setText(R.string.dwr_cfg_trigger_read);
         cbRead.setChecked(sp.getBoolean(PREF_TRIGGER_READ, true));
         root.addView(cbRead);
 
         final android.widget.CheckBox cbFav = new android.widget.CheckBox(context);
-        cbFav.setText("收藏漫画(爱心)后下载");
+        cbFav.setText(R.string.dwr_cfg_trigger_favorite);
         cbFav.setChecked(sp.getBoolean(PREF_TRIGGER_FAVORITE, false));
         root.addView(cbFav);
 
         final android.widget.CheckBox cbFinish = new android.widget.CheckBox(context);
-        cbFinish.setText("翻至最后一页读完后下载");
+        cbFinish.setText(R.string.dwr_cfg_trigger_finish);
         cbFinish.setChecked(sp.getBoolean(PREF_TRIGGER_FINISH, false));
         root.addView(cbFinish);
 
@@ -341,7 +342,7 @@ public class DownloadWhileReadingHelper {
 
         // 2. 下载数量范围区域
         android.widget.TextView tvTitle2 = new android.widget.TextView(context);
-        tvTitle2.setText("二、下载数量范围（单选）");
+        tvTitle2.setText(R.string.dwr_cfg_section_range);
         tvTitle2.setTextSize(14f);
         tvTitle2.setTypeface(null, android.graphics.Typeface.BOLD);
         tvTitle2.setPadding(0, p4, 0, p4);
@@ -353,19 +354,19 @@ public class DownloadWhileReadingHelper {
 
         final android.widget.RadioGroup rgMode = new android.widget.RadioGroup(context);
         final android.widget.RadioButton rbAll = new android.widget.RadioButton(context);
-        rbAll.setText("整本 (下载整本漫画)");
+        rbAll.setText(R.string.dwr_cfg_range_whole);
         rgMode.addView(rbAll);
 
         final android.widget.RadioButton rbCur = new android.widget.RadioButton(context);
-        rbCur.setText("当前阅读进度 (仅已读部分)");
+        rbCur.setText(R.string.dwr_cfg_range_current);
         rgMode.addView(rbCur);
 
         final android.widget.RadioButton rbPct = new android.widget.RadioButton(context);
-        rbPct.setText("当前阅读进度向后推 " + curPercent[0] + "%");
+        rbPct.setText(context.getString(R.string.dwr_cfg_range_percent, curPercent[0]));
         rgMode.addView(rbPct);
 
         final android.widget.RadioButton rbPgs = new android.widget.RadioButton(context);
-        rbPgs.setText("当前进度向后推 " + curPages[0] + " 页");
+        rbPgs.setText(context.getString(R.string.dwr_cfg_range_pages, curPages[0]));
         rgMode.addView(rbPgs);
 
         if (MODE_CURRENT.equals(curMode)) {
@@ -390,7 +391,7 @@ public class DownloadWhileReadingHelper {
 
         // 3. 向后推数值快捷调节
         android.widget.TextView tvTitle3 = new android.widget.TextView(context);
-        tvTitle3.setText("三、向后推参数调节");
+        tvTitle3.setText(R.string.dwr_cfg_section_ahead);
         tvTitle3.setTextSize(14f);
         tvTitle3.setTypeface(null, android.graphics.Typeface.BOLD);
         tvTitle3.setPadding(0, p4, 0, p4);
@@ -398,7 +399,7 @@ public class DownloadWhileReadingHelper {
 
         // 百分比按钮行
         final android.widget.TextView tvPctLabel = new android.widget.TextView(context);
-        tvPctLabel.setText("向后推比例: " + curPercent[0] + "%");
+        tvPctLabel.setText(context.getString(R.string.dwr_cfg_percent_label, curPercent[0]));
         tvPctLabel.setTextSize(13f);
         root.addView(tvPctLabel);
 
@@ -415,8 +416,8 @@ public class DownloadWhileReadingHelper {
                 @Override
                 public void onClick(android.view.View v) {
                     curPercent[0] = p;
-                    tvPctLabel.setText("向后推比例: " + p + "%");
-                    rbPct.setText("当前阅读进度向后推 " + p + "%");
+                    tvPctLabel.setText(context.getString(R.string.dwr_cfg_percent_label, p));
+                    rbPct.setText(context.getString(R.string.dwr_cfg_range_percent, p));
                 }
             });
             rowPct.addView(btn);
@@ -425,7 +426,7 @@ public class DownloadWhileReadingHelper {
 
         // 页数按钮行
         final android.widget.TextView tvPgsLabel = new android.widget.TextView(context);
-        tvPgsLabel.setText("向后推页数: " + curPages[0] + " 页");
+        tvPgsLabel.setText(context.getString(R.string.dwr_cfg_pages_label, curPages[0]));
         tvPgsLabel.setTextSize(13f);
         tvPgsLabel.setPadding(0, p8, 0, 0);
         root.addView(tvPgsLabel);
@@ -435,7 +436,7 @@ public class DownloadWhileReadingHelper {
         final int[] pgsOptions = new int[]{5, 10, 15, 20, 30};
         for (final int pgs : pgsOptions) {
             android.widget.Button btn = new android.widget.Button(context, null, android.R.attr.borderlessButtonStyle);
-            btn.setText(pgs + "页");
+            btn.setText(context.getString(R.string.dwr_cfg_pages_button, pgs));
             btn.setTextSize(12f);
             android.widget.LinearLayout.LayoutParams blp = new android.widget.LinearLayout.LayoutParams(0, (int) (38 * density + 0.5f), 1f);
             btn.setLayoutParams(blp);
@@ -443,8 +444,8 @@ public class DownloadWhileReadingHelper {
                 @Override
                 public void onClick(android.view.View v) {
                     curPages[0] = pgs;
-                    tvPgsLabel.setText("向后推页数: " + pgs + " 页");
-                    rbPgs.setText("当前进度向后推 " + pgs + " 页");
+                    tvPgsLabel.setText(context.getString(R.string.dwr_cfg_pages_label, pgs));
+                    rbPgs.setText(context.getString(R.string.dwr_cfg_range_pages, pgs));
                 }
             });
             rowPgs.addView(btn);
@@ -452,9 +453,9 @@ public class DownloadWhileReadingHelper {
         root.addView(rowPgs);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("边看边下偏好设置");
+        builder.setTitle(R.string.dwr_prefs_title);
         builder.setView(scrollView);
-        builder.setPositiveButton("保存", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.dwr_cfg_save, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String selectedMode = MODE_ALL;
@@ -476,25 +477,25 @@ public class DownloadWhileReadingHelper {
                         .apply();
 
                 updateOverallSummary(pref, sp);
-                Toast.makeText(context, "已保存边看边下设置", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, R.string.dwr_cfg_saved, Toast.LENGTH_SHORT).show();
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 
     public static void updateQuantitySummary(Preference pref, SharedPreferences sp) {
         if (pref == null || sp == null) return;
         String mode = sp.getString(PREF_QUANTITY_MODE, MODE_ALL);
-        String summary = "整本";
+        String summary = pref.getContext().getString(R.string.dwr_sum_scope_whole);
         if (MODE_CURRENT.equals(mode)) {
-            summary = "当前阅读进度";
+            summary = pref.getContext().getString(R.string.dwr_qty_current);
         } else if (MODE_PERCENT.equals(mode)) {
             int percent = sp.getInt(PREF_FORWARD_PERCENT, 25);
-            summary = "当前阅读进度向后推 " + percent + "%";
+            summary = pref.getContext().getString(R.string.dwr_cfg_range_percent, percent);
         } else if (MODE_PAGES.equals(mode)) {
             int pages = sp.getInt(PREF_FORWARD_PAGES, 10);
-            summary = "当前进度向后推 " + pages + " 页";
+            summary = pref.getContext().getString(R.string.dwr_cfg_range_pages, pages);
         }
         pref.setSummary(summary);
     }
@@ -517,14 +518,14 @@ public class DownloadWhileReadingHelper {
         int pages = sp.getInt(PREF_FORWARD_PAGES, 10);
 
         final CharSequence[] items = new CharSequence[]{
-                "整本 (下载整本漫画)",
-                "当前阅读进度 (下载至当前所读页)",
-                "当前阅读进度向后推 " + percent + "%",
-                "当前进度向后推 " + pages + " 页"
+                context.getString(R.string.dwr_cfg_range_whole),
+                context.getString(R.string.dwr_qty_current_long),
+                context.getString(R.string.dwr_cfg_range_percent, percent),
+                context.getString(R.string.dwr_cfg_range_pages, pages)
         };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("选择下载数量范围");
+        builder.setTitle(R.string.dwr_qty_title);
         builder.setSingleChoiceItems(items, selectedIndex, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -535,7 +536,7 @@ public class DownloadWhileReadingHelper {
                 dialog.dismiss();
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 }

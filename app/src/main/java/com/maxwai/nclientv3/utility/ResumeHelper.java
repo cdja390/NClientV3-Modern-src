@@ -1,5 +1,6 @@
 package com.maxwai.nclientv3.utility;
 // Modified/Added for NClientV3 Modern under Apache-2.0 (a derivative of NClientV3 by maxwai and contributors); see docs/PATCHED_FILES.md
+import com.maxwai.nclientv3.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -88,7 +89,7 @@ public class ResumeHelper {
         final SharedPreferences sp = activity.getSharedPreferences("Settings", Context.MODE_PRIVATE);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle("是否跳转至上次阅读页");
+        builder.setTitle(R.string.resume_dialog_title);
 
         // Main layout container
         LinearLayout root = new LinearLayout(activity);
@@ -100,13 +101,13 @@ public class ResumeHelper {
 
         // 1. Prompt message
         TextView msg = new TextView(activity);
-        msg.setText(String.format("上次阅读至第 %d 页，是否继续阅读？", lastPage));
+        msg.setText(activity.getString(R.string.resume_dialog_message, lastPage));
         msg.setTextSize(15.5f);
         root.addView(msg);
 
         // 2. Quick persistent choice section label
         TextView quickLabel = new TextView(activity);
-        quickLabel.setText("直接选择永久偏好：");
+        quickLabel.setText(R.string.resume_quick_label);
         quickLabel.setTextSize(12.5f);
         quickLabel.setAlpha(0.65f);
         LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(
@@ -126,7 +127,7 @@ public class ResumeHelper {
         btnRow.setLayoutParams(rowParams);
 
         Button btnDefaultYes = new Button(activity, null, android.R.attr.borderlessButtonStyle);
-        btnDefaultYes.setText("默认是 (始终跳转)");
+        btnDefaultYes.setText(R.string.resume_default_yes);
         btnDefaultYes.setTextSize(13f);
         btnDefaultYes.setPadding(dp2px(activity, 4), dp2px(activity, 6), dp2px(activity, 4), dp2px(activity, 6));
         LinearLayout.LayoutParams p1 = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
@@ -134,7 +135,7 @@ public class ResumeHelper {
         btnDefaultYes.setLayoutParams(p1);
 
         Button btnDefaultNo = new Button(activity, null, android.R.attr.borderlessButtonStyle);
-        btnDefaultNo.setText("默认否 (不再跳转)");
+        btnDefaultNo.setText(R.string.resume_default_no);
         btnDefaultNo.setTextSize(13f);
         btnDefaultNo.setPadding(dp2px(activity, 4), dp2px(activity, 6), dp2px(activity, 4), dp2px(activity, 6));
         LinearLayout.LayoutParams p2 = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
@@ -147,7 +148,7 @@ public class ResumeHelper {
 
         // 4. Checkbox: 不再提示（记住本次选择）
         final CheckBox cbDontAsk = new CheckBox(activity);
-        cbDontAsk.setText("不再提示（记住本次选择）");
+        cbDontAsk.setText(R.string.resume_dont_ask);
         cbDontAsk.setTextSize(14f);
         LinearLayout.LayoutParams cbParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -158,23 +159,23 @@ public class ResumeHelper {
         builder.setView(root);
 
         // Single-time action buttons: 否, 是
-        builder.setNegativeButton("否", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(R.string.resume_no, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (cbDontAsk.isChecked()) {
                     sp.edit().putBoolean(PREF_AUTO_JUMP, false).apply();
-                    Toast.makeText(activity, "已设置为默认不自动跳转（可在设置中修改）", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(activity, R.string.resume_set_never, Toast.LENGTH_SHORT).show();
                 }
                 dialog.dismiss();
             }
         });
 
-        builder.setPositiveButton("是", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.resume_yes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (cbDontAsk.isChecked()) {
                     sp.edit().putBoolean(PREF_AUTO_JUMP, true).apply();
-                    Toast.makeText(activity, "已设置为默认自动跳转（可在设置中修改）", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(activity, R.string.resume_set_always, Toast.LENGTH_SHORT).show();
                 }
                 dialog.dismiss();
                 openZoom(activity, gallery, directory, lastPage);
@@ -188,7 +189,7 @@ public class ResumeHelper {
             @Override
             public void onClick(View v) {
                 sp.edit().putBoolean(PREF_AUTO_JUMP, true).apply();
-                Toast.makeText(activity, "已设置为默认自动跳转（可在设置中修改）", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, R.string.resume_set_always, Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
                 openZoom(activity, gallery, directory, lastPage);
             }
@@ -198,7 +199,7 @@ public class ResumeHelper {
             @Override
             public void onClick(View v) {
                 sp.edit().putBoolean(PREF_AUTO_JUMP, false).apply();
-                Toast.makeText(activity, "已设置为默认不自动跳转（可在设置中修改）", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, R.string.resume_set_never, Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
             }
         });
@@ -271,7 +272,7 @@ public class ResumeHelper {
                                 .edit()
                                 .remove(PREF_AUTO_JUMP)
                                 .apply();
-                        Toast.makeText(ctx, "已重置：进入已读漫画时将重新弹出询问提示", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ctx, R.string.resume_reset_done, Toast.LENGTH_SHORT).show();
                         return true;
                     }
                 });
@@ -284,11 +285,11 @@ public class ResumeHelper {
     public static void updateResumeSummary(Preference pref, SharedPreferences sp) {
         if (pref == null || sp == null) return;
         if (!sp.contains(PREF_AUTO_JUMP)) {
-            pref.setSummary("当前模式: 每次进入已读漫画时询问提示");
+            pref.setSummary(R.string.resume_mode_ask);
         } else if (sp.getBoolean(PREF_AUTO_JUMP, false)) {
-            pref.setSummary("当前模式: 始终直接跳转至上次阅读页 (默认是)");
+            pref.setSummary(R.string.resume_mode_always);
         } else {
-            pref.setSummary("当前模式: 始终停留在封面详情页 (默认否)");
+            pref.setSummary(R.string.resume_mode_never);
         }
     }
 
@@ -301,31 +302,31 @@ public class ResumeHelper {
         }
 
         CharSequence[] items = new CharSequence[]{
-                "每次进入已读漫画时询问提示 (恢复弹窗)",
-                "始终直接跳转至上次阅读页 (默认是)",
-                "始终停留在封面详情页 (默认否)"
+                context.getString(R.string.resume_option_ask),
+                context.getString(R.string.resume_option_always),
+                context.getString(R.string.resume_option_never)
         };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("阅读断点续读偏好");
+        builder.setTitle(R.string.resume_prefs_title);
         builder.setSingleChoiceItems(items, selected, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (which == 0) {
                     sp.edit().remove(PREF_AUTO_JUMP).apply();
-                    Toast.makeText(context, "已设置为每次询问提示", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, R.string.resume_toast_ask, Toast.LENGTH_SHORT).show();
                 } else if (which == 1) {
                     sp.edit().putBoolean(PREF_AUTO_JUMP, true).apply();
-                    Toast.makeText(context, "已设置为始终自动跳转", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, R.string.resume_toast_always, Toast.LENGTH_SHORT).show();
                 } else if (which == 2) {
                     sp.edit().putBoolean(PREF_AUTO_JUMP, false).apply();
-                    Toast.makeText(context, "已设置为始终停留在封面", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, R.string.resume_toast_never, Toast.LENGTH_SHORT).show();
                 }
                 updateResumeSummary(pref, sp);
                 dialog.dismiss();
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 

@@ -1,5 +1,6 @@
 package com.maxwai.nclientv3.utility;
 // Modified/Added for NClientV3 Modern under Apache-2.0 (a derivative of NClientV3 by maxwai and contributors); see docs/PATCHED_FILES.md
+import com.maxwai.nclientv3.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -25,7 +26,7 @@ public class VolumeDirectionHelper {
         if (activity == null || menu == null) return;
         SharedPreferences sp = activity.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         boolean side = sp.getBoolean(PREF_KEY_VOLUME_SIDE, true);
-        String title = side ? "音量键换页: 音量+下一页" : "音量键换页: 音量-下一页";
+        String title = activity.getString(side ? R.string.volume_menu_plus_next : R.string.volume_menu_minus_next);
 
         MenuItem item = menu.findItem(MENU_ID_VOLUME_DIRECTION);
         if (item == null) {
@@ -49,13 +50,13 @@ public class VolumeDirectionHelper {
         SharedPreferences sp = activity.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         final boolean currentSide = sp.getBoolean(PREF_KEY_VOLUME_SIDE, true);
         final String[] options = new String[] {
-            "音量+ 下一页，音量- 上一页 (默认)",
-            "音量- 下一页，音量+ 上一页"
+            activity.getString(R.string.volume_option_plus_next),
+            activity.getString(R.string.volume_option_minus_next)
         };
         int checkedItem = currentSide ? 0 : 1;
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity);
-        builder.setTitle("音量键翻页方向");
+        builder.setTitle(R.string.volume_direction_title);
         builder.setSingleChoiceItems(options, checkedItem, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -66,7 +67,7 @@ public class VolumeDirectionHelper {
                 }
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 
@@ -81,7 +82,7 @@ public class VolumeDirectionHelper {
             ((ZoomActivity) activity).setVolumeSide(side);
         }
 
-        Toast.makeText(activity, side ? "音量+切换下一页" : "音量-切换下一页", Toast.LENGTH_SHORT).show();
+        Toast.makeText(activity, side ? R.string.volume_toast_plus_next : R.string.volume_toast_minus_next, Toast.LENGTH_SHORT).show();
         activity.invalidateOptionsMenu();
     }
 
@@ -105,7 +106,7 @@ public class VolumeDirectionHelper {
         if (context == null || pref == null) return;
         SharedPreferences sp = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         boolean side = sp.getBoolean(PREF_KEY_VOLUME_SIDE, true);
-        pref.setSummary(side ? "当前：音量+下一页，音量-上一页 (默认)" : "当前：音量-下一页，音量+上一页");
+        pref.setSummary(side ? R.string.volume_direction_summary_default : R.string.volume_direction_summary_minus);
     }
 
     public static void showSettingsDialog(final Context context, final Preference preference) {
@@ -114,13 +115,13 @@ public class VolumeDirectionHelper {
         SharedPreferences sp = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         final boolean currentSide = sp.getBoolean(PREF_KEY_VOLUME_SIDE, true);
         final String[] options = new String[] {
-            "音量+ 下一页，音量- 上一页 (默认)",
-            "音量- 下一页，音量+ 上一页"
+            context.getString(R.string.volume_option_plus_next),
+            context.getString(R.string.volume_option_minus_next)
         };
         int checkedItem = currentSide ? 0 : 1;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("音量键翻页方向");
+        builder.setTitle(R.string.volume_direction_title);
         builder.setSingleChoiceItems(options, checkedItem, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -131,10 +132,10 @@ public class VolumeDirectionHelper {
                         .putBoolean(PREF_KEY_VOLUME_SIDE, newSide)
                         .apply();
                 updatePreferenceSummary(context, preference);
-                Toast.makeText(context, newSide ? "音量+切换下一页" : "音量-切换下一页", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, newSide ? R.string.volume_toast_plus_next : R.string.volume_toast_minus_next, Toast.LENGTH_SHORT).show();
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 }

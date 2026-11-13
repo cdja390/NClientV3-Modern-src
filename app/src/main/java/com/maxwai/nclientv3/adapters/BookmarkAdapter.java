@@ -44,7 +44,7 @@ public class BookmarkAdapter extends RecyclerView.Adapter<BookmarkAdapter.ViewHo
         final int position = holder.getBindingAdapterPosition();
         Bookmark bookmark = bookmarks.get(position);
 
-        holder.queryText.setText(bookmark.toString());
+        holder.queryText.setText(bookmark.toDisplayString(bookmarkActivity));
         holder.pageLabel.setText(bookmarkActivity.getString(R.string.bookmark_page_format, bookmark.page));
 
         holder.deleteButton.setOnClickListener(v -> removeBookmarkAtPosition(position));

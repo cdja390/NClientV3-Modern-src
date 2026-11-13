@@ -1,5 +1,6 @@
 package com.maxwai.nclientv3.utility;
 // Modified/Added for NClientV3 Modern under Apache-2.0 (a derivative of NClientV3 by maxwai and contributors); see docs/PATCHED_FILES.md
+import com.maxwai.nclientv3.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -168,9 +169,7 @@ public class ReadingSessionHelper {
 
             if (finished) {
                 try {
-                    String msg = isZh(activity)
-                        ? "\u5df2\u81ea\u52a8\u6807\u8bb0\u4e3a\u300c" + target.name + "\u300d"
-                        : "Marked as \"" + target.name + "\"";
+                    String msg = activity.getString(R.string.reading_status_auto_marked, target.name);
                     Toast.makeText(activity.getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
                 } catch (Throwable ignored) {
                 }

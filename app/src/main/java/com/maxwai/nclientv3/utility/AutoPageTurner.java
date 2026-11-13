@@ -1,5 +1,6 @@
 package com.maxwai.nclientv3.utility;
 // Modified/Added for NClientV3 Modern under Apache-2.0 (a derivative of NClientV3 by maxwai and contributors); see docs/PATCHED_FILES.md
+import com.maxwai.nclientv3.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -57,13 +58,13 @@ public class AutoPageTurner {
         if (menu == null) return;
         MenuItem item = menu.findItem(MENU_ID_AUTO_TURN);
         if (item == null) {
-            item = menu.add(0, MENU_ID_AUTO_TURN, 999, "自动翻页");
+            item = menu.add(0, MENU_ID_AUTO_TURN, 999, R.string.auto_turn);
         }
         if (item != null) {
             if (sIsRunning) {
-                item.setTitle("自动翻页 (运行中: " + sIntervalSec + "s)");
+                item.setTitle(activity.getString(R.string.auto_turn_running, sIntervalSec));
             } else {
-                item.setTitle("自动翻页");
+                item.setTitle(R.string.auto_turn);
             }
         }
     }
@@ -86,13 +87,13 @@ public class AutoPageTurner {
         }
 
         final String[] items = new String[] {
-            sIsRunning ? "关闭自动翻页 (当前运行中)" : "关闭自动翻页",
-            "3 秒 / 页",
-            "5 秒 / 页 (推荐)",
-            "8 秒 / 页",
-            "10 秒 / 页",
-            "15 秒 / 页",
-            "自定义秒数..."
+            activity.getString(sIsRunning ? R.string.auto_turn_off_running : R.string.auto_turn_off),
+            activity.getString(R.string.auto_turn_seconds, 3),
+            activity.getString(R.string.auto_turn_seconds_recommended, 5),
+            activity.getString(R.string.auto_turn_seconds, 8),
+            activity.getString(R.string.auto_turn_seconds, 10),
+            activity.getString(R.string.auto_turn_seconds, 15),
+            activity.getString(R.string.auto_turn_custom)
         };
 
         final int[] intervals = new int[] { 0, 3, 5, 8, 10, 15, -1 };
@@ -108,7 +109,7 @@ public class AutoPageTurner {
         }
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity);
-        builder.setTitle("定时自动翻页");
+        builder.setTitle(R.string.auto_turn_dialog_title);
         builder.setSingleChoiceItems(items, checkedItem, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -116,7 +117,7 @@ public class AutoPageTurner {
                 if (which >= 0 && which < intervals.length) {
                     int selected = intervals[which];
                     if (selected == 0) {
-                        stop(activity, "自动翻页已关闭");
+                        stop(activity, activity.getString(R.string.auto_turn_closed));
                     } else if (selected == -1) {
                         showCustomIntervalDialog(activity);
                     } else {
@@ -125,7 +126,7 @@ public class AutoPageTurner {
                 }
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 
@@ -134,7 +135,7 @@ public class AutoPageTurner {
 
         final EditText input = new EditText(activity);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setHint("输入翻页间隔 (1 - 60 秒)");
+        input.setHint(R.string.auto_turn_custom_hint);
         int current = sIntervalSec > 0 ? sIntervalSec : 5;
         input.setText(String.valueOf(current));
         input.setSelection(input.getText().length());
@@ -149,9 +150,9 @@ public class AutoPageTurner {
         container.addView(input);
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity);
-        builder.setTitle("自定义翻页间隔");
+        builder.setTitle(R.string.auto_turn_custom_title);
         builder.setView(container);
-        builder.setPositiveButton("开始", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.auto_turn_start, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String text = input.getText().toString().trim();
@@ -164,7 +165,7 @@ public class AutoPageTurner {
                 start(activity, sec);
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 
@@ -202,7 +203,7 @@ public class AutoPageTurner {
             });
         }
 
-        Toast.makeText(activity, "已开启自动翻页 (" + intervalSec + "秒/页)，轻触屏幕即停", Toast.LENGTH_SHORT).show();
+        Toast.makeText(activity, activity.getString(R.string.auto_turn_started, intervalSec), Toast.LENGTH_SHORT).show();
 
         sFlipRunnable = new Runnable() {
             @Override
@@ -224,7 +225,7 @@ public class AutoPageTurner {
                         updatePillText(act);
                         sHandler.postDelayed(this, sIntervalSec * 1000L);
                     } else {
-                        stop(act, "已到达最后一页，自动翻页已停止");
+                        stop(act, act.getString(R.string.auto_turn_last_page));
                     }
                 }
             }
@@ -285,7 +286,7 @@ public class AutoPageTurner {
             if (SystemClock.uptimeMillis() - sStartTime < 500) {
                 return false;
             }
-            stop(activity, "已停止自动翻页");
+            stop(activity, activity.getString(R.string.auto_turn_stopped));
             return true;
         }
         return false;
@@ -293,7 +294,7 @@ public class AutoPageTurner {
 
     public static void onPause(Activity activity) {
         if (sIsRunning) {
-            stop(activity, "已暂停自动翻页");
+            stop(activity, activity.getString(R.string.auto_turn_paused));
         }
     }
 
@@ -345,7 +346,7 @@ public class AutoPageTurner {
         pill.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stop(activity, "已停止自动翻页");
+                stop(activity, activity.getString(R.string.auto_turn_stopped));
             }
         });
 
@@ -376,10 +377,10 @@ public class AutoPageTurner {
             int cur = za.getZoomCurrentPage();
             int tot = za.getZoomTotalPages();
             if (tot > 0) {
-                return intervalSec + "s 自动翻页 (" + cur + "/" + tot + ")";
+                return activity.getString(R.string.auto_turn_pill_progress, intervalSec, cur, tot);
             }
         }
-        return intervalSec + "s 自动翻页中 (轻触停止)";
+        return activity.getString(R.string.auto_turn_pill, intervalSec);
     }
 
     private static void removePill(Activity activity) {

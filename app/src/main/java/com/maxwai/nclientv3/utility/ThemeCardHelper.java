@@ -34,9 +34,21 @@ public final class ThemeCardHelper {
         public final int primaryContainer;
         public final int tertiaryContainer;
 
+        /** 4.6.0: preset name as a string resource, resolved when the card is bound. */
+        public final int titleRes;
+
+        public Palette(String key, int titleRes, int primary, int primaryContainer, int tertiaryContainer) {
+            this(key, null, titleRes, primary, primaryContainer, tertiaryContainer);
+        }
+
         public Palette(String key, String title, int primary, int primaryContainer, int tertiaryContainer) {
+            this(key, title, 0, primary, primaryContainer, tertiaryContainer);
+        }
+
+        private Palette(String key, String title, int titleRes, int primary, int primaryContainer, int tertiaryContainer) {
             this.key = key;
             this.title = title;
+            this.titleRes = titleRes;
             this.primary = primary;
             this.primaryContainer = primaryContainer;
             this.tertiaryContainer = tertiaryContainer;
@@ -62,21 +74,21 @@ public final class ThemeCardHelper {
     }
 
     public static final Palette[] PALETTES = new Palette[] {
-        new Palette("purple", "Ink",    0xFF3156D6, 0xFFDCE3FF, 0xFFC9D4FF),
-        new Palette("blue",   "Blue",   0xFF2F5BFF, 0xFFE4E9FF, 0xFFC9D4FF),
-        new Palette("indigo", "Indigo", 0xFF4F46E5, 0xFFE7E5FF, 0xFFD9D6FF),
-        new Palette("cyan",   "Cyan",   0xFF0891B2, 0xFFD5F4FA, 0xFFBAE6FD),
-        new Palette("teal",   "Teal",   0xFF0F766E, 0xFFD5F5F2, 0xFF99F6E4),
-        new Palette("green",  "Green",  0xFF16803C, 0xFFDCF5E4, 0xFFBBF7D0),
-        new Palette("lime",   "Lime",   0xFF4D7C0F, 0xFFE8F6D0, 0xFFD9F99D),
-        new Palette("amber",  "Amber",  0xFFB45309, 0xFFFEF0D6, 0xFFFDE68A),
-        new Palette("orange", "Orange", 0xFFEA580C, 0xFFFFE8D6, 0xFFFED7AA),
-        new Palette("red",    "Red",    0xFFDC2626, 0xFFFEE2E2, 0xFFFECACA),
-        new Palette("rose",   "Rose",   0xFFE11D48, 0xFFFFE4E9, 0xFFFECDD3),
-        new Palette("pink",   "Pink",   0xFFDB2777, 0xFFFCE7F1, 0xFFFBCFE8),
-        new Palette("brown",  "Stone",  0xFF78716C, 0xFFF5F0ED, 0xFFE7E5E4),
-        new Palette("ocean",  "Ocean",  0xFF0369A1, 0xFFE0F2FE, 0xFFBAE6FD),
-        new Palette("mono",   "Mono",   0xFF18181B, 0xFFF4F4F5, 0xFFE4E4E7)
+        new Palette("purple", R.string.theme_color_ink, 0xFF3156D6, 0xFFDCE3FF, 0xFFC9D4FF),
+        new Palette("blue", R.string.theme_color_blue, 0xFF2F5BFF, 0xFFE4E9FF, 0xFFC9D4FF),
+        new Palette("indigo", R.string.theme_color_indigo, 0xFF4F46E5, 0xFFE7E5FF, 0xFFD9D6FF),
+        new Palette("cyan", R.string.theme_color_cyan, 0xFF0891B2, 0xFFD5F4FA, 0xFFBAE6FD),
+        new Palette("teal", R.string.theme_color_teal, 0xFF0F766E, 0xFFD5F5F2, 0xFF99F6E4),
+        new Palette("green", R.string.theme_color_green, 0xFF16803C, 0xFFDCF5E4, 0xFFBBF7D0),
+        new Palette("lime", R.string.theme_color_lime, 0xFF4D7C0F, 0xFFE8F6D0, 0xFFD9F99D),
+        new Palette("amber", R.string.theme_color_amber, 0xFFB45309, 0xFFFEF0D6, 0xFFFDE68A),
+        new Palette("orange", R.string.theme_color_orange, 0xFFEA580C, 0xFFFFE8D6, 0xFFFED7AA),
+        new Palette("red", R.string.theme_color_red, 0xFFDC2626, 0xFFFEE2E2, 0xFFFECACA),
+        new Palette("rose", R.string.theme_color_rose, 0xFFE11D48, 0xFFFFE4E9, 0xFFFECDD3),
+        new Palette("pink", R.string.theme_color_pink, 0xFFDB2777, 0xFFFCE7F1, 0xFFFBCFE8),
+        new Palette("brown", R.string.theme_color_stone, 0xFF78716C, 0xFFF5F0ED, 0xFFE7E5E4),
+        new Palette("ocean", R.string.theme_color_ocean, 0xFF0369A1, 0xFFE0F2FE, 0xFFBAE6FD),
+        new Palette("mono", R.string.theme_color_mono, 0xFF18181B, 0xFFF4F4F5, 0xFFE4E4E7)
     };
 
     public static class ColorCardDrawable extends Drawable {
@@ -240,8 +252,9 @@ public final class ThemeCardHelper {
             card.setLayoutParams(lp);
 
             card.setTag(p.key);
-            card.setContentDescription(p.title);
-            card.setTooltipText(p.title);
+            String title = p.titleRes != 0 ? ctx.getString(p.titleRes) : p.title;
+            card.setContentDescription(title);
+            card.setTooltipText(title);
             card.setClickable(true);
             card.setFocusable(true);
             card.setBackground(new ColorCardDrawable(ctx, p, isSelected, surfaceColor));

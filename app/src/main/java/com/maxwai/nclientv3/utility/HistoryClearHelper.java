@@ -28,23 +28,14 @@ public class HistoryClearHelper {
             count = hist == null ? 0 : hist.size();
         } catch (Throwable ignored) {
         }
-        final boolean zh = isZh(activity);
-        String title = zh ? "清除阅读历史？" : "Clear reading history?";
+        String title = activity.getString(R.string.history_clear_title);
         String message;
-        if (zh) {
-            if (count > 0) {
-                message = "将删除全部 " + count + " 条阅读历史，此操作无法撤销。\n不会影响收藏、已下载、阅读状态和断点续读进度。";
-            } else {
-                message = "当前没有阅读历史。仍要清除吗？此操作不会影响收藏、已下载、阅读状态和断点续读进度。";
-            }
+        if (count > 0) {
+            message = activity.getString(R.string.history_clear_message_count, count);
         } else {
-            if (count > 0) {
-                message = "This will delete all " + count + " reading-history entries. This cannot be undone.\nFavorites, downloads, reading status, and resume progress are not affected.";
-            } else {
-                message = "There is no reading history. Clear anyway? Favorites, downloads, reading status, and resume progress are not affected.";
-            }
+            message = activity.getString(R.string.history_clear_message_empty);
         }
-        String positive = zh ? "清除" : "Clear";
+        String positive = activity.getString(R.string.history_clear_confirm);
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity)
             .setTitle(title)

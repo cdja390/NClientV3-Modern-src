@@ -1,5 +1,6 @@
 package com.maxwai.nclientv3.components.classes;
 
+import com.maxwai.nclientv3.R;
 import android.content.Context;
 import android.net.Uri;
 
@@ -59,6 +60,14 @@ public class Bookmark {
 
     public void deleteBookmark() {
         Queries.BookmarkTable.deleteBookmark(url);
+    }
+
+    /** 4.6.0: localized label for the bookmark list; toString() stays as the debug form. */
+    @NonNull
+    public String toDisplayString(@NonNull android.content.Context context) {
+        if (requestType == ApiRequestType.FAVORITE) return context.getString(R.string.bookmark_favorites);
+        if (requestType == ApiRequestType.BYALL) return context.getString(R.string.bookmark_main_page);
+        return toString();
     }
 
     @NonNull

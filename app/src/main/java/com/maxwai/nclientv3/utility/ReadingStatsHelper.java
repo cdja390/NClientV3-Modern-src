@@ -1,5 +1,6 @@
 package com.maxwai.nclientv3.utility;
 // Modified/Added for NClientV3 Modern under Apache-2.0 (a derivative of NClientV3 by maxwai and contributors); see docs/PATCHED_FILES.md
+import com.maxwai.nclientv3.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -482,11 +483,10 @@ public class ReadingStatsHelper {
             boolean zh = isZh(activity);
             String title;
             if (row == null) {
-                title = zh ? "\u9605\u8bfb\u7edf\u8ba1\uff08\u6682\u65e0\uff09" : "Reading stats (none yet)";
+                title = activity.getString(R.string.stats_menu_none);
             } else {
-                title = (zh ? "\u9605\u8bfb\u7edf\u8ba1\uff08" : "Reading stats (")
-                    + formatCount(row[0], zh) + " \u00b7 " + formatDuration(row[1], zh)
-                    + (zh ? "\uff09" : ")");
+                title = activity.getString(R.string.stats_menu_summary,
+                    formatCount(activity, row[0]), formatDuration(activity, row[1]));
             }
             if (item == null) {
                 item = menu.add(0, MENU_ID_READING_STATS, 1001, title);
@@ -519,10 +519,9 @@ public class ReadingStatsHelper {
         long[] row = query(id);
         StringBuilder sb = new StringBuilder();
         if (row == null) {
-            sb.append(zh ? "\u8fd9\u672c\u8fd8\u6ca1\u6709\u9605\u8bfb\u7edf\u8ba1\u3002" : "No reading stats for this gallery yet.");
+            sb.append(activity.getString(R.string.stats_gallery_none));
             if (!isEnabled(activity)) {
-                sb.append(zh ? "\n\u8bbe\u7f6e\u91cc\u300c\u8bb0\u5f55\u9605\u8bfb\u65f6\u957f\u4e0e\u6b21\u6570\u300d\u5f53\u524d\u5173\u95ed\u3002"
-                    : "\n\"Record reading time and count\" is off in Settings.");
+                sb.append(activity.getString(R.string.stats_recording_off_note));
             }
         } else {
             int total = 0;
@@ -530,20 +529,19 @@ public class ReadingStatsHelper {
                 total = gallery.getPageCount();
             } catch (Throwable ignored) {
             }
-            sb.append(zh ? "\u9605\u8bfb\u6b21\u6570\uff1a" : "Times read: ").append(row[0]).append('\n');
-            sb.append(zh ? "\u7d2f\u8ba1\u65f6\u957f\uff1a" : "Total time: ").append(formatDuration(row[1], zh)).append('\n');
-            sb.append(zh ? "\u9996\u6b21\u9605\u8bfb\uff1a" : "First read: ").append(formatDate(row[2])).append('\n');
-            sb.append(zh ? "\u4e0a\u6b21\u9605\u8bfb\uff1a" : "Last read: ").append(formatDate(row[3])).append('\n');
-            sb.append(zh ? "\u6700\u8fdc\u5230\u8fbe\uff1a\u7b2c " : "Furthest page: ").append(row[4]);
-            if (total > 0) sb.append(" / ").append(total);
-            sb.append(zh ? " \u9875" : "");
+            sb.append(activity.getString(R.string.stats_times_read, row[0])).append('\n');
+            sb.append(activity.getString(R.string.stats_total_time, formatDuration(activity, row[1]))).append('\n');
+            sb.append(activity.getString(R.string.stats_first_read, formatDate(row[2]))).append('\n');
+            sb.append(activity.getString(R.string.stats_last_read, formatDate(row[3]))).append('\n');
+            if (total > 0) sb.append(activity.getString(R.string.stats_furthest_of, row[4], total));
+            else sb.append(activity.getString(R.string.stats_furthest, row[4]));
         }
         MaterialAlertDialogBuilder b = new MaterialAlertDialogBuilder(activity)
-            .setTitle(zh ? "\u9605\u8bfb\u7edf\u8ba1" : "Reading stats")
+            .setTitle(R.string.stats_title)
             .setMessage(sb.toString())
-            .setPositiveButton(zh ? "\u5173\u95ed" : "Close", null);
+            .setPositiveButton(R.string.stats_close, null);
         if (row != null) {
-            b.setNegativeButton(zh ? "\u6e05\u9664\u672c\u4f5c\u7edf\u8ba1" : "Clear for this gallery",
+            b.setNegativeButton(R.string.stats_clear_gallery,
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -592,9 +590,7 @@ public class ReadingStatsHelper {
             if (ctx == null) return;
             boolean zh = isZh(ctx);
             int n = countRows();
-            pref.setSummary(zh
-                ? "\u53ea\u6e05\u7a7a\u9605\u8bfb\u6b21\u6570\u4e0e\u65f6\u957f\u7edf\u8ba1\uff08\u5f53\u524d " + n + " \u672c\uff09\uff0c\u4e0d\u5f71\u54cd\u9605\u8bfb\u5386\u53f2\u3001\u6536\u85cf\u3001\u5df2\u4e0b\u8f7d\u3001\u9605\u8bfb\u72b6\u6001\u548c\u65ad\u70b9\u7eed\u8bfb"
-                : "Only clears reading time and count (" + n + " galleries now). History, favorites, downloads, status and resume progress are not affected");
+            pref.setSummary(ctx.getString(R.string.stats_clear_summary_count, n));
         } catch (Throwable t) {
             log("updateClearSummary failed", t);
         }
@@ -614,29 +610,25 @@ public class ReadingStatsHelper {
             String title;
             String message;
             if (galleryId > 0) {
-                title = zh ? "\u6e05\u9664\u672c\u4f5c\u9605\u8bfb\u7edf\u8ba1\uff1f" : "Clear reading stats for this gallery?";
-                message = zh
-                    ? "\u5c06\u5220\u9664\u8fd9\u672c\u7684\u9605\u8bfb\u6b21\u6570\u548c\u65f6\u957f\uff0c\u65e0\u6cd5\u64a4\u9500\u3002\n\u4e0d\u4f1a\u5f71\u54cd\u9605\u8bfb\u5386\u53f2\u3001\u6536\u85cf\u3001\u5df2\u4e0b\u8f7d\u3001\u9605\u8bfb\u72b6\u6001\u548c\u65ad\u70b9\u7eed\u8bfb\u3002"
-                    : "This deletes the reading count and time of this gallery. This cannot be undone.\nHistory, favorites, downloads, status and resume progress are not affected.";
+                title = ctx.getString(R.string.stats_clear_gallery_title);
+                message = ctx.getString(R.string.stats_clear_gallery_message);
             } else {
                 int n = countRows();
-                title = zh ? "\u6e05\u7a7a\u5168\u90e8\u9605\u8bfb\u7edf\u8ba1\uff1f" : "Clear all reading stats?";
-                message = zh
-                    ? "\u5c06\u5220\u9664\u5168\u90e8 " + n + " \u672c\u7684\u9605\u8bfb\u6b21\u6570\u548c\u65f6\u957f\uff0c\u65e0\u6cd5\u64a4\u9500\uff08\u5df2\u5bfc\u51fa\u7684\u5907\u4efd\u6587\u4ef6\u4e0d\u53d7\u5f71\u54cd\uff09\u3002\n\u4e0d\u4f1a\u5f71\u54cd\u9605\u8bfb\u5386\u53f2\u3001\u6536\u85cf\u3001\u5df2\u4e0b\u8f7d\u3001\u9605\u8bfb\u72b6\u6001\u548c\u65ad\u70b9\u7eed\u8bfb\u3002"
-                    : "This deletes the reading count and time of all " + n + " galleries. This cannot be undone (backup files already exported are not affected).\nHistory, favorites, downloads, status and resume progress are not affected.";
+                title = ctx.getString(R.string.stats_clear_all_title);
+                message = ctx.getString(R.string.stats_clear_all_message, n);
             }
             final AlertDialog dialog = new MaterialAlertDialogBuilder(ctx)
                 .setTitle(title)
                 .setMessage(message)
-                .setNegativeButton(zh ? "\u53d6\u6d88" : "Cancel", null)
-                .setPositiveButton(zh ? "\u6e05\u9664" : "Clear", new DialogInterface.OnClickListener() {
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.stats_clear_confirm, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int which) {
                         boolean ok = clear(galleryId);
                         try {
                             Toast.makeText(ctx.getApplicationContext(), ok
-                                ? (zh ? "\u5df2\u6e05\u9664\u9605\u8bfb\u7edf\u8ba1" : "Reading stats cleared")
-                                : (zh ? "\u6e05\u9664\u5931\u8d25" : "Clear failed"), Toast.LENGTH_SHORT).show();
+                                ? R.string.stats_cleared
+                                : R.string.stats_clear_failed, Toast.LENGTH_SHORT).show();
                         } catch (Throwable ignored) {
                         }
                         if (pref != null) refreshSummaries(pref);
@@ -802,13 +794,11 @@ public class ReadingStatsHelper {
             long[] t = totals();
             String s;
             if (t[0] <= 0) {
-                s = zh ? "\u8fd8\u6ca1\u6709\u9605\u8bfb\u7edf\u8ba1" : "No reading stats yet";
+                s = ctx.getString(R.string.stats_view_none);
             } else {
-                s = zh
-                    ? "\u5171 " + t[0] + " \u672c\uff0c\u7d2f\u8ba1 " + formatDuration(t[2], true) + " / " + t[1] + " \u6b21"
-                    : t[0] + " galleries, " + formatDuration(t[2], false) + " in total / " + formatCount(t[1], false);
+                s = ctx.getString(R.string.stats_view_totals, t[0], formatDuration(ctx, t[2]), formatCount(ctx, t[1]));
             }
-            if (!isEnabled(ctx)) s += zh ? "\uff08\u8bb0\u5f55\u5f00\u5173\u5df2\u5173\u95ed\uff09" : " (recording is off)";
+            if (!isEnabled(ctx)) s = ctx.getString(R.string.stats_view_recording_off, s);
             pref.setSummary(s);
         } catch (Throwable t) {
             log("updateViewSummary failed", t);
@@ -834,10 +824,10 @@ public class ReadingStatsHelper {
         }
     }
 
-    private static String sortLabel(int mode, boolean zh) {
-        if (mode == SORT_TIME) return zh ? "\u6392\u5e8f\uff1a\u65f6\u957f" : "Sort: time";
-        if (mode == SORT_COUNT) return zh ? "\u6392\u5e8f\uff1a\u6b21\u6570" : "Sort: count";
-        return zh ? "\u6392\u5e8f\uff1a\u6700\u8fd1" : "Sort: recent";
+    private static String sortLabel(int mode, Context ctx) {
+        if (mode == SORT_TIME) return ctx.getString(R.string.stats_sort_time);
+        if (mode == SORT_COUNT) return ctx.getString(R.string.stats_sort_count);
+        return ctx.getString(R.string.stats_sort_recent);
     }
 
     /** Settings "view_reading_stats": one line per gallery; tap a line for its details. */
@@ -850,23 +840,21 @@ public class ReadingStatsHelper {
             final List<Entry> entries = queryAll();
             if (pref != null) refreshSummaries(pref);
             if (entries.isEmpty()) {
-                String msg = zh ? "\u8fd8\u6ca1\u6709\u4efb\u4f55\u9605\u8bfb\u7edf\u8ba1\u3002\u6253\u5f00\u9605\u8bfb\u9875\u770b\u6f2b\u753b\u540e\uff0c\u8fd9\u91cc\u4f1a\u6309\u4f5c\u54c1\u5217\u51fa\u9605\u8bfb\u6b21\u6570\u548c\u65f6\u957f\u3002"
-                    : "No reading stats yet. Galleries you read will be listed here with their count and time.";
+                String msg = ctx.getString(R.string.stats_all_empty);
                 if (!enabled) {
-                    msg += zh ? "\n\n\u8bbe\u7f6e\u91cc\u300c\u8bb0\u5f55\u9605\u8bfb\u65f6\u957f\u4e0e\u6b21\u6570\u300d\u5f53\u524d\u5173\u95ed\uff0c\u6253\u5f00\u540e\u624d\u4f1a\u5f00\u59cb\u8bb0\u5f55\u3002"
-                        : "\n\n\"Record reading time and count\" is off in Settings; turn it on to start recording.";
+                    msg += ctx.getString(R.string.stats_all_recording_off_note);
                 }
                 new MaterialAlertDialogBuilder(ctx)
-                    .setTitle(zh ? "\u9605\u8bfb\u7edf\u8ba1" : "Reading stats")
+                    .setTitle(R.string.stats_title)
                     .setMessage(msg)
-                    .setPositiveButton(zh ? "\u5173\u95ed" : "Close", null)
+                    .setPositiveButton(R.string.stats_close, null)
                     .show();
                 return;
             }
             sortEntries(entries, sSortMode);
             final EntryAdapter adapter = new EntryAdapter(ctx, entries, zh);
-            String title = zh ? "\u9605\u8bfb\u7edf\u8ba1\uff08" + entries.size() + " \u672c\uff09" : "Reading stats (" + entries.size() + ")";
-            if (!enabled) title += zh ? " \u00b7 \u8bb0\u5f55\u5df2\u5173\u95ed" : " \u00b7 recording off";
+            String title = ctx.getString(R.string.stats_all_title, entries.size());
+            if (!enabled) title = ctx.getString(R.string.stats_all_title_off, title);
             final AlertDialog dialog = new MaterialAlertDialogBuilder(ctx)
                 .setTitle(title)
                 .setAdapter(adapter, new DialogInterface.OnClickListener() {
@@ -876,8 +864,8 @@ public class ReadingStatsHelper {
                         if (e != null) showEntryDetail(ctx, e, pref);
                     }
                 })
-                .setNeutralButton(sortLabel(sSortMode, zh), null)
-                .setPositiveButton(zh ? "\u5173\u95ed" : "Close", null)
+                .setNeutralButton(sortLabel(sSortMode, ctx), null)
+                .setPositiveButton(R.string.stats_close, null)
                 .create();
             dialog.setOnShowListener(new DialogInterface.OnShowListener() {
                 @Override
@@ -892,7 +880,7 @@ public class ReadingStatsHelper {
                                 sSortMode = (sSortMode + 1) % 3;
                                 sortEntries(entries, sSortMode);
                                 adapter.notifyDataSetChanged();
-                                sort.setText(sortLabel(sSortMode, zh));
+                                sort.setText(sortLabel(sSortMode, ctx));
                                 ListView lv = dialog.getListView();
                                 if (lv != null) lv.setSelection(0);
                             }
@@ -915,28 +903,28 @@ public class ReadingStatsHelper {
             if (ctx instanceof Activity && ((Activity) ctx).isFinishing()) return;
             final boolean zh = isZh(ctx);
             StringBuilder sb = new StringBuilder();
-            sb.append(zh ? "\u7f16\u53f7\uff1a#" : "ID: #").append(e.gallery).append('\n');
-            sb.append(zh ? "\u9605\u8bfb\u6b21\u6570\uff1a" : "Times read: ").append(e.count).append('\n');
-            sb.append(zh ? "\u7d2f\u8ba1\u65f6\u957f\uff1a" : "Total time: ").append(formatDuration(e.totalMs, zh)).append('\n');
-            sb.append(zh ? "\u9996\u6b21\u9605\u8bfb\uff1a" : "First read: ").append(formatDate(e.firstRead)).append('\n');
-            sb.append(zh ? "\u4e0a\u6b21\u9605\u8bfb\uff1a" : "Last read: ").append(formatDate(e.lastRead)).append('\n');
-            sb.append(zh ? "\u6700\u8fdc\u5230\u8fbe\uff1a\u7b2c " : "Furthest page: ").append(e.maxPage).append(zh ? " \u9875" : "");
+            sb.append(ctx.getString(R.string.stats_entry_id, e.gallery)).append('\n');
+            sb.append(ctx.getString(R.string.stats_times_read, e.count)).append('\n');
+            sb.append(ctx.getString(R.string.stats_total_time, formatDuration(ctx, e.totalMs))).append('\n');
+            sb.append(ctx.getString(R.string.stats_first_read, formatDate(e.firstRead))).append('\n');
+            sb.append(ctx.getString(R.string.stats_last_read, formatDate(e.lastRead))).append('\n');
+            sb.append(ctx.getString(R.string.stats_furthest, e.maxPage));
             new MaterialAlertDialogBuilder(ctx)
                 .setTitle(e.displayTitle())
                 .setMessage(sb.toString())
-                .setPositiveButton(zh ? "\u6253\u5f00\u6f2b\u753b" : "Open gallery", new DialogInterface.OnClickListener() {
+                .setPositiveButton(R.string.stats_open_gallery, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int which) {
                         openGallery(ctx, e.gallery);
                     }
                 })
-                .setNeutralButton(zh ? "\u8fd4\u56de\u5217\u8868" : "Back", new DialogInterface.OnClickListener() {
+                .setNeutralButton(R.string.stats_back_to_list, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int which) {
                         showAllStats(ctx, pref);
                     }
                 })
-                .setNegativeButton(zh ? "\u6e05\u9664\u672c\u4f5c\u7edf\u8ba1" : "Clear for this gallery", new DialogInterface.OnClickListener() {
+                .setNegativeButton(R.string.stats_clear_gallery, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int which) {
                         confirmClear(ctx, e.gallery, pref, new Runnable() {
@@ -1023,8 +1011,8 @@ public class ReadingStatsHelper {
                 title.setText(e.displayTitle());
                 StringBuilder sb = new StringBuilder();
                 if (e.title != null && !e.title.trim().isEmpty()) sb.append('#').append(e.gallery).append(" \u00b7 ");
-                sb.append(formatCount(e.count, zh)).append(" \u00b7 ").append(formatDuration(e.totalMs, zh))
-                    .append(" \u00b7 ").append(zh ? "\u4e0a\u6b21 " : "last ").append(formatDate(e.lastRead));
+                sb.append(formatCount(ctx, e.count)).append(" \u00b7 ").append(formatDuration(ctx, e.totalMs))
+                    .append(" \u00b7 ").append(ctx.getString(R.string.stats_entry_last, formatDate(e.lastRead)));
                 sub.setText(sb.toString());
             }
             return row;
@@ -1052,18 +1040,17 @@ public class ReadingStatsHelper {
         }
     }
 
-    static String formatCount(long n, boolean zh) {
-        return zh ? (n + " \u6b21") : (n == 1 ? "1 time" : n + " times");
+    static String formatCount(Context ctx, long n) {
+        return ctx.getResources().getQuantityString(R.plurals.stats_times, (int) Math.min(n, Integer.MAX_VALUE), n);
     }
 
-    static String formatDuration(long ms, boolean zh) {
+    static String formatDuration(Context ctx, long ms) {
         long min = ms / 60000L;
-        if (min < 1) return zh ? "\u4e0d\u8db3 1 \u5206\u949f" : "< 1 min";
+        if (min < 1) return ctx.getString(R.string.stats_duration_lt1);
         long h = min / 60L;
         long m = min % 60L;
-        if (h == 0) return zh ? (m + " \u5206\u949f") : (m + " min");
-        if (zh) return m == 0 ? (h + " \u5c0f\u65f6") : (h + " \u5c0f\u65f6 " + m + " \u5206\u949f");
-        return m == 0 ? (h + " h") : (h + " h " + m + " min");
+        if (h == 0) return ctx.getString(R.string.stats_duration_min, m);
+        return m == 0 ? ctx.getString(R.string.stats_duration_h, h) : ctx.getString(R.string.stats_duration_hm, h, m);
     }
 
     private static String formatDate(long wall) {

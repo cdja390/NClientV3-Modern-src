@@ -41,24 +41,24 @@ public class FavoriteSyncHelper {
         }
 
         final String[] options = new String[] {
-            "最新 1 页 (快速同步，约25部)",
-            "最新 3 页 (约75部)",
-            "最新 5 页 (约125部)",
-            "全部同步 (双向完整合并)",
-            "自定义页数..."
+            activity.getString(R.string.fav_sync_option_1),
+            activity.getString(R.string.fav_sync_option_3),
+            activity.getString(R.string.fav_sync_option_5),
+            activity.getString(R.string.fav_sync_option_all),
+            activity.getString(R.string.fav_sync_option_custom)
         };
 
         final int[] selected = new int[] { lastChoice };
 
         new MaterialAlertDialogBuilder(activity)
-            .setTitle("同步网页收藏")
+            .setTitle(R.string.fav_sync_dialog_title)
             .setSingleChoiceItems(options, lastChoice, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     selected[0] = which;
                 }
             })
-            .setPositiveButton("开始同步", new DialogInterface.OnClickListener() {
+            .setPositiveButton(R.string.fav_sync_start, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     int choice = selected[0];
@@ -86,7 +86,7 @@ public class FavoriteSyncHelper {
 
         final EditText input = new EditText(activity);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setHint("输入页数 (例如 10)");
+        input.setHint(R.string.fav_sync_custom_hint);
         input.setText(String.valueOf(lastCustom));
         input.setSelection(input.getText().length());
 
@@ -105,10 +105,10 @@ public class FavoriteSyncHelper {
         container.addView(input);
 
         new MaterialAlertDialogBuilder(activity)
-            .setTitle("自定义同步页数")
-            .setMessage("请输入要从网页同步的最新页数：")
+            .setTitle(R.string.fav_sync_custom_title)
+            .setMessage(R.string.fav_sync_custom_message)
             .setView(container)
-            .setPositiveButton("开始同步", new DialogInterface.OnClickListener() {
+            .setPositiveButton(R.string.fav_sync_start, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     String text = input.getText().toString().trim();
@@ -118,7 +118,7 @@ public class FavoriteSyncHelper {
                     } catch (Exception ignored) {}
 
                     if (pages <= 0) {
-                        Toast.makeText(activity, "请输入大于 0 的有效页数", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, R.string.fav_sync_custom_invalid, Toast.LENGTH_SHORT).show();
                         return;
                     }
 
