@@ -82,3 +82,10 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 - `ehentai/EhFeed.java`, new `EhPager.java`, `EhUrls.java`, `EhCategory.java`: all tag terms, request category/page/rating filters and global defaults, 24-query/4-page LRU and upstream cursor boundaries. Explicit Private and evicted-page cursor behavior match b2ee7ed.
 - `api/components/Ranges.java`: optional EH request rating with legacy six-int Parcel reader preserved; `api/InspectorV3.java` passes ranges to EH. Rating UI follows in P4.
 - Tests: `ehentai/EhSearchPagerTest`, updated `EhFeedTest`. No real Android Parcel test is claimed.
+
+## Files added or modified in 4.7.2 (P4, source selection)
+
+- New `source/SourcePolicy.java`, `SourcePreferences.java`, and `SourceDialogs.java`. Source migration follows the upstream preference structure, with the confirmed NH default and paired EH/EX switch. The toolbar and settings share the selector.
+- `MainActivity.java`, `InspectorV3.java`, and `PageSwitcher.java` reset list paging for a new source selection and guard callbacks on the main thread. `ListAdapter.java` marks both sources in a merged list. Sort options use the source intersection.
+- `EhSettings.java`, `EhAuth.java`, `EhBrowseActivity.java`, `EhFeed.java`, and `EhRepository.java` coordinate host changes and reset the list and detail caches.
+- `SearchActivity.java`, `GeneralPreferenceFragment.java`, and the three `strings_472.xml` files expose the request rating and source choices. Tests cover source migration and the three locale resource sets.

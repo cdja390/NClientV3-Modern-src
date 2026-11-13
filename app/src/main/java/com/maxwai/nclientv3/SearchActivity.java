@@ -94,6 +94,22 @@ public class SearchActivity extends GeneralActivity {
             findViewById(R.id.category_group),
         };
         initRanges();
+        Button rating = findViewById(R.id.eh_rating_filter);
+        rating.setVisibility(com.maxwai.nclientv3.source.SourcePreferences.enabled(this).stream()
+            .anyMatch(source -> source != com.maxwai.nclientv3.source.GallerySource.NHENTAI) ? View.VISIBLE : View.GONE);
+        rating.setOnClickListener(v -> {
+            String[] labels = new String[7];
+            labels[0] = getString(R.string.rating_inherit);
+            labels[1] = getString(R.string.rating_no_filter);
+            for (int star = 1; star <= 5; star++) labels[star + 1] = getString(R.string.rating_min_stars, star);
+            new MaterialAlertDialogBuilder(this).setTitle(R.string.rating_request_title)
+                .setSingleChoiceItems(labels, ranges.getMinRating() + 1, (dialog, which) -> {
+                    ranges.setMinRating(which - 1);
+                    rating.setText(labels[which]);
+                    advanced = true;
+                    dialog.dismiss();
+                }).setNegativeButton(R.string.cancel, null).show();
+        });
         adapter = new HistoryAdapter(this);
         autoComplete = (AppCompatAutoCompleteTextView) getLayoutInflater().inflate(R.layout.autocomplete_entry, findViewById(R.id.appbar), false);
         autoComplete.setOnEditorActionListener((v, actionId, event) -> {

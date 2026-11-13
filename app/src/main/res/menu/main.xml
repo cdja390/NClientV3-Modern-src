@@ -2,6 +2,7 @@
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:icon="@drawable/ic_search" android:id="@+id/search" android:orderInCategory="10" android:title="@string/search" app:actionViewClass="androidx.appcompat.widget.SearchView" app:showAsAction="always|collapseActionView" />
+    <item android:id="@+id/sources" android:title="@string/gallery_sources_title" app:showAsAction="never" />
     <item android:id="@+id/safe_mode" android:title="@string/safe_mode" android:checkable="true" app:showAsAction="never" />
     <item android:icon="@drawable/ic_help" android:id="@+id/tag_manager" android:visible="false" android:title="@string/update_tag_status" app:showAsAction="ifRoom|collapseActionView" />
     <item android:icon="@drawable/ic_shuffle" android:id="@+id/random_favorite" android:orderInCategory="20" android:title="@string/random_manga" app:showAsAction="ifRoom|collapseActionView" />

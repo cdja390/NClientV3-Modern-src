@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.maxwai.nclientv3.api.enums.ApiRequestType;
 import com.maxwai.nclientv3.api.enums.TagType;
+import com.maxwai.nclientv3.source.GallerySource;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +46,9 @@ public class EhFeedTest {
         assertFalse(EhFeed.isMergeable(ApiRequestType.FAVORITE));
         assertFalse(EhFeed.isMergeable(ApiRequestType.BYSINGLE));
         assertFalse(EhFeed.isMergeable(ApiRequestType.RANDOM));
-        assertEquals(EhFeed.Mode.NH, EhFeed.modeFor(null, ApiRequestType.BYALL));
+        assertEquals(EhFeed.Mode.NH, EhFeed.modeFor(Collections.singleton(GallerySource.NHENTAI), ApiRequestType.BYALL));
+        assertEquals(EhFeed.Mode.NONE, EhFeed.modeFor(Collections.emptySet(), ApiRequestType.BYALL));
+        assertEquals(EhFeed.Mode.NH, EhFeed.modeFor(Collections.emptySet(), ApiRequestType.BYSINGLE));
     }
 
     @Test

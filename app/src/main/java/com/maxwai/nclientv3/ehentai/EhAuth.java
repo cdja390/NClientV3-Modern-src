@@ -137,6 +137,6 @@ public final class EhAuth {
 
     public static void logout(@NonNull Context context) {
         prefs(context).edit().clear().apply();
-        EhSettings.setUseExhentai(context, false);
+        com.maxwai.nclientv3.source.SourcePreferences.setEhHost(context, false);
     }
 }

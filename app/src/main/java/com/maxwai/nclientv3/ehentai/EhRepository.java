@@ -134,6 +134,16 @@ public final class EhRepository {
         return r;
     }
 
+    public static void clearCaches() {
+        synchronized (PREVIEW_PAGES) {
+            PREVIEW_PAGES.clear();
+            SHAPE.clear();
+        }
+        synchronized (IMAGES) {
+            IMAGES.clear();
+        }
+    }
+
     public static void forget(@NonNull EhGalleryKey key) {
         synchronized (PREVIEW_PAGES) {
             PREVIEW_PAGES.keySet().removeIf(k -> k.startsWith(key.gid + ":"));

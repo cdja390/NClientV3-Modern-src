@@ -22,7 +22,6 @@
 package com.maxwai.nclientv3.ehentai;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,6 +30,7 @@ import com.maxwai.nclientv3.api.components.GenericGallery;
 import com.maxwai.nclientv3.api.components.Tag;
 import com.maxwai.nclientv3.api.components.Ranges;
 import com.maxwai.nclientv3.source.GalleryIdentity;
+import com.maxwai.nclientv3.source.GallerySource;
 import com.maxwai.nclientv3.api.enums.ApiRequestType;
 import com.maxwai.nclientv3.api.enums.TagStatus;
 import com.maxwai.nclientv3.api.enums.TagType;
@@ -61,16 +61,17 @@ public final class EhFeed {
     /** Query nhentai's "popular" home page is rewritten to (InspectorV3.tryByAllPopular). */
     private static final String NH_POPULAR_PLACEHOLDER = "-nclientv3";
 
-    public enum Mode {NH, EH, BOTH}
+    public enum Mode {NH, EH, BOTH, NONE}
 
     private EhFeed() {
     }
 
     @NonNull
-    public static Mode mode(@Nullable Context context) {
-        if (context == null) return Mode.NH;
-        SharedPreferences p = context.getSharedPreferences("Settings", Context.MODE_PRIVATE);
-        return parseMode(p.getString(KEY_SOURCES, MODE_NH));
+    public static Mode modeFor(@NonNull Set<GallerySource> enabled, @Nullable ApiRequestType type) {
+        if (!isMergeable(type)) return Mode.NH;
+        if (enabled.isEmpty()) return Mode.NONE;
+        if (!enabled.contains(GallerySource.NHENTAI)) return Mode.EH;
+        return enabled.size() > 1 ? Mode.BOTH : Mode.NH;
     }
 
     @NonNull
@@ -83,11 +84,6 @@ public final class EhFeed {
     /** Only the browsable lists are merged; favorites, random and single galleries stay nhentai. */
     public static boolean isMergeable(@Nullable ApiRequestType type) {
         return type == ApiRequestType.BYALL || type == ApiRequestType.BYSEARCH || type == ApiRequestType.BYTAG;
-    }
-
-    @NonNull
-    public static Mode modeFor(@Nullable Context context, @Nullable ApiRequestType type) {
-        return isMergeable(type) ? mode(context) : Mode.NH;
     }
 
     // ---- query ----
@@ -206,15 +202,8 @@ public final class EhFeed {
 
     /** Loads page {@code page} of the e-hentai list matching the main list's query and tags. */
     @NonNull
-    public static Result load(@NonNull Context context, @Nullable String query, @Nullable Collection<Tag> tags,
-                              int page) throws IOException {
-        return load(context, query, tags, null, page);
-    }
-
-    @NonNull
-    public static Result load(@NonNull Context context, @Nullable String query, @Nullable Collection<Tag> tags,
+    public static Result load(@NonNull Context context, boolean ex, @Nullable String query, @Nullable Collection<Tag> tags,
                               @Nullable Ranges ranges, int page) throws IOException {
-        final boolean ex = EhSettings.useExhentai(context);
         final String search = buildQuery(query, tags);
         final int shown = EhSettings.shownCategories(context);
         final int minRating = EhSettings.minRating(context);

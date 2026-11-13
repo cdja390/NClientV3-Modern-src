@@ -22,6 +22,9 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 
+import com.maxwai.nclientv3.source.GallerySource;
+import com.maxwai.nclientv3.source.SourcePreferences;
+
 /** Non-secret e-hentai preferences ("EHentai" preferences file). */
 public final class EhSettings {
     static final String PREFS = "EHentai";
@@ -40,13 +43,14 @@ public final class EhSettings {
 
     /** exhentai is only used when switched on and the account has an igneous cookie. */
     public static boolean useExhentai(@NonNull Context context) {
-        return prefs(context).getBoolean(KEY_EXHENTAI, false) && EhAuth.hasExhentaiAccess(context);
+        return SourcePreferences.ehSource(context) == GallerySource.EXHENTAI && EhAuth.hasExhentaiAccess(context);
     }
 
     public static boolean wantsExhentai(@NonNull Context context) {
         return prefs(context).getBoolean(KEY_EXHENTAI, false);
     }
 
+    /** Persists the legacy switch. SourcePreferences coordinates its changes with the source list. */
     public static void setUseExhentai(@NonNull Context context, boolean value) {
         prefs(context).edit().putBoolean(KEY_EXHENTAI, value).apply();
     }

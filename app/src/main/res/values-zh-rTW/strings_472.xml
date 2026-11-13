@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NClientV3 Modern 4.7.2 source merging. -->
+<resources>
+    <string name="gallery_sources_title">畫廊來源</string>
+    <string name="source_name_nh">nhentai</string>
+    <string name="source_name_eh">e-hentai</string>
+    <string name="source_name_ex">ExHentai</string>
+    <string name="sources_choose_hint">請在「畫廊來源」選單中選擇至少一個來源。</string>
+    <string name="source_badge_nh">NH</string>
+    <string name="source_badge_eh">EH</string>
+    <string name="source_badge_ex">EX</string>
+    <string name="source_badge_pages">%1$s · %2$d 頁</string>
+    <string name="rating_request_title">本次搜尋的 EH 最低評分</string>
+    <string name="rating_inherit">EH 評分：使用全域設定</string>
+    <string name="rating_no_filter">EH 評分：不限</string>
+    <string name="rating_min_stars">EH 評分：至少 %1$d 星</string>
+</resources>

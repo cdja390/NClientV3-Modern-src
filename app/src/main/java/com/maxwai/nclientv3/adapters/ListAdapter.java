@@ -104,10 +104,12 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
         holder.overlay.setVisibility((queryString != null && ent.hasIgnoredTags(queryString)) ? View.VISIBLE : View.GONE);
         loadGallery(holder, ent);
         holder.pages.setVisibility(View.GONE);
-        boolean eh = ent instanceof EhSimpleGallery;
-        if (eh) {
-            // Source badge for the mixed nhentai + e-hentai list.
-            holder.pages.setText(context.getString(R.string.source_badge_eh_pages, ent.getPageCount()));
+        if (com.maxwai.nclientv3.source.SourcePreferences.enabled(context).size() > 1) {
+            GallerySource source = GalleryIdentity.of(ent).source;
+            int badge = source == GallerySource.NHENTAI ? R.string.source_badge_nh
+                : source == GallerySource.EXHENTAI ? R.string.source_badge_ex : R.string.source_badge_eh;
+            holder.pages.setText(context.getString(R.string.source_badge_pages,
+                context.getString(badge), ent.getPageCount()));
             holder.pages.setVisibility(View.VISIBLE);
         }
         holder.title.setText(ent.getTitle());

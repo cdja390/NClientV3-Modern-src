@@ -42,6 +42,8 @@ import com.maxwai.nclientv3.MainActivity;
 import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.components.activities.GeneralActivity;
 import com.maxwai.nclientv3.utility.Utility;
+import com.maxwai.nclientv3.source.GallerySource;
+import com.maxwai.nclientv3.source.SourcePreferences;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -446,7 +448,7 @@ public class EhBrowseActivity extends GeneralActivity {
         account.setTitle(loggedIn ? getString(R.string.eh_account_sign_out) : getString(R.string.eh_account_sign_in));
         MenuItem ex = menu.findItem(R.id.eh_action_exhentai);
         ex.setVisible(loggedIn);
-        ex.setChecked(EhSettings.useExhentai(this));
+        ex.setChecked(SourcePreferences.ehSource(this) == GallerySource.EXHENTAI);
         menu.findItem(R.id.eh_action_fav_folder).setVisible(section == Section.FAVORITES && loggedIn);
         menu.findItem(R.id.eh_action_clear_history).setVisible(section == Section.HISTORY);
         menu.findItem(R.id.eh_action_filter).setVisible(section == Section.FRONT);
@@ -494,12 +496,12 @@ public class EhBrowseActivity extends GeneralActivity {
             return true;
         }
         if (id == R.id.eh_action_exhentai) {
-            boolean want = !EhSettings.useExhentai(this);
+            boolean want = SourcePreferences.ehSource(this) != GallerySource.EXHENTAI;
             if (want && !EhAuth.hasExhentaiAccess(this)) {
                 checkExhentaiAccess();
                 return true;
             }
-            EhSettings.setUseExhentai(this, want);
+            SourcePreferences.setEhHost(this, want);
             authSnapshot = authState();
             invalidateOptionsMenu();
             reload(false);
@@ -555,7 +557,7 @@ public class EhBrowseActivity extends GeneralActivity {
                         .show();
                     return;
                 }
-                EhSettings.setUseExhentai(this, true);
+                SourcePreferences.setEhHost(this, true);
                 authSnapshot = authState();
                 invalidateOptionsMenu();
                 reload(false);

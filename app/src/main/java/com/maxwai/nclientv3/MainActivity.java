@@ -56,6 +56,11 @@ import com.maxwai.nclientv3.components.activities.BaseActivity;
 import com.maxwai.nclientv3.components.views.PageSwitcher;
 import com.maxwai.nclientv3.components.widgets.CustomGridLayoutManager;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.source.SourceCapabilities;
+import com.maxwai.nclientv3.source.SourcePreferences;
+import com.maxwai.nclientv3.source.SourcePolicy;
+import com.maxwai.nclientv3.source.SourceDialogs;
+import com.maxwai.nclientv3.source.GallerySource;
 import com.maxwai.nclientv3.settings.Login;
 import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.settings.TagV2;
@@ -88,10 +93,8 @@ public class MainActivity extends BaseActivity
             Intent intent = new Intent(MainActivity.this, GalleryActivity.class);
             LogUtility.d(g.toString());
             intent.putExtra(getPackageName() + ".GALLERY", g);
-            runOnUiThread(() -> {
-                startActivity(intent);
-                finish();
-            });
+            startActivity(intent);
+            finish();
             LogUtility.d("STARTED");
         }
     };
@@ -101,6 +104,7 @@ public class MainActivity extends BaseActivity
         @Override
         public void onSuccess(List<GenericGallery> galleries) {
             adapter.addGalleries(galleries);
+            showPageSwitcher(inspector.getPage(), inspector.getPageCount());
         }
     };
     //views
@@ -121,7 +125,7 @@ public class MainActivity extends BaseActivity
             super.onSuccess(galleries);
             adapter.restartDataset(galleries);
             showPageSwitcher(inspector.getPage(), inspector.getPageCount());
-            runOnUiThread(() -> recycler.smoothScrollToPosition(0));
+            if (!galleries.isEmpty()) recycler.smoothScrollToPosition(0);
         }
     };
     final Runnable changeLanguageRunnable = () -> {
@@ -141,6 +145,7 @@ public class MainActivity extends BaseActivity
     private DrawerLayout drawerLayout;
     private Toolbar toolbar;
     private boolean setting = false;
+    private String sourceSignature;
     /**
      * The profile is fetched asynchronously and can land long after onResume has painted the
      * drawer, so redraw whenever it changes instead of only reading it once.
@@ -156,6 +161,7 @@ public class MainActivity extends BaseActivity
             return;
         }
         setContentView(R.layout.activity_main);
+        sourceSignature = SourcePolicy.serialize(SourcePreferences.enabled(this));
         //load inspector
         selectStartMode(getIntent(), getPackageName());
         LogUtility.d("Main started with mode " + modeType);
@@ -514,7 +520,7 @@ public class MainActivity extends BaseActivity
     }
 
     public void showPageSwitcher(final int actualPage, final int totalPage) {
-        pageSwitcher.setPages(totalPage, actualPage);
+        pageSwitcher.displayPages(Math.max(1, totalPage), actualPage);
 
 
         if (Global.isInfiniteScrollMain()) {
@@ -554,15 +560,24 @@ public class MainActivity extends BaseActivity
         settings.edit().putString(getString(R.string.preference_key_language),
             setLocaleList.isEmpty() ? getString(R.string.key_default_value) :
                 Objects.requireNonNull(setLocaleList.get(0)).toLanguageTag()).apply();
+        String currentSources = SourcePolicy.serialize(SourcePreferences.enabled(this));
+        boolean sourcesChanged = sourceSignature != null && !sourceSignature.equals(currentSources);
+        sourceSignature = currentSources;
         if (setting) {
             Global.initFromShared(this);//restart all settings
-            inspector = inspector.cloneInspector(this, resetDataset);
-            inspector.start();//restart inspector
-            adapter.notifyDataSetChanged();//restart adapter
-            adapter.resetStatuses();
-            showPageSwitcher(inspector.getPage(), inspector.getPageCount());//restart page switcher
+            if (sourcesChanged) {
+                reloadSources();
+            } else {
+                inspector = inspector.cloneInspector(this, resetDataset);
+                inspector.start();
+                adapter.notifyDataSetChanged();
+                adapter.resetStatuses();
+                showPageSwitcher(inspector.getPage(), inspector.getPageCount());
+            }
             changeLayout(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
             setting = false;
+        } else if (sourcesChanged && inspector != null) {
+            reloadSources();
         } else if (filteringTag) {
             inspector = InspectorV3.basicInspector(this, 1, resetDataset);
             inspector.start();
@@ -631,7 +646,8 @@ public class MainActivity extends BaseActivity
     }
 
     private void popularItemDispay(MenuItem item) {
-        item.setTitle(getString(R.string.sort_type_title_format, getString(Global.getSortType().getNameId())));
+        item.setTitle(getString(R.string.sort_type_title_format, getString(
+            SourceCapabilities.effectiveSort(SourcePreferences.enabled(this), Global.getSortType()).getNameId())));
         Global.setTint(this, item.getIcon());
     }
 
@@ -676,6 +692,10 @@ public class MainActivity extends BaseActivity
             if (adapter != null) adapter.notifyDataSetChanged();
             return true;
         }
+        if (item.getItemId() == R.id.sources) {
+            SourceDialogs.show(this, this::reloadSources);
+            return true;
+        }
         if (item.getItemId() == R.id.by_popular) {
             updateSortType(item);
         } else if (item.getItemId() == R.id.only_language) {
@@ -707,18 +727,31 @@ public class MainActivity extends BaseActivity
         return super.onOptionsItemSelected(item);
     }
 
+    private void reloadSources() {
+        sourceSignature = SourcePolicy.serialize(SourcePreferences.enabled(this));
+        if (inspector == null) return;
+        inspector = inspector.cloneInspector(this, resetDataset);
+        inspector.setPage(1);
+        inspector.setSortType(Global.getSortType());
+        adapter.restartDataset(new ArrayList<>());
+        showPageSwitcher(1, 1);
+        inspector.start();
+        invalidateOptionsMenu();
+    }
+
     private void updateSortType(MenuItem item) {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.select_dialog_singlechoice);
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
-        for (SortType type : SortType.values())
+        List<SortType> options = SourceCapabilities.sortOptions(SourcePreferences.enabled(this));
+        for (SortType type : options)
             adapter.add(getString(type.getNameId()));
-        temporaryType = Global.getSortType();
+        temporaryType = SourceCapabilities.effectiveSort(SourcePreferences.enabled(this), Global.getSortType());
         builder.setIcon(R.drawable.ic_sort).setTitle(R.string.sort_select_type);
-        builder.setSingleChoiceItems(adapter, temporaryType.ordinal(), (dialog, which) -> temporaryType = SortType.values()[which]);
+        builder.setSingleChoiceItems(adapter, options.indexOf(temporaryType), (dialog, which) -> temporaryType = options.get(which));
         builder.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                temporaryType = SortType.values()[position];
+                temporaryType = options.get(position);
                 parent.setSelection(position);
             }
 
@@ -727,7 +760,8 @@ public class MainActivity extends BaseActivity
             }
         });
         builder.setPositiveButton(R.string.ok, (dialog, which) -> {
-            Global.updateSortType(MainActivity.this, temporaryType);
+            if (SourcePreferences.enabled(this).equals(java.util.EnumSet.of(GallerySource.NHENTAI)))
+                Global.updateSortType(MainActivity.this, temporaryType);
             popularItemDispay(item);
             inspector = inspector.cloneInspector(MainActivity.this, resetDataset);
             inspector.setSortType(temporaryType);
@@ -871,22 +905,32 @@ public class MainActivity extends BaseActivity
 
     abstract class MainInspectorResponse extends InspectorV3.DefaultInspectorResponse {
         @Override
+        public void dispatch(InspectorV3 request, Runnable callback) {
+            runOnUiThread(() -> {
+                if (inspector == request && !isFinishing() && !isDestroyed()) callback.run();
+            });
+        }
+
+        @Override
         public void onSuccess(List<GenericGallery> galleries) {
             super.onSuccess(galleries);
             if (adapter != null) adapter.resetStatuses();
-            if (galleries.isEmpty())
-                showError(R.string.no_entry_found, null);
+            if (galleries.isEmpty()) {
+                boolean noSources = SourcePreferences.enabled(MainActivity.this).isEmpty();
+                showError(noSources ? R.string.sources_choose_hint : R.string.no_entry_found,
+                    noSources ? v -> SourceDialogs.show(MainActivity.this, MainActivity.this::reloadSources) : null);
+            }
         }
 
         @Override
         public void onStart() {
-            runOnUiThread(() -> refresher.setRefreshing(true));
+            refresher.setRefreshing(true);
             hideError();
         }
 
         @Override
         public void onEnd() {
-            runOnUiThread(() -> refresher.setRefreshing(false));
+            refresher.setRefreshing(false);
             inspecting = false;
         }
 

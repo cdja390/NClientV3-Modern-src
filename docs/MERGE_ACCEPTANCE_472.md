@@ -49,15 +49,23 @@
 - JVM 矩阵有证据条目：T04、T06-T26、T32，共23项；真实网络、Android Parcel和真机项未验收。
 - 本次用户进一步明确：方案 B 保留独立 EH 阅读器，同时补齐垂直/条漫、边缘点击、音量键、自动翻页、自动阅读状态等阅读交互和设置；不得把这些差异作为已接受保留项。后续逐项验收。
 
+## 本次 P4 验证（2026-11-13，Asia/Shanghai）
+
+- 主页菜单和设置页共用来源选择，至少选一项才能保存。导入的空配置显示来源选择入口，可重新保存。导入同时带 EH 和 EX 时，按现有开关保留其中一项；明确的单个 EH 或 EX 来源与开关同步。独立 EH 页仍按账号能否访问 EX 决定实际站点。
+- 选择变更重载第一页，失效旧游标缓存。MainActivity 在主线程核对请求身份后一次处理对应回调，防止旧请求更新新列表或刷新指示器。程序更新页码显示不触发新请求。
+- 排序菜单采用来源能力交集，保留仅 NH 时的排序；双来源显示每行徽标。搜索页可指定最低评分。
+- 指定三任务成功。XML 130 tests / 0 failures / 0 errors / 0 skipped，SourcePolicyTest 5，LocalizationCompletenessTest 3。release APK 18068217 字节，SHA-256 1BDC6BE7CC746B65D1A228058945C8F21201803309AE7E787B610EB99556FD0F。P4 产物版本仍为 4.7.1-Modern。
+- JVM 矩阵 T01-T26、T32 共 27 项有通过证据。选框、排序菜单、徽标及切换时序仍待设备验证。
+
 ## 逐项状态
 
 | ID | 本次状态 | 证据/限制 |
 |---|---|---|
-| T01 | 待验证 | 后续阶段 |
-| T02 | 待验证 | 后续阶段 |
-| T03 | 待验证 | 后续阶段 |
+| T01 | 通过（JVM） | P4 SourcePolicyTest，保留导入空串并忽略未知名称 |
+| T02 | 通过（JVM） | P4 SourcePolicyTest，覆盖三个旧选项和 EH/EX |
+| T03 | 通过（JVM） | P4 SourcePolicyTest，覆盖镜像推导与 NH 默认值 |
 | T04 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
-| T05 | 部分验证 | 排序交集逻辑通过；P4 接入菜单 |
+| T05 | 通过（JVM） | SourceMergerTest；P4 菜单使用同一交集方法，交互待验 |
 | T06 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T07 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T08 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
@@ -84,7 +92,7 @@
 | T29 | 部分验证 | 保留旧 kind 读取分支；真实解包待验 |
 | T30 | 待验证 | 后续阶段 |
 | T31 | 部分验证 | 来源键单测和调用点审查；UI 待验 |
-| T32 | 通过 | LocalizationCompletenessTest 2/2 |
+| T32 | 通过 | LocalizationCompletenessTest 3/3 |
 | N01 | 待验证 | 未做网络/设备验收 |
 | N02 | 待验证 | 未做网络/设备验收 |
 | N03 | 待验证 | 未做网络/设备验收 |

@@ -79,6 +79,18 @@ public class LocalizationCompletenessTest {
     }
 
     @Test
+    public void mergeStringsHaveTraditionalChinese() throws Exception {
+        Map<String, String> zh = strings("values-zh-rTW", false);
+        Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+            .parse(new File(resDir("values"), "strings_472.xml"));
+        NodeList nodes = document.getElementsByTagName("string");
+        for (int i = 0; i < nodes.getLength(); i++) {
+            String name = ((Element) nodes.item(i)).getAttribute("name");
+            assertTrue("values-zh-rTW missing " + name, zh.containsKey(name));
+        }
+    }
+
+    @Test
     public void englishDefaultsContainNoChinese() throws Exception {
         Map<String, String> en = strings("values", false);
         List<String> cjk = new ArrayList<>();

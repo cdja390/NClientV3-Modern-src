@@ -22,7 +22,7 @@ import com.maxwai.nclientv3.api.local.LocalGallery;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.ehentai.EhFeed;
 import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
-import com.maxwai.nclientv3.ehentai.EhSettings;
+import com.maxwai.nclientv3.source.SourcePreferences;
 import com.maxwai.nclientv3.source.GalleryIdentity;
 import com.maxwai.nclientv3.source.GallerySource;
 import com.maxwai.nclientv3.source.MergePage;
@@ -389,25 +389,31 @@ public class InspectorV3 extends Thread implements Parcelable {
     @Override
     public void run() {
         LogUtility.d("Starting download: " + url);
-        if (response != null) response.onStart();
+        if (response != null) response.dispatch(this, response::onStart);
         try {
             loadGalleries();
-            if (response != null) {
-                response.onSuccess(galleries);
-            }
+            if (response != null) response.dispatch(this, () -> response.onSuccess(galleries));
         } catch (Exception e) {
-            if (response != null) response.onFailure(e);
+            if (response != null) response.dispatch(this, () -> response.onFailure(e));
+        } finally {
+            if (response != null) response.dispatch(this, response::onEnd);
         }
-        if (response != null) response.onEnd();
         LogUtility.d("Finished download: " + url);
     }
 
     /** 4.7.2: each merged source fails independently; only all-source failure aborts the page. */
     private void loadGalleries() throws IOException, InvalidResponseException {
         Context ctx = context.get();
-        EhFeed.Mode mode = EhFeed.modeFor(ctx, requestType);
+        Set<GallerySource> enabled = SourcePreferences.enabled(ctx);
+        EhFeed.Mode mode = EhFeed.modeFor(enabled, requestType);
+        boolean ex = enabled.contains(GallerySource.EXHENTAI);
+        if (mode == EhFeed.Mode.NONE) {
+            galleries = new ArrayList<>();
+            pageCount = 1;
+            return;
+        }
         if (mode == EhFeed.Mode.EH && ctx != null) {
-            EhFeed.Result eh = EhFeed.load(ctx, query, tags, ranges, page);
+            EhFeed.Result eh = EhFeed.load(ctx, ex, query, tags, ranges, page);
             galleries = EhFeed.wrap(eh.items);
             pageCount = eh.pageCount(page);
             return;
@@ -427,8 +433,8 @@ public class InspectorV3 extends Thread implements Parcelable {
             nh.parseDocument();
             return new MergePage<>(nh.galleries, nh.pageCount);
         }));
-        sources.add(SourceMerger.source(GalleryIdentity.ehSource(EhSettings.useExhentai(ctx)), effectiveSort -> {
-            EhFeed.Result eh = EhFeed.load(ctx, query, tags, ranges, page);
+        sources.add(SourceMerger.source(ex ? GallerySource.EXHENTAI : GallerySource.EHENTAI, effectiveSort -> {
+            EhFeed.Result eh = EhFeed.load(ctx, ex, query, tags, ranges, page);
             return new MergePage<>(EhFeed.wrap(eh.items), eh.pageCount(page));
         }));
         MergePage<GenericGallery> merged = sourceMerger.merge(sources, sortType, page,
@@ -558,6 +564,8 @@ public class InspectorV3 extends Thread implements Parcelable {
     }
 
     public interface InspectorResponse {
+        default void dispatch(InspectorV3 inspector, Runnable callback) { callback.run(); }
+
         boolean shouldStart(InspectorV3 inspector);
 
         void onSuccess(List<GenericGallery> galleries);

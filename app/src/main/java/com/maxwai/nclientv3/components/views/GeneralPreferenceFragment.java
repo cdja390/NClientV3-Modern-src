@@ -172,6 +172,13 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
     @SuppressLint("ApplySharedPref")
     private void mainMenu() {
         addPreferencesFromResource(R.xml.settings);
+        Preference sources = Objects.requireNonNull(findPreference("source_selector"));
+        sources.setSummary(com.maxwai.nclientv3.source.SourceDialogs.summary(act));
+        sources.setOnPreferenceClickListener(preference -> {
+            com.maxwai.nclientv3.source.SourceDialogs.show(act, () ->
+                sources.setSummary(com.maxwai.nclientv3.source.SourceDialogs.summary(act)));
+            return true;
+        });
 
         fillRoba();
 
