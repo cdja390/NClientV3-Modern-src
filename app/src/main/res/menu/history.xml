@@ -1,10 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/cancelAll"
-        android:icon="@drawable/ic_close"
-        android:orderInCategory="300"
-        android:title="@string/clear_history"
-        app:showAsAction="ifRoom|collapseActionView" />
+<?xml version="1.0" encoding="utf-8"?><!-- Modified for NClientV3 Modern (Apache-2.0 section 4(b)); see docs/PATCHED_FILES.md -->
+<menu
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:icon="@drawable/ic_search" android:id="@+id/search" android:orderInCategory="10" android:title="@string/search" app:actionViewClass="androidx.appcompat.widget.SearchView" app:showAsAction="always|collapseActionView" />
+    <item android:icon="@drawable/ic_close" android:id="@+id/cancelAll" android:orderInCategory="300" android:title="@string/clear_history" app:showAsAction="ifRoom|collapseActionView" />
 </menu>

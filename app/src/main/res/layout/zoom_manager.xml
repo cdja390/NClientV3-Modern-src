@@ -1,65 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/page_switcher"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingTop="8dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="9">
-
-        <ImageButton
-            android:id="@+id/prev"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="2"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/prev"
-            app:tint="?android:attr/colorForeground"
-            app:srcCompat="@drawable/ic_arrow_back" />
-
-        <TextView
-            android:id="@+id/pages"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="5"
-            android:focusable="false"
-            android:gravity="center"
-            android:inputType="none"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:text="@string/page_placeholder"
-            android:textAlignment="center"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:contentDescription="@string/app_name"
-            android:labelFor="@+id/pages"
-            android:visibility="gone" />
-
-        <ImageButton
-            android:id="@+id/next"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="2"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/next"
-            app:tint="?android:attr/colorForeground"
-            app:srcCompat="@drawable/ic_arrow_forward" />
-
+<LinearLayout android:orientation="vertical" android:id="@+id/page_switcher" android:paddingTop="8.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="16.0dp" android:paddingEnd="16.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="9.0">
+        <ImageButton android:id="@+id/prev" android:background="?selectableItemBackgroundBorderless" android:layout_width="0.0dp" android:layout_height="match_parent" android:layout_weight="2.0" android:contentDescription="@string/prev" app:srcCompat="@drawable/ic_arrow_back" app:tint="#ffffffff" />
+        <TextView android:textAppearance="?android:textAppearanceMedium" android:textColor="#ffffffff" android:gravity="center" android:id="@+id/pages" android:paddingTop="8.0dp" android:paddingBottom="8.0dp" android:focusable="false" android:layout_width="0.0dp" android:layout_height="wrap_content" android:text="@string/page_placeholder" android:layout_weight="5.0" android:inputType="none" android:textAlignment="center" />
+        <TextView android:visibility="gone" android:layout_width="wrap_content" android:layout_height="wrap_content" android:contentDescription="@string/app_name" android:labelFor="@id/pages" />
+        <ImageButton android:id="@+id/next" android:background="?selectableItemBackgroundBorderless" android:layout_width="0.0dp" android:layout_height="match_parent" android:layout_weight="2.0" android:contentDescription="@string/next" app:srcCompat="@drawable/ic_arrow_forward" app:tint="#ffffffff" />
     </LinearLayout>
-
-    <SeekBar
-
-        android:id="@+id/seekBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="24dp" />
+    <SeekBar android:id="@+id/seekBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="24.0dp" android:splitTrack="false" style="@style/Widget.NClient.SeekBar" />
 </LinearLayout>

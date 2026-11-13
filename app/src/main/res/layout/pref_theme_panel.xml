@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:paddingTop="8.0dp" android:paddingBottom="8.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="16.0dp" android:paddingEnd="16.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <LinearLayout android:gravity="center_vertical" android:orientation="horizontal" android:id="@+id/header_container" android:background="@drawable/bg_menu_top" android:padding="14.0dp" android:focusable="true" android:clickable="true" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <FrameLayout android:background="@drawable/bg_icon_tile" android:layout_width="40.0dp" android:layout_height="40.0dp" android:backgroundTint="?colorSecondaryContainer">
+            <ImageView android:layout_gravity="center" android:layout_width="20.0dp" android:layout_height="20.0dp" android:src="@drawable/ic_palette" app:tint="?colorOnSecondaryContainer" />
+        </FrameLayout>
+        <LinearLayout android:orientation="vertical" android:layout_width="0.0dp" android:layout_height="wrap_content" android:layout_weight="1.0" android:layout_marginStart="12.0dp">
+            <TextView android:textSize="15.0sp" android:textColor="?colorOnSurface" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/theme_section_colors" />
+            <TextView android:textSize="12.0sp" android:textColor="?colorOnSurfaceVariant" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2.0dp" android:text="@string/theme_section_colors_summary" />
+        </LinearLayout>
+        <ImageView android:id="@+id/btn_collapse" android:layout_width="24.0dp" android:layout_height="24.0dp" android:src="@drawable/ic_arrow_down_24dp" android:layout_marginStart="8.0dp" app:tint="?colorOnSurfaceVariant" />
+    </LinearLayout>
+    <LinearLayout android:orientation="vertical" android:id="@+id/mode_container" android:background="@drawable/bg_menu_mid" android:padding="12.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2.0dp">
+        <com.google.android.material.button.MaterialButtonToggleGroup android:id="@+id/mode_group" android:layout_width="match_parent" android:layout_height="wrap_content" app:selectionRequired="true" app:singleSelection="true" style="@style/Widget.Material3Expressive.MaterialButtonToggleGroup">
+            <com.google.android.material.button.MaterialButton android:id="@+id/mode_system" android:layout_width="0.0dp" android:layout_height="wrap_content" android:text="" android:layout_weight="1.0" android:checkable="true" android:contentDescription="@string/theme_mode_system" app:icon="@drawable/ic_mode_system" style="@style/Widget.NClient.SegmentIcon" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/mode_light" android:layout_width="0.0dp" android:layout_height="wrap_content" android:text="" android:layout_weight="1.0" android:checkable="true" android:contentDescription="@string/theme_mode_light" app:icon="@drawable/ic_mode_light" style="@style/Widget.NClient.SegmentIcon" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/mode_dark" android:layout_width="0.0dp" android:layout_height="wrap_content" android:text="" android:layout_weight="1.0" android:checkable="true" android:contentDescription="@string/theme_mode_dark" app:icon="@drawable/ic_mode_dark" style="@style/Widget.NClient.SegmentIcon" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/mode_black" android:layout_width="0.0dp" android:layout_height="wrap_content" android:text="" android:layout_weight="1.0" android:checkable="true" android:contentDescription="@string/theme_mode_black" app:icon="@drawable/ic_mode_black" style="@style/Widget.NClient.SegmentIcon" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+    </LinearLayout>
+    <LinearLayout android:orientation="vertical" android:id="@+id/color_container" android:background="@drawable/bg_menu_bottom" android:paddingTop="14.0dp" android:paddingBottom="14.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2.0dp">
+        <HorizontalScrollView android:scrollbars="none" android:clipToPadding="false" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="16.0dp" android:paddingEnd="16.0dp">
+            <LinearLayout android:gravity="center_vertical" android:orientation="horizontal" android:id="@+id/color_group" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </HorizontalScrollView>
+    </LinearLayout>
+</LinearLayout>

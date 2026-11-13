@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.components.views.CFTokenView;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.utility.ThemeColors;
 
 import java.lang.ref.WeakReference;
 
@@ -76,6 +77,7 @@ public abstract class GeneralActivity extends AppCompatActivity {
         if (preferences.getBoolean(getString(R.string.preference_key_black_theme), false)) {
             theme.applyStyle(R.style.AppTheme_Black, true);
         }
+        ThemeColors.apply(theme, this);
         return theme;
     }
 }

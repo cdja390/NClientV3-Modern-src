@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string-array name="theme_color_keys">
+        <item>blue</item>
+        <item>teal</item>
+        <item>green</item>
+        <item>orange</item>
+        <item>rose</item>
+        <item>mono</item>
+        <item>indigo</item>
+        <item>cyan</item>
+        <item>lime</item>
+        <item>amber</item>
+        <item>red</item>
+        <item>pink</item>
+        <item>brown</item>
+        <item>ocean</item>
+    </string-array>
+    <array name="theme_color_styles">
+        <item>@style/ThemeOverlay.NClient.Blue</item>
+        <item>@style/ThemeOverlay.NClient.Teal</item>
+        <item>@style/ThemeOverlay.NClient.Green</item>
+        <item>@style/ThemeOverlay.NClient.Orange</item>
+        <item>@style/ThemeOverlay.NClient.Rose</item>
+        <item>@style/ThemeOverlay.NClient.Mono</item>
+        <item>@style/ThemeOverlay.NClient.Indigo</item>
+        <item>@style/ThemeOverlay.NClient.Cyan</item>
+        <item>@style/ThemeOverlay.NClient.Lime</item>
+        <item>@style/ThemeOverlay.NClient.Amber</item>
+        <item>@style/ThemeOverlay.NClient.Red</item>
+        <item>@style/ThemeOverlay.NClient.Pink</item>
+        <item>@style/ThemeOverlay.NClient.Brown</item>
+        <item>@style/ThemeOverlay.NClient.Ocean</item>
+    </array>
+    <string-array name="swipe_mode_entries">
+        <item>@string/swipe_mode_page</item>
+        <item>@string/swipe_mode_tabs</item>
+    </string-array>
+    <string-array name="swipe_mode_values">
+        <item>page</item>
+        <item>tabs</item>
+    </string-array>
+    <string-array name="bar_size_entries">
+        <item>@string/bar_size_large</item>
+        <item>@string/bar_size_medium</item>
+        <item>@string/bar_size_small</item>
+    </string-array>
+    <string-array name="bar_size_values">
+        <item>l</item>
+        <item>m</item>
+        <item>s</item>
+    </string-array>
+    <string-array name="blur_fps_entries">
+        <item>@string/blur_fps_15</item>
+        <item>@string/blur_fps_30</item>
+        <item>@string/blur_fps_60</item>
+        <item>@string/blur_fps_unlimited</item>
+    </string-array>
+    <string-array name="blur_fps_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>0</item>
+    </string-array>
+</resources>

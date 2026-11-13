@@ -1,37 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/master_layout"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".MainActivity">
-
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/refresher"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/page_switcher"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
+<?xml version="1.0" encoding="utf-8"?><!-- Modified for NClientV3 Modern (Apache-2.0 section 4(b)); see docs/PATCHED_FILES.md -->
+<androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/master_layout" android:layout_width="match_parent" android:layout_height="match_parent" app:layout_behavior="@string/appbar_scrolling_view_behavior"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout android:id="@+id/refresher" android:layout_width="match_parent" android:layout_height="0.0dp" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintVertical_bias="1.0">
+        <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler" android:paddingBottom="148.0dp" android:clipToPadding="false" android:layout_width="match_parent" android:layout_height="match_parent" />
+            <TextView android:id="@+id/browse_empty" android:layout_gravity="center" android:gravity="center" android:padding="24.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="40.0dp" android:textColor="@color/md_theme_onSurface" android:textSize="16.0sp" android:visibility="gone" />
+        </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-    <com.maxwai.nclientv3.components.views.PageSwitcher
-        android:id="@+id/page_switcher"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
-
-
+    <com.maxwai.nclientv3.components.views.PageSwitcher android:id="@+id/page_switcher" android:visibility="gone" android:layout_width="0.0dp" android:layout_height="44.0dp" android:layout_marginBottom="86.0dp" android:paddingStart="4.0dp" android:paddingEnd="4.0dp" android:layout_marginStart="24.0dp" android:layout_marginEnd="24.0dp" app:cardBackgroundColor="@android:color/transparent" app:cardElevation="0.0dp" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

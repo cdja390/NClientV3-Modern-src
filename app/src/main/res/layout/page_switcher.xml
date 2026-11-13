@@ -1,50 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/master_layout"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_alignParentStart="true"
-    android:layout_alignParentLeft="true"
-    android:layout_alignParentBottom="true"
-    android:alpha="0.75"
-    android:background="?android:attr/colorBackground"
-    android:gravity="center"
-    android:orientation="horizontal"
-    android:weightSum="9">
-
-    <androidx.appcompat.widget.AppCompatImageButton
-        android:id="@+id/prev"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="2"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/prev_page"
-        android:tint="?android:attr/colorForeground"
-        app:srcCompat="@drawable/ic_arrow_back" />
-
-    <androidx.appcompat.widget.AppCompatEditText
-        android:id="@+id/page_index"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="5"
-        android:focusable="false"
-        android:gravity="center"
-        android:hint="@string/hashtag"
-        android:inputType="none"
-        android:text="@string/page_switcher_placeholder"
-        android:textAlignment="center"
-        tools:ignore="Autofill" />
-
-    <androidx.appcompat.widget.AppCompatImageButton
-        android:id="@+id/next"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="2"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/next_page"
-        android:tint="?android:attr/colorForeground"
-        app:srcCompat="@drawable/ic_arrow_forward" />
+<LinearLayout android:gravity="center_vertical" android:layout_gravity="center_vertical" android:orientation="horizontal" android:id="@+id/master_layout" android:background="@android:color/transparent" android:layout_width="match_parent" android:layout_height="match_parent" android:weightSum="9.0" android:alpha="1.0"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/prev" android:background="?selectableItemBackgroundBorderless" android:layout_width="0.0dp" android:layout_height="match_parent" android:scaleType="centerInside" android:tint="?android:colorForeground" android:layout_weight="2.0" android:contentDescription="@string/prev_page" app:srcCompat="@drawable/ic_arrow_back" />
+    <androidx.appcompat.widget.AppCompatEditText android:textSize="14.0sp" android:textColor="?android:colorForeground" android:gravity="center" android:id="@+id/page_index" android:background="@android:color/transparent" android:paddingTop="0.0dp" android:paddingBottom="0.0dp" android:focusable="false" android:layout_width="0.0dp" android:layout_height="match_parent" android:text="@string/page_switcher_placeholder" android:hint="@string/hashtag" android:includeFontPadding="false" android:layout_weight="5.0" android:inputType="none" android:textAlignment="center" />
+    <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/next" android:background="?selectableItemBackgroundBorderless" android:layout_width="0.0dp" android:layout_height="match_parent" android:scaleType="centerInside" android:tint="?android:colorForeground" android:layout_weight="2.0" android:contentDescription="@string/next_page" app:srcCompat="@drawable/ic_arrow_forward" />
 </LinearLayout>

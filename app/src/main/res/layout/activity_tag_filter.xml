@@ -1,41 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    tools:context=".TagFilterActivity">
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appbar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="@dimen/appbar_padding_top">
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:layout_weight="1"
-            app:layout_scrollFlags="scroll|enterAlways"
-            app:title="@string/app_name">
-
-        </androidx.appcompat.widget.Toolbar>
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/colorPrimaryVariant"
-            app:tabMode="scrollable" />
+<androidx.coordinatorlayout.widget.CoordinatorLayout android:fitsSystemWindows="true" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.google.android.material.appbar.AppBarLayout android:id="@+id/appbar" android:background="@android:color/transparent" android:paddingTop="@dimen/appbar_padding_top" android:layout_width="match_parent" android:layout_height="wrap_content" android:elevation="0.0dp" app:elevation="0.0dp">
+        <androidx.appcompat.widget.Toolbar android:id="@+id/toolbar" android:background="@android:color/transparent" android:layout_width="match_parent" android:layout_height="?actionBarSize" android:layout_weight="1.0" app:layout_scrollFlags="scroll|enterAlways" app:title="@string/manage_tags" app:titleTextColor="@color/md_theme_onSurface" />
+        <com.google.android.material.tabs.TabLayout android:id="@+id/tabs" android:background="@android:color/transparent" android:layout_width="match_parent" android:layout_height="wrap_content" app:tabIndicatorColor="?colorPrimary" app:tabIndicatorFullWidth="false" app:tabMode="scrollable" app:tabRippleColor="@android:color/transparent" app:tabSelectedTextColor="?colorPrimary" app:tabTextColor="?colorOnSurfaceVariant" />
     </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
-
+    <androidx.viewpager2.widget.ViewPager2 android:id="@+id/container" android:layout_width="match_parent" android:layout_height="match_parent" app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

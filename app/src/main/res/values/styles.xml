@@ -1,38 +1,374 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <style name="Base.AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:colorBackground">@color/md_theme_surfaceContainer</item>
+        <item name="android:windowBackground">@color/md_theme_surfaceContainer</item>
+        <item name="android:seekBarStyle">@style/Widget.NClient.SeekBar</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Material3.Dialog.Alert</item>
+        <item name="cardViewStyle">@style/Widget.NClient.CardView</item>
+        <item name="chipStyle">@style/Widget.Material3.Chip.Filter</item>
+        <item name="colorAccent">@color/md_theme_secondary</item>
+        <item name="colorError">@color/md_theme_error</item>
+        <item name="colorErrorContainer">@color/md_theme_errorContainer</item>
+        <item name="colorOnBackground">@color/md_theme_onBackground</item>
+        <item name="colorOnError">@color/md_theme_onError</item>
+        <item name="colorOnErrorContainer">@color/md_theme_onErrorContainer</item>
+        <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_onPrimaryContainer</item>
+        <item name="colorOnSecondary">@color/md_theme_onSecondary</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_onSecondaryContainer</item>
+        <item name="colorOnSurface">@color/md_theme_onSurface</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_inverseOnSurface</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_onSurfaceVariant</item>
+        <item name="colorOnTertiary">@color/md_theme_onTertiary</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_onTertiaryContainer</item>
+        <item name="colorOutline">@color/md_theme_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_outlineVariant</item>
+        <item name="colorPrimary">@color/md_theme_primary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
+        <item name="colorPrimaryInverse">@color/md_theme_inversePrimary</item>
+        <item name="colorPrimaryVariant">@color/md_theme_primaryContainer</item>
+        <item name="colorSecondary">@color/md_theme_secondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_secondaryContainer</item>
+        <item name="colorSurface">@color/md_theme_surface</item>
+        <item name="colorSurfaceContainer">@color/md_theme_surfaceContainer</item>
+        <item name="colorSurfaceContainerHigh">@color/md_theme_surfaceContainerHigh</item>
+        <item name="colorSurfaceContainerHighest">@color/md_theme_surfaceContainerHighest</item>
+        <item name="colorSurfaceContainerLow">@color/md_theme_surfaceContainerLow</item>
+        <item name="colorSurfaceContainerLowest">@color/md_theme_surfaceContainerLowest</item>
+        <item name="colorSurfaceInverse">@color/md_theme_inverseSurface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_surfaceVariant</item>
+        <item name="colorTertiary">@color/md_theme_tertiary</item>
+        <item name="colorTertiaryContainer">@color/md_theme_tertiaryContainer</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Material3Expressive.MaterialAlertDialog</item>
+        <item name="materialSwitchStyle">@style/Widget.Material3.CompoundButton.MaterialSwitch</item>
+        <item name="navHeaderGradient">@color/md_theme_surface</item>
         <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
-
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryVariant">@color/primaryColorVariant</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:windowSplashScreenBackground" tools:targetApi="31">#1F1F1F</item>
-        <item name="navHeaderGradient">@drawable/side_nav_bar</item>
+        <item name="seekBarStyle">@style/Widget.NClient.SeekBar</item>
     </style>
-
-
+    <style name="AppTheme" parent="Base.AppTheme" />
     <style name="AppTheme.Black" parent="AppTheme">
-        <item name="colorSurface">#000000</item>
-        <item name="android:windowBackground">#000000</item>
         <item name="android:colorBackground">#000000</item>
+        <item name="android:windowBackground">#000000</item>
+        <item name="cardViewStyle">@style/BlackCardView</item>
+        <item name="colorSurface">#000000</item>
+        <item name="colorSurfaceContainer">#000000</item>
+        <item name="colorSurfaceContainerHigh">#121212</item>
+        <item name="colorSurfaceContainerHighest">#1c1b1f</item>
+        <item name="colorSurfaceContainerLow">#000000</item>
+        <item name="colorSurfaceContainerLowest">#000000</item>
+        <item name="colorSurfaceVariant">#000000</item>
         <item name="elevationOverlayEnabled">false</item>
         <item name="navHeaderGradient">#000000</item>
-        <item name="colorPrimaryVariant">#000000</item>
-        <item name="cardViewStyle">@style/BlackCardView</item>
     </style>
-
-    <style name="BlackCardView" parent="CardView">
+    <style name="BlackCardView" parent="Widget.NClient.CardView">
         <item name="cardBackgroundColor">#000000</item>
+        <item name="cardCornerRadius">20.0dp</item>
+        <item name="cardElevation">0.0dp</item>
     </style>
-
     <style name="ProfileSectionTitle">
+        <item name="android:textSize">16.0sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingTop">16.0dp</item>
+        <item name="android:paddingBottom">4.0dp</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-        <item name="android:paddingTop">16dp</item>
-        <item name="android:paddingBottom">4dp</item>
-        <item name="android:textSize">16sp</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">16.0dp</item>
+        <item name="android:paddingEnd">16.0dp</item>
     </style>
-
+    <style name="Widget.NClient.CardView" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">?colorSurfaceContainerHigh</item>
+        <item name="cardCornerRadius">20.0dp</item>
+        <item name="cardElevation">0.0dp</item>
+    </style>
+    <style name="Widget.NClient.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:height">36.0dp</item>
+        <item name="android:width">64.0dp</item>
+        <item name="android:color">?colorPrimaryContainer</item>
+        <item name="marginHorizontal">4.0dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Blue" parent="">
+        <item name="colorAccent">@color/theme_blue_primary</item>
+        <item name="colorControlActivated">@color/theme_blue_primary</item>
+        <item name="colorOnPrimary">@color/theme_blue_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_blue_on_container</item>
+        <item name="colorOnSecondary">@color/theme_blue_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_blue_on_container</item>
+        <item name="colorPrimary">@color/theme_blue_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_blue_container</item>
+        <item name="colorPrimaryVariant">@color/theme_blue_primary</item>
+        <item name="colorSecondary">@color/theme_blue_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_blue_container</item>
+        <item name="navHeaderGradient">@color/theme_blue_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Teal" parent="">
+        <item name="colorAccent">@color/theme_teal_primary</item>
+        <item name="colorControlActivated">@color/theme_teal_primary</item>
+        <item name="colorOnPrimary">@color/theme_teal_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_teal_on_container</item>
+        <item name="colorOnSecondary">@color/theme_teal_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_teal_on_container</item>
+        <item name="colorPrimary">@color/theme_teal_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_teal_container</item>
+        <item name="colorPrimaryVariant">@color/theme_teal_primary</item>
+        <item name="colorSecondary">@color/theme_teal_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_teal_container</item>
+        <item name="navHeaderGradient">@color/theme_teal_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Green" parent="">
+        <item name="colorAccent">@color/theme_green_primary</item>
+        <item name="colorControlActivated">@color/theme_green_primary</item>
+        <item name="colorOnPrimary">@color/theme_green_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_green_on_container</item>
+        <item name="colorOnSecondary">@color/theme_green_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_green_on_container</item>
+        <item name="colorPrimary">@color/theme_green_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_green_container</item>
+        <item name="colorPrimaryVariant">@color/theme_green_primary</item>
+        <item name="colorSecondary">@color/theme_green_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_green_container</item>
+        <item name="navHeaderGradient">@color/theme_green_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Orange" parent="">
+        <item name="colorAccent">@color/theme_orange_primary</item>
+        <item name="colorControlActivated">@color/theme_orange_primary</item>
+        <item name="colorOnPrimary">@color/theme_orange_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_orange_on_container</item>
+        <item name="colorOnSecondary">@color/theme_orange_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_orange_on_container</item>
+        <item name="colorPrimary">@color/theme_orange_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_orange_container</item>
+        <item name="colorPrimaryVariant">@color/theme_orange_primary</item>
+        <item name="colorSecondary">@color/theme_orange_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_orange_container</item>
+        <item name="navHeaderGradient">@color/theme_orange_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Rose" parent="">
+        <item name="colorAccent">@color/theme_rose_primary</item>
+        <item name="colorControlActivated">@color/theme_rose_primary</item>
+        <item name="colorOnPrimary">@color/theme_rose_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_rose_on_container</item>
+        <item name="colorOnSecondary">@color/theme_rose_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_rose_on_container</item>
+        <item name="colorPrimary">@color/theme_rose_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_rose_container</item>
+        <item name="colorPrimaryVariant">@color/theme_rose_primary</item>
+        <item name="colorSecondary">@color/theme_rose_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_rose_container</item>
+        <item name="navHeaderGradient">@color/theme_rose_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Mono" parent="">
+        <item name="colorAccent">@color/theme_mono_primary</item>
+        <item name="colorControlActivated">@color/theme_mono_primary</item>
+        <item name="colorOnPrimary">@color/theme_mono_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_mono_on_container</item>
+        <item name="colorOnSecondary">@color/theme_mono_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_mono_on_container</item>
+        <item name="colorPrimary">@color/theme_mono_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_mono_container</item>
+        <item name="colorPrimaryVariant">@color/theme_mono_primary</item>
+        <item name="colorSecondary">@color/theme_mono_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_mono_container</item>
+        <item name="navHeaderGradient">@color/theme_mono_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Indigo" parent="">
+        <item name="colorAccent">@color/theme_indigo_primary</item>
+        <item name="colorControlActivated">@color/theme_indigo_primary</item>
+        <item name="colorOnPrimary">@color/theme_indigo_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_indigo_on_container</item>
+        <item name="colorOnSecondary">@color/theme_indigo_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_indigo_on_container</item>
+        <item name="colorPrimary">@color/theme_indigo_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_indigo_container</item>
+        <item name="colorPrimaryVariant">@color/theme_indigo_primary</item>
+        <item name="colorSecondary">@color/theme_indigo_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_indigo_container</item>
+        <item name="navHeaderGradient">@color/theme_indigo_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Cyan" parent="">
+        <item name="colorAccent">@color/theme_cyan_primary</item>
+        <item name="colorControlActivated">@color/theme_cyan_primary</item>
+        <item name="colorOnPrimary">@color/theme_cyan_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_cyan_on_container</item>
+        <item name="colorOnSecondary">@color/theme_cyan_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_cyan_on_container</item>
+        <item name="colorPrimary">@color/theme_cyan_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_cyan_container</item>
+        <item name="colorPrimaryVariant">@color/theme_cyan_primary</item>
+        <item name="colorSecondary">@color/theme_cyan_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_cyan_container</item>
+        <item name="navHeaderGradient">@color/theme_cyan_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Lime" parent="">
+        <item name="colorAccent">@color/theme_lime_primary</item>
+        <item name="colorControlActivated">@color/theme_lime_primary</item>
+        <item name="colorOnPrimary">@color/theme_lime_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_lime_on_container</item>
+        <item name="colorOnSecondary">@color/theme_lime_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_lime_on_container</item>
+        <item name="colorPrimary">@color/theme_lime_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_lime_container</item>
+        <item name="colorPrimaryVariant">@color/theme_lime_primary</item>
+        <item name="colorSecondary">@color/theme_lime_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_lime_container</item>
+        <item name="navHeaderGradient">@color/theme_lime_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Amber" parent="">
+        <item name="colorAccent">@color/theme_amber_primary</item>
+        <item name="colorControlActivated">@color/theme_amber_primary</item>
+        <item name="colorOnPrimary">@color/theme_amber_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_amber_on_container</item>
+        <item name="colorOnSecondary">@color/theme_amber_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_amber_on_container</item>
+        <item name="colorPrimary">@color/theme_amber_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_amber_container</item>
+        <item name="colorPrimaryVariant">@color/theme_amber_primary</item>
+        <item name="colorSecondary">@color/theme_amber_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_amber_container</item>
+        <item name="navHeaderGradient">@color/theme_amber_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Red" parent="">
+        <item name="colorAccent">@color/theme_red_primary</item>
+        <item name="colorControlActivated">@color/theme_red_primary</item>
+        <item name="colorOnPrimary">@color/theme_red_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_red_on_container</item>
+        <item name="colorOnSecondary">@color/theme_red_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_red_on_container</item>
+        <item name="colorPrimary">@color/theme_red_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_red_container</item>
+        <item name="colorPrimaryVariant">@color/theme_red_primary</item>
+        <item name="colorSecondary">@color/theme_red_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_red_container</item>
+        <item name="navHeaderGradient">@color/theme_red_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Pink" parent="">
+        <item name="colorAccent">@color/theme_pink_primary</item>
+        <item name="colorControlActivated">@color/theme_pink_primary</item>
+        <item name="colorOnPrimary">@color/theme_pink_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_pink_on_container</item>
+        <item name="colorOnSecondary">@color/theme_pink_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_pink_on_container</item>
+        <item name="colorPrimary">@color/theme_pink_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_pink_container</item>
+        <item name="colorPrimaryVariant">@color/theme_pink_primary</item>
+        <item name="colorSecondary">@color/theme_pink_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_pink_container</item>
+        <item name="navHeaderGradient">@color/theme_pink_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Brown" parent="">
+        <item name="colorAccent">@color/theme_brown_primary</item>
+        <item name="colorControlActivated">@color/theme_brown_primary</item>
+        <item name="colorOnPrimary">@color/theme_brown_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_brown_on_container</item>
+        <item name="colorOnSecondary">@color/theme_brown_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_brown_on_container</item>
+        <item name="colorPrimary">@color/theme_brown_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_brown_container</item>
+        <item name="colorPrimaryVariant">@color/theme_brown_primary</item>
+        <item name="colorSecondary">@color/theme_brown_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_brown_container</item>
+        <item name="navHeaderGradient">@color/theme_brown_container</item>
+    </style>
+    <style name="ThemeOverlay.NClient.Ocean" parent="">
+        <item name="colorAccent">@color/theme_ocean_primary</item>
+        <item name="colorControlActivated">@color/theme_ocean_primary</item>
+        <item name="colorOnPrimary">@color/theme_ocean_on</item>
+        <item name="colorOnPrimaryContainer">@color/theme_ocean_on_container</item>
+        <item name="colorOnSecondary">@color/theme_ocean_on</item>
+        <item name="colorOnSecondaryContainer">@color/theme_ocean_on_container</item>
+        <item name="colorPrimary">@color/theme_ocean_primary</item>
+        <item name="colorPrimaryContainer">@color/theme_ocean_container</item>
+        <item name="colorPrimaryVariant">@color/theme_ocean_primary</item>
+        <item name="colorSecondary">@color/theme_ocean_primary</item>
+        <item name="colorSecondaryContainer">@color/theme_ocean_container</item>
+        <item name="navHeaderGradient">@color/theme_ocean_container</item>
+    </style>
+    <style name="Widget.NClient.Segment" parent="Widget.Material3Expressive.Button.OutlinedButton">
+        <item name="android:minHeight">40.0dp</item>
+        <item name="android:insetLeft">0.0dp</item>
+        <item name="android:insetRight">0.0dp</item>
+        <item name="android:insetTop">0.0dp</item>
+        <item name="android:insetBottom">0.0dp</item>
+        <item name="android:checkable">true</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    <style name="Widget.NClient.ColorDot" parent="Widget.Material3.Button">
+        <item name="android:padding">0.0dp</item>
+        <item name="android:layout_width">40.0dp</item>
+        <item name="android:layout_height">40.0dp</item>
+        <item name="android:minWidth">0.0dp</item>
+        <item name="android:minHeight">0.0dp</item>
+        <item name="android:insetLeft">0.0dp</item>
+        <item name="android:insetRight">0.0dp</item>
+        <item name="android:insetTop">0.0dp</item>
+        <item name="android:insetBottom">0.0dp</item>
+        <item name="android:checkable">true</item>
+        <item name="android:layout_marginStart">8.0dp</item>
+        <item name="android:layout_marginEnd">8.0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="cornerRadius">20.0dp</item>
+        <item name="elevation">0.0dp</item>
+        <item name="rippleColor">@android:color/transparent</item>
+        <item name="strokeColor">@color/theme_dot_stroke</item>
+        <item name="strokeWidth">3.0dp</item>
+    </style>
+    <style name="Widget.NClient.SegmentIcon" parent="Widget.NClient.Segment">
+        <item name="android:paddingLeft">0.0dp</item>
+        <item name="android:paddingRight">0.0dp</item>
+        <item name="android:minWidth">0.0dp</item>
+        <item name="android:minHeight">52.0dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">0.0dp</item>
+        <item name="iconSize">22.0dp</item>
+    </style>
+    <style name="ShapeAppearance.NClient.MenuTop" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeBottomLeft">6.0dp</item>
+        <item name="cornerSizeBottomRight">6.0dp</item>
+        <item name="cornerSizeTopLeft">24.0dp</item>
+        <item name="cornerSizeTopRight">24.0dp</item>
+    </style>
+    <style name="ShapeAppearance.NClient.MenuMid" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">6.0dp</item>
+    </style>
+    <style name="ShapeAppearance.NClient.MenuBottom" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeBottomLeft">24.0dp</item>
+        <item name="cornerSizeBottomRight">24.0dp</item>
+        <item name="cornerSizeTopLeft">6.0dp</item>
+        <item name="cornerSizeTopRight">6.0dp</item>
+    </style>
+    <style name="Widget.NClient.SeekBar" parent="Widget.AppCompat.SeekBar">
+        <item name="android:paddingLeft">14.0dp</item>
+        <item name="android:paddingRight">14.0dp</item>
+        <item name="android:maxHeight">20.0dp</item>
+        <item name="android:progressDrawable">@drawable/m3_seekbar_track</item>
+        <item name="android:minHeight">20.0dp</item>
+        <item name="android:thumb">@drawable/m3_seekbar_thumb</item>
+        <item name="android:paddingStart">14.0dp</item>
+        <item name="android:paddingEnd">14.0dp</item>
+        <item name="android:splitTrack">false</item>
+    </style>
+    <style name="Theme.NClient.Reader" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:colorBackground">#ff000000</item>
+        <item name="android:windowBackground">#ff000000</item>
+        <item name="android:statusBarColor">#ff000000</item>
+        <item name="android:navigationBarColor">#ff000000</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorSurface">#ff1e1e1e</item>
+        <item name="colorSurfaceContainer">#ff1e1e1e</item>
+        <item name="colorSurfaceContainerHigh">#ff2a2a2a</item>
+        <item name="colorOnSurface">#ffffffff</item>
+        <item name="colorOnBackground">#ffffffff</item>
+        <item name="seekBarStyle">@style/Widget.NClient.SeekBar</item>
+        <item name="android:seekBarStyle">@style/Widget.NClient.SeekBar</item>
+    </style>
+    <style name="TextAppearance.NClient.BarLabel" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">10.0sp</item>
+    </style>
 </resources>

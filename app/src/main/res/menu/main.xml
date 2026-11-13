@@ -1,60 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/search"
-        android:icon="@drawable/ic_search"
-        android:orderInCategory="10"
-        android:title="@string/search"
-        app:actionViewClass="androidx.appcompat.widget.SearchView"
-        app:showAsAction="ifRoom|collapseActionView" />
-    <item
-        android:id="@+id/tag_manager"
-        android:icon="@drawable/ic_help"
-        android:title="@string/update_tag_status"
-        android:visible="false"
-        app:showAsAction="ifRoom|collapseActionView" />
-    <item
-        android:id="@+id/random_favorite"
-        android:icon="@drawable/ic_shuffle"
-        android:orderInCategory="20"
-        android:title="@string/random_manga"
-        app:showAsAction="ifRoom|collapseActionView" />
-    <item
-        android:id="@+id/only_language"
-        android:title="@string/all_languages"
-        app:showAsAction="ifRoom|collapseActionView" />
-    <item
-        android:id="@+id/by_popular"
-        android:icon="@drawable/ic_sort"
-        android:title="@string/sort_by_popular"
-        app:showAsAction="ifRoom|collapseActionView" />
-    <item
-        android:id="@+id/open_browser"
-        android:icon="@drawable/ic_world"
-        android:title="@string/open_in_browser"
-        app:showAsAction="ifRoom|collapseActionView" />
-    <item
-        android:id="@+id/sync_favorites"
-        android:icon="@drawable/ic_sync"
-        android:orderInCategory="11"
-        android:title="@string/favorite_sync_web"
-        android:visible="false"
-        app:showAsAction="always" />
-    <item
-        android:id="@+id/add_bookmark"
-        android:icon="@drawable/ic_bookmark_border"
-        android:title="@string/add_bookmark"
-        app:showAsAction="ifRoom|collapseActionView" />
-    <item
-        android:id="@+id/download_page"
-        android:icon="@drawable/ic_file"
-        android:title="@string/download_all_galleries_in_this_page"
-        android:titleCondensed="@string/download_all_galleries"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/sort_by_name"
-        android:title="@string/sort_by_title"
-        android:visible="false"
-        app:showAsAction="never" />
+<?xml version="1.0" encoding="utf-8"?><!-- Modified for NClientV3 Modern (Apache-2.0 section 4(b)); see docs/PATCHED_FILES.md -->
+<menu
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:icon="@drawable/ic_search" android:id="@+id/search" android:orderInCategory="10" android:title="@string/search" app:actionViewClass="androidx.appcompat.widget.SearchView" app:showAsAction="always|collapseActionView" />
+    <item android:id="@+id/safe_mode" android:title="@string/safe_mode" android:checkable="true" app:showAsAction="never" />
+    <item android:icon="@drawable/ic_help" android:id="@+id/tag_manager" android:visible="false" android:title="@string/update_tag_status" app:showAsAction="ifRoom|collapseActionView" />
+    <item android:icon="@drawable/ic_shuffle" android:id="@+id/random_favorite" android:orderInCategory="20" android:title="@string/random_manga" app:showAsAction="ifRoom|collapseActionView" />
+    <item android:id="@+id/only_language" android:title="@string/all_languages" app:showAsAction="ifRoom|collapseActionView" />
+    <item android:icon="@drawable/ic_sort" android:id="@+id/by_popular" android:title="@string/sort_by_popular" app:showAsAction="ifRoom|collapseActionView" />
+    <item android:icon="@drawable/ic_world" android:id="@+id/open_browser" android:title="@string/open_in_browser" app:showAsAction="ifRoom|collapseActionView" />
+    <item android:icon="@drawable/ic_sync" android:id="@+id/sync_favorites" android:visible="false" android:orderInCategory="11" android:title="@string/favorite_sync_web" app:showAsAction="always" />
+    <item android:icon="@drawable/ic_bookmark_border" android:id="@+id/add_bookmark" android:title="@string/add_bookmark" app:showAsAction="ifRoom|collapseActionView" />
+    <item android:icon="@drawable/ic_file" android:id="@+id/download_page" android:title="@string/download_all_galleries_in_this_page" android:titleCondensed="@string/download_all_galleries" app:showAsAction="never" />
+    <item android:id="@+id/sort_by_name" android:visible="false" android:title="@string/sort_by_title" app:showAsAction="never" />
 </menu>

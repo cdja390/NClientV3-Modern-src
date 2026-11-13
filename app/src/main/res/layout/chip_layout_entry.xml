@@ -1,5 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.maxwai.nclientv3.components.widgets.ChipTag xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/Widget.MaterialComponents.Chip.Action"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" />
+<com.maxwai.nclientv3.components.widgets.ChipTag android:layout_width="wrap_content" android:layout_height="wrap_content" style="@style/Widget.Material3.Chip.Assist"
+  xmlns:android="http://schemas.android.com/apk/res/android" />
