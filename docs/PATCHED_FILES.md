@@ -56,3 +56,9 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
   `async/database/export/Exporter.java` (one extra zip entry) and `Importer.java` (one
   branch). Format and compatibility: `docs/BACKUP_FORMAT.md`.
 - Version 4.7.0 (`app/build.gradle.kts`: `minorVersion = 7`, versionCode 470000).
+
+## Files added or modified in 4.7.1
+
+- Login fix: `settings/Login.java`, `settings/AuthStore.java`, `settings/ApiAuthInterceptor.java`, `settings/CustomInterceptor.java`, `loginapi/AuthApi.java`, `loginapi/User.java`, `LoginActivity.java`, `components/views/TurnstileDialog.java` (refresh-token persistence and refresh, API-based user profile, Cloudflare page ends on `cf_clearance`, web login returns to the app).
+- Merged main list: new `ehentai/EhFeed.java` and `ehentai/EhSimpleGallery.java` (design from yosefario-dev/NClientV3 `InspectorV3.mergeAcross`, `EHentaiPager`, `EHentaiSource.buildSearchQuery`, Apache-2.0), plus `api/InspectorV3.java`, `api/SimpleGallery.java` (protected constructor), `adapters/ListAdapter.java`, `res/xml/settings.xml`, `values*/strings_471.xml`, `values/arrays_471.xml`.
+- Tests: `loginapi/LoginFlowTest`, `settings/ClearanceCookieTest`, `ehentai/EhFeedTest`.
