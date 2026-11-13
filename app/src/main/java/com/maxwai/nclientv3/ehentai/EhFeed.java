@@ -29,6 +29,7 @@ import androidx.annotation.Nullable;
 
 import com.maxwai.nclientv3.api.components.GenericGallery;
 import com.maxwai.nclientv3.api.components.Tag;
+import com.maxwai.nclientv3.source.GalleryIdentity;
 import com.maxwai.nclientv3.api.enums.ApiRequestType;
 import com.maxwai.nclientv3.api.enums.TagStatus;
 import com.maxwai.nclientv3.api.enums.TagType;
@@ -264,7 +265,7 @@ public final class EhFeed {
         Set<String> seen = new HashSet<>();
         for (GenericGallery g : mixed) {
             if (g == null) continue;
-            String id = (g instanceof EhSimpleGallery ? "eh:" + ((EhSimpleGallery) g).info.key.gid : "nh:" + g.getId());
+            String id = GalleryIdentity.of(g).stableKey();
             if (seen.add(id)) out.add(g);
         }
         return out;

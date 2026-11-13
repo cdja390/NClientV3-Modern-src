@@ -28,17 +28,16 @@ import androidx.annotation.Nullable;
 
 import com.maxwai.nclientv3.api.SimpleGallery;
 import com.maxwai.nclientv3.api.enums.Language;
+import com.maxwai.nclientv3.source.GalleryIdentity;
+import com.maxwai.nclientv3.source.SourceKey;
 
 import java.util.Locale;
 
 /**
- * An e-hentai gallery shown in the main (nhentai) list, the counterpart of yosefario's
- * SimpleGallery with source=EHENTAI. Its id is the negative gid so it never collides with an
- * nhentai id in the adapter's status cache or MainActivity's "opened gallery" bookkeeping; taps
- * are routed to {@link EhGalleryActivity} by {@link #open}.
- * <p>
- * Not parcelled as itself: InspectorV3 leaves these out of its saved state (they would come back
- * as plain nhentai galleries with a meaningless id).
+ * An e-hentai gallery shown in the main list. Identity is {@link #sourceKey()}, not the sign of
+ * {@link #getId()}. {@code getId()} is only the positive gid clamped to an int, for callers that
+ * still take an int. Status colors, opened-row updates and nhentai tables must use the source key.
+ * Taps go to {@link EhGalleryActivity} via {@link #open}.
  */
 public class EhSimpleGallery extends SimpleGallery {
     @NonNull
@@ -50,9 +49,41 @@ public class EhSimpleGallery extends SimpleGallery {
         this.info = info;
     }
 
+    /** List-row restore. Display fields only; category, rating and favorite slot are not parcelled. */
+    @NonNull
+    public static EhSimpleGallery restore(long gid, @Nullable String token, boolean exhentai,
+                                          @Nullable String title, @Nullable String thumb, int pages,
+                                          @Nullable String language) {
+        EhGalleryInfo info = new EhGalleryInfo(new EhGalleryKey(Math.max(0, gid),
+            token == null ? "" : token, exhentai));
+        info.title = title == null ? "" : title;
+        info.thumb = thumb;
+        info.pages = pages;
+        info.language = language;
+        return new EhSimpleGallery(info);
+    }
+
+    @NonNull
+    public SourceKey sourceKey() {
+        return new SourceKey(GalleryIdentity.ehSource(info.key.exhentai), info.key.gid, info.key.token);
+    }
+
     static int idFor(@NonNull EhGalleryKey key) {
-        long gid = Math.min(key.gid, Integer.MAX_VALUE);
-        return (int) -Math.max(1, gid);
+        return GalleryIdentity.numericId(key.gid);
+    }
+
+    @Nullable
+    public static String languageToken(@NonNull Language language) {
+        switch (language) {
+            case CHINESE:
+                return "chinese";
+            case ENGLISH:
+                return "english";
+            case JAPANESE:
+                return "japanese";
+            default:
+                return null;
+        }
     }
 
     @NonNull

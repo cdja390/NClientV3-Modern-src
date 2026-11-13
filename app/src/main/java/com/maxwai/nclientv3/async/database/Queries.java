@@ -28,6 +28,7 @@ import com.maxwai.nclientv3.components.classes.Bookmark;
 import com.maxwai.nclientv3.components.status.Status;
 import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.source.GalleryIdentity;
 import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.settings.TagV2;
 import com.maxwai.nclientv3.utility.LocalTagFilterHelper;
@@ -769,6 +770,8 @@ public class Queries {
 
         public static void addGallery(SimpleGallery gallery) {
             if (gallery.getId() <= 0) return;
+            // e-hentai rows keep their own database. A shared numeric id must not replace nhentai history.
+            if (!GalleryIdentity.persistsInNhentaiTables(gallery)) return;
             ContentValues values = new ContentValues(5);
             values.put(ID, gallery.getId());
             values.put(MEDIAID, gallery.getMediaId());

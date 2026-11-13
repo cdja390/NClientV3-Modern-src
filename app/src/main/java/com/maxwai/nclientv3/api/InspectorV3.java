@@ -23,6 +23,8 @@ import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.ehentai.EhFeed;
 import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.source.GalleryListParcel;
+import com.maxwai.nclientv3.source.RowCodec;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
 
@@ -81,16 +83,22 @@ public class InspectorV3 extends Thread implements Parcelable {
         url = in.readString();
         requestType = ApiRequestType.values[in.readByte()];
         List<? extends GenericGallery> tmpList = null;
-        switch (GenericGallery.Type.values()[in.readByte()]) {
-            case LOCAL:
-                tmpList = in.createTypedArrayList(LocalGallery.CREATOR);
-                break;
-            case SIMPLE:
-                tmpList = in.createTypedArrayList(SimpleGallery.CREATOR);
-                break;
-            case COMPLETE:
-                tmpList = in.createTypedArrayList(Gallery.CREATOR);
-                break;
+        int galleryKind = in.readByte() & 0xff;
+        RowCodec.SectionKind section = RowCodec.sectionKind(galleryKind);
+        if (section == RowCodec.SectionKind.MIXED) {
+            tmpList = GalleryListParcel.readMixed(in);
+        } else if (section == RowCodec.SectionKind.CLASSIC) {
+            switch (GenericGallery.Type.values()[galleryKind]) {
+                case LOCAL:
+                    tmpList = in.createTypedArrayList(LocalGallery.CREATOR);
+                    break;
+                case SIMPLE:
+                    tmpList = in.createTypedArrayList(SimpleGallery.CREATOR);
+                    break;
+                case COMPLETE:
+                    tmpList = in.createTypedArrayList(Gallery.CREATOR);
+                    break;
+            }
         }
         if (tmpList != null)
         {
@@ -228,17 +236,27 @@ public class InspectorV3 extends Thread implements Parcelable {
         dest.writeString(query);
         dest.writeString(url);
         dest.writeByte(requestType.ordinal());
-        // 4.7.1: e-hentai entries of a merged list are not parcelled (they would come back as
-        // nhentai galleries); the restored page shows the nhentai half until it is reloaded.
-        ArrayList<GenericGallery> saved = null;
+        // 4.7.2: a list that contains e-hentai rows uses kind 3 and RowCodec. Lists without those
+        // rows keep the 4.7.1 typed-list bytes, so an old INSPECTOR parcel still takes the classic branch.
+        boolean mixed = false;
         if (galleries != null) {
-            saved = new ArrayList<>(galleries.size());
-            for (GenericGallery g : galleries) if (!(g instanceof EhSimpleGallery)) saved.add(g);
+            for (GenericGallery g : galleries) {
+                if (g instanceof EhSimpleGallery) {
+                    mixed = true;
+                    break;
+                }
+            }
         }
-        if (saved == null || saved.isEmpty())
-            dest.writeByte((byte) GenericGallery.Type.SIMPLE.ordinal());
-        else dest.writeByte((byte) saved.get(0).getType().ordinal());
-        dest.writeTypedList(saved);
+        if (mixed) {
+            dest.writeByte((byte) RowCodec.KIND_MIXED);
+            GalleryListParcel.writeMixed(dest, galleries);
+        } else {
+            ArrayList<GenericGallery> saved = galleries == null ? null : new ArrayList<>(galleries);
+            if (saved == null || saved.isEmpty())
+                dest.writeByte((byte) GenericGallery.Type.SIMPLE.ordinal());
+            else dest.writeByte((byte) saved.get(0).getType().ordinal());
+            dest.writeTypedList(saved);
+        }
         dest.writeTypedList(new ArrayList<>(tags));
         dest.writeParcelable(ranges, flags);
     }

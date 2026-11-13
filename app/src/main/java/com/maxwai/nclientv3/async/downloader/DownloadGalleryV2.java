@@ -14,6 +14,7 @@ import androidx.work.WorkerParameters;
 import com.maxwai.nclientv3.api.SimpleGallery;
 import com.maxwai.nclientv3.api.components.Gallery;
 import com.maxwai.nclientv3.api.components.GenericGallery;
+import com.maxwai.nclientv3.source.GalleryIdentity;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
@@ -32,6 +33,8 @@ public class DownloadGalleryV2 extends Worker {
     }
 
     public static void downloadGallery(Context context, GenericGallery gallery) {
+        // 4.7.2: a positive gid is not an nhentai id. P6 sends these to the e-hentai downloader.
+        if (!GalleryIdentity.persistsInNhentaiTables(gallery)) return;
         if (gallery.isValid() && gallery instanceof Gallery)
             downloadGallery(context, (Gallery) gallery);
         if (gallery.getId() > 0) {

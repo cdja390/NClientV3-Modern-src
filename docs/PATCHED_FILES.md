@@ -62,3 +62,9 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 - Login fix: `settings/Login.java`, `settings/AuthStore.java`, `settings/ApiAuthInterceptor.java`, `settings/CustomInterceptor.java`, `loginapi/AuthApi.java`, `loginapi/User.java`, `LoginActivity.java`, `components/views/TurnstileDialog.java` (refresh-token persistence and refresh, API-based user profile, Cloudflare page ends on `cf_clearance`, web login returns to the app).
 - Merged main list: new `ehentai/EhFeed.java` and `ehentai/EhSimpleGallery.java` (design from yosefario-dev/NClientV3 `InspectorV3.mergeAcross`, `EHentaiPager`, `EHentaiSource.buildSearchQuery`, Apache-2.0), plus `api/InspectorV3.java`, `api/SimpleGallery.java` (protected constructor), `adapters/ListAdapter.java`, `res/xml/settings.xml`, `values*/strings_471.xml`, `values/arrays_471.xml`.
 - Tests: `loginapi/LoginFlowTest`, `settings/ClearanceCookieTest`, `ehentai/EhFeedTest`.
+
+## Files added or modified in 4.7.2 (P1, source identity)
+
+- New `source/GallerySource.java`, `source/SourceKey.java`, `source/RowCodec.java`, `source/GalleryIdentity.java`, `source/GalleryListParcel.java`. Identity follows yosefario-dev/NClientV3 `SourceId` plus `SimpleGallery.source` / `token` (Apache-2.0), rewritten for this app. The negative gid is no longer the source flag.
+- `ehentai/EhSimpleGallery.java` (positive clamped gid, `sourceKey()`, list restore), `api/SimpleGallery.java` (`restoreListRow`), `api/InspectorV3.java` (mixed list parcel, kind byte 3; classic lists stay on the old typed-list path), `adapters/ListAdapter.java` (status and opened-row lookup by source key), `ehentai/EhFeed.java` (dedup key), `async/downloader/DownloadGalleryV2.java` and `async/database/Queries.java` (nhentai tables reject other sources until P6 routes downloads).
+- Test: `source/SourceKeyTest`. JVM tests do not call `android.os.Parcel` (`isReturnDefaultValues`).

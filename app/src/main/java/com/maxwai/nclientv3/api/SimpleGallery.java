@@ -84,6 +84,17 @@ public class SimpleGallery extends GenericGallery {
         this(title, id, 0, pageCount, thumbnail, language, new TagList());
     }
 
+    /**
+     * 4.7.2: one nhentai row from a mixed-list parcel. Tags are not stored, same as
+     * {@link #writeToParcel}.
+     */
+    public static SimpleGallery restoreListRow(String title, int id, int mediaId, String thumb,
+                                               Language language, int pageCount) {
+        Uri thumbnail = thumb == null || thumb.isEmpty() ? Uri.EMPTY : Uri.parse(thumb);
+        return new SimpleGallery(title == null ? "" : title, id, mediaId, pageCount, thumbnail,
+            language == null ? Language.UNKNOWN : language, new TagList());
+    }
+
     public SimpleGallery(Gallery gallery) {
         title = gallery.getTitle();
         mediaId = gallery.getMediaId();

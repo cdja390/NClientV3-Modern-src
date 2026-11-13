@@ -2,7 +2,6 @@ package com.maxwai.nclientv3.adapters;
 
 import android.content.Intent;
 import android.text.Layout;
-import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +21,9 @@ import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.components.activities.BaseActivity;
 import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
 import com.maxwai.nclientv3.ehentai.EhUi;
+import com.maxwai.nclientv3.source.GalleryIdentity;
+import com.maxwai.nclientv3.source.GallerySource;
+import com.maxwai.nclientv3.source.SourceKey;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.TagV2;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
@@ -31,11 +33,12 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
 public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder> {
-    private final SparseIntArray statuses = new SparseIntArray();
+    private final HashMap<String, Integer> statuses = new HashMap<>();
     private final List<SimpleGallery> mDataset;
     private final BaseActivity context;
     private final String queryString;
@@ -139,26 +142,29 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
             holder.pages.animate().alpha(holder.pages.getAlpha() == 0f ? 1f : 0f).setDuration(100).start();
             return true;
         });
-        int statusColor = statuses.get(ent.getId(), 0);
-        if (statusColor == 0 && !eh) {
+        String statusKey = GalleryIdentity.of(ent).stableKey();
+        Integer cached = statuses.get(statusKey);
+        int statusColor = cached == null ? 0 : cached;
+        if (statusColor == 0 && GalleryIdentity.persistsInNhentaiTables(ent)) {
             statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
-            statuses.put(ent.getId(), statusColor);
+            statuses.put(statusKey, statusColor);
         }
         holder.title.setBackgroundColor(statusColor);
     }
 
     public void updateColor(int id) {
         if (id < 0) return;
-        int position = -1;
-        statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
+        String statusKey = new SourceKey(GallerySource.NHENTAI, id, null).stableKey();
+        statuses.put(statusKey, Queries.StatusMangaTable.getStatus(id).color);
         for (int i = 0; i < mDataset.size(); i++) {
-            SimpleGallery gallery= mDataset.get(i);
-            if (gallery != null && gallery.getId() == id) {
-                position = id;
-                break;
+            SimpleGallery gallery = mDataset.get(i);
+            if (gallery == null) continue;
+            SourceKey row = GalleryIdentity.of(gallery);
+            if (GalleryIdentity.sameIdentity(GallerySource.NHENTAI, id, row.source, row.id)) {
+                notifyItemChanged(i);
+                return;
             }
         }
-        if (position >= 0) notifyItemChanged(position);
     }
 
     private void downloadGallery(final SimpleGallery ent) {
