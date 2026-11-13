@@ -54,7 +54,7 @@ public class LocalActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         //Global.initActivity(this);
-        setContentView(R.layout.app_bar_main);
+        setContentView(R.layout.activity_main); // drawer host, as in the Modern publish build
         BottomNavRouter.install(this, R.id.downloaded);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);

@@ -96,7 +96,7 @@ public class FavoriteActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         //Global.initActivity(this);
 
-        setContentView(R.layout.app_bar_main);
+        setContentView(R.layout.activity_main); // drawer host, as in the Modern publish build
         BottomNavRouter.install(this, R.id.favorite_manager);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
