@@ -87,7 +87,7 @@
 - 首页无关键词、标签、语言或范围筛选时，启用 EH/EX 可切换「最近」和「热门（日榜）」。双选热门时第一页交替显示 NH 日榜和 EH/EX 热门榜，后续页读取 NH 日榜。仅 EH/EX 热门榜共一页，并应用 EH 全局分类和最低评分。仅 NH 恢复独立保存的排序。
 - 指定三项离线任务全部成功。测试 XML 146 tests / 0 failures / 0 errors / 0 skipped，LocalizationCompletenessTest 3/3。新增覆盖 NH 传输 URL、旧书签、筛选边界、两站顺序、EH/EX 地址和单页与分类评分行为。
 - Release `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\release\NClientV3_4.7.2.apk`，18119993 字节，SHA-256 `8F11901AD7EC8B127A4E0E33791EC95AA5A38AE52E290261DCE36A45DAB678B7`。核验包名 `com.IlFforever.nclientv3.clone`、`470200`、`4.7.2-Modern`，未签名。
-- Debug `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\debug\NClientV3_4.7.2-Modern_debug.apk`，24096491 字节，SHA-256 `5041C77E220FFD3C01FD89FB52086D8C734A51A389B24ED26523C3EB938FB911`。核验包名 `com.IlFforever.nclientv3.clone.debug`、`470200` 和既有 Debug 证书。华为已并存安装上一构建的 Debug；本次热门构建的联网和真机验收待执行。
+- Debug `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\debug\NClientV3_4.7.2-Modern_debug.apk`，24096491 字节，SHA-256 `5041C77E220FFD3C01FD89FB52086D8C734A51A389B24ED26523C3EB938FB911`。核验包名 `com.IlFforever.nclientv3.clone.debug`、`470200` 和既有 Debug 证书。覆盖更新和真机结果见 10.4。
 
 ## 逐项状态
 
@@ -194,8 +194,7 @@
 
 ## 10. 华为真机验收
 
-本次通过 ADB 只读确认华为 GLA-AL00（API 31）安装的是 `4.5.0-Modern` / `450000`。
-签名、覆盖安装和功能检查仍待执行。下列各项均待验，实测后逐项写入结果。
+华为 GLA-AL00（API 31）保留 `4.5.0-Modern` / `450000`，并存 Debug 的热门排序验收见 10.4。正式包的同证书覆盖升级、数据迁移和升级后验收仍待执行。
 
 ### 10.1 升级准备
 
@@ -235,3 +234,11 @@
 8. 手动登出清理会话凭据。
 
 出现问题时记录北京时间、动作和结果。开发侧读取应用包版本和经过过滤的 `NCLIENTLOG`。
+
+### 10.4 热门排序实测（2026-11-13 至 2026-11-14，Asia/Shanghai）
+
+- 用户同意后，于 11 月 13 日 23:43 用 ADB 覆盖更新华为 GLA-AL00 上的 Debug，返回 `Success`。更新前后 Debug 的签名证书、UID 和首次安装时间一致，设备上的 `base.apk` SHA-256 与 4.7.2 热门构建一致。原 4.5.0 的版本、UID、首次安装及更新时间均一致。
+- D03 双站热门通过。选择 NH+EH，排序框出现「最近」和「热门（日榜）」。第 1 页前三行的标签为 NH、EH 交替排列，页码为 1 / 20。第 2 页可见六张卡片均为 NH，日志记录第 2 页的 `sort=popular-today` 请求完成。
+- D03 切换来源和排序通过。仅 EH 时热门结果可见，单页列表隐藏翻页栏。仅 NH 时恢复原先的「最近」，菜单保留五种排序。双站热门第 2 页切换「最近」后回到第 1 页，测试结束时恢复到双站热门第 1 页。
+- D03 关键词搜索通过。从搜索入口提交测试词，结果页显示 NH 和 EH，排序框仅有「最近」。标签和范围筛选的现场操作仍待验。
+- D03 的 EX 联网项目待验。现场 EH 菜单显示登录入口，ExHentai 开关待有访问权限的账号登录后可用。正式包迁移和其余真机项目按原矩阵继续验收。
