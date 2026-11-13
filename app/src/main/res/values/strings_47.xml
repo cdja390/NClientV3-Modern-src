@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NClientV3 Modern 4.7.0 strings (English defaults). Generated from one table so en/zh stay in step. -->
+<resources>
+    <!-- login -->
+    <string name="login_account_header">Sign in with your nhentai account</string>
+    <string name="login_account_explanation">Your password is sent only to nhentai over HTTPS and is never stored on this device. A quick human check (Cloudflare Turnstile) and a short proof of work run before signing in.</string>
+    <string name="login_username_hint">Username or email</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_sign_in">Sign in</string>
+    <string name="login_create_api_key">Create an API key for this device (optional)</string>
+    <string name="login_other_methods">Other ways to sign in</string>
+    <string name="login_use_api_key">Use an API key instead</string>
+    <string name="login_web_fallback">Web login (fallback)</string>
+    <string name="login_privacy_note">The web login is the pre-4.7 method. It gives up after 60 seconds if no session appears.</string>
+    <string name="login_status_already_signed_in">You are signed in. You can sign in again or create an API key.</string>
+    <string name="login_status_missing_fields">Enter a username and a password.</string>
+    <string name="login_status_captcha_loading">Loading the human check…</string>
+    <string name="login_status_captcha_error">Could not load the human check: %1$s</string>
+    <string name="login_status_verify">Complete the human check.</string>
+    <string name="login_status_captcha_cancelled">Verification cancelled.</string>
+    <string name="login_status_solving">Solving the login challenge…</string>
+    <string name="login_status_signing_in">Signing in…</string>
+    <string name="login_status_login_failed">Sign-in failed: %1$s</string>
+    <string name="login_status_signed_in">Signed in.</string>
+    <string name="login_status_signed_in_key_hint">Signed in. Optionally create an API key below; it keeps favorites working after the session expires.</string>
+    <string name="login_status_creating_key">Creating the API key…</string>
+    <string name="login_status_key_saved">API key created and saved.</string>
+    <string name="login_status_key_failed">Could not create the API key: %1$s</string>
+    <string name="login_error_captcha">the human check was rejected, try again</string>
+    <string name="login_error_credentials">wrong username or password</string>
+    <string name="login_error_rate_limited">too many attempts, wait a few minutes</string>
+    <string name="login_error_http">server error (HTTP %1$d)</string>
+    <string name="login_error_network">network error</string>
+    <string name="login_web_timeout">The web login timed out after 60 seconds. Try the native sign-in or an API key.</string>
+    <string name="turnstile_title">Verify you are human</string>
+    <string name="turnstile_title_second">One more check</string>
+    <string name="turnstile_subtitle">Cloudflare needs to confirm you are not a bot before continuing.</string>
+    <string name="turnstile_subtitle_second">Confirm once more to create the API key.</string>
+    <string name="turnstile_error">Verification failed. Tap to try again.</string>
+</resources>
