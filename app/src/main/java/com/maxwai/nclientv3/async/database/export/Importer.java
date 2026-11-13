@@ -194,6 +194,9 @@ class Importer {
                 LogUtility.d("Importing: " + name);
                 if (Exporter.DB_ZIP_FILE.equals(name)) {
                     importDB(inputStream, listener);
+                } else if (com.maxwai.nclientv3.ehentai.EhBackup.ENTRY_NAME.equals(name)) {
+                    // 4.7.0: ehentai.db rows (merged by gallery id). docs/BACKUP_FORMAT.md
+                    com.maxwai.nclientv3.ehentai.EhDatabase.importBackup(context, inputStream);
                 } else {
                     String shared = name.substring(0, name.length() - 5);
                     importSharedPreferences(context, shared, inputStream);

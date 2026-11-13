@@ -111,6 +111,12 @@ public class Exporter {
                 exportSharedPreferences(context, shared, zip);
                 zip.closeEntry();
             }
+
+            // 4.7.0: ehentai.db, as a shared-preferences shaped entry so older builds still
+            // import the archive (they keep it as an unused preferences file). docs/BACKUP_FORMAT.md
+            zip.putNextEntry(new ZipEntry(com.maxwai.nclientv3.ehentai.EhBackup.ENTRY_NAME));
+            com.maxwai.nclientv3.ehentai.EhDatabase.exportBackup(context, zip);
+            zip.closeEntry();
         }
 
     }

@@ -44,4 +44,13 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
   OkHttp client (paced, 509 / ban / rate-limit aware), `res/layout/*eh*`, `res/menu/eh_*.xml`,
   `res/drawable/eh_chip_background.xml`. Hooks in existing classes: one drawer item in
   `res/menu/activity_main_drawer.xml`, one branch each in `MainActivity.onNavigationItemSelected`
-  and `BottomNavRouter.setupNavigationView`, and three activities in `AndroidManifest.xml`.
+  and `BottomNavRouter.setupNavigationView`, and the e-hentai activities in `AndroidManifest.xml`.
+- e-hentai P2: `ehentai/EhLoginActivity.java` (WebView forums login / paste cookies),
+  online and local favorites, history; `ehentai/EhDatabase.java` (separate `ehentai.db`,
+  Entries.db untouched). Share-in and VIEW links for e-hentai/exhentai galleries:
+  `utility/ShareLinkParser.java` (new `EHENTAI` kind), `ShareReceiverActivity.java`
+  (VIEW intent filter in `AndroidManifest.xml`), `PINActivity.java` (one whitelist entry).
+- e-hentai P3: downloads (`ehentai/EhDownloads.java`, `ehentai/EhDownloadWorker.java`),
+  offline reading, resume and reading statistics; backup of ehentai.db:
+  `async/database/export/Exporter.java` (one extra zip entry) and `Importer.java` (one
+  branch). Format and compatibility: `docs/BACKUP_FORMAT.md`.
