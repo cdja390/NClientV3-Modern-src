@@ -519,6 +519,8 @@
     <string name="auto_mark_overwrite_manual_summary">When the last page is reached, also change On Hold, Dropped and custom statuses to Completed</string>
     <string name="record_reading_stats">Record reading time and count</string>
     <string name="record_reading_stats_summary">Per gallery: times read and active reading time. Every opening of the reader counts once (rotating the screen or returning from the background does not). Time counts the whole time the reader is in the foreground. Included in backups.</string>
+    <string name="view_reading_stats">View reading stats</string>
+    <string name="view_reading_stats_summary">Reading time and count of every gallery</string>
     <string name="clear_reading_stats">Clear reading stats</string>
     <string name="clear_reading_stats_summary">Only clears reading time and count. History, favorites, downloads, status and resume progress are not affected</string>
 </resources>

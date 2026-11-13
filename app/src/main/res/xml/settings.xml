@@ -40,6 +40,7 @@
         <SwitchPreferenceCompat android:title="@string/auto_mark_reading_status" android:key="auto_mark_reading_status" android:summary="@string/auto_mark_reading_status_summary" android:defaultValue="false" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/auto_mark_overwrite_manual" android:key="auto_mark_overwrite_manual" android:summary="@string/auto_mark_overwrite_manual_summary" android:defaultValue="false" android:dependency="auto_mark_reading_status" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/record_reading_stats" android:key="record_reading_stats" android:summary="@string/record_reading_stats_summary" android:defaultValue="false" app:iconSpaceReserved="false" />
+        <Preference android:title="@string/view_reading_stats" android:key="view_reading_stats" android:summary="@string/view_reading_stats_summary" app:iconSpaceReserved="false" />
         <Preference android:title="@string/clear_reading_stats" android:key="clear_reading_stats" android:summary="@string/clear_reading_stats_summary" app:iconSpaceReserved="false" />
         <SeekBarPreference android:max="400" android:title="@string/default_zoom" android:key="@string/preference_key_default_zoom" android:defaultValue="100" app:iconSpaceReserved="false" app:min="100" app:seekBarIncrement="10" app:showSeekBarValue="true" />
     </PreferenceCategory>

@@ -334,6 +334,8 @@
     <!-- NClientV3 Modern strings -->
     <string name="record_reading_stats">記錄閱讀時長與次數</string>
     <string name="record_reading_stats_summary">按作品記錄閱讀次數和有效閱讀時長。每開啟一次閱讀頁算一次（旋轉螢幕、從背景切回不算）；閱讀頁在前景的時間全部計入。包含在備份中。</string>
+    <string name="view_reading_stats">查看閱讀統計</string>
+    <string name="view_reading_stats_summary">按作品查看閱讀次數和累計時長</string>
     <string name="clear_reading_stats">清空閱讀統計</string>
     <string name="clear_reading_stats_summary">只清空閱讀次數與時長統計，不影響閱讀歷史、收藏、已下載、閱讀狀態和斷點續讀</string>
 </resources>

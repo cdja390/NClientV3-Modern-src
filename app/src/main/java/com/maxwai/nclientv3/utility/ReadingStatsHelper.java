@@ -3,28 +3,41 @@ package com.maxwai.nclientv3.utility;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.JsonWriter;
+import android.text.TextUtils;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.maxwai.nclientv3.GalleryActivity;
 import com.maxwai.nclientv3.api.components.GenericGallery;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -48,6 +61,8 @@ import java.util.WeakHashMap;
  *  - onCreateOptionsMenu, before "return true": setupGalleryMenu(activity, menu, gallery)
  *  - onOptionsItemSelected, first: if (onGalleryMenuItemSelected(activity, item, gallery)) return true
  * GeneralPreferenceFragment hooks (mainMenu end and onResume): bindPreference(fragment)
+ *  - binds "view_reading_stats" (list of every ReadingStats row, read-only, never creates the
+ *    table) and "clear_reading_stats".
  * Backup hooks:
  *  - Exporter.dumpDB, after the SCHEMAS loop, before writer.endObject(): exportTable(db, writer)
  *  - Importer.importDB, before db.delete(tableName): onImportTable(db, tableName)
@@ -84,6 +99,7 @@ public class ReadingStatsHelper {
     public static final String PREF_SETTINGS = "Settings";
     public static final String PREF_ENABLED = "record_reading_stats";
     public static final String PREF_CLEAR = "clear_reading_stats";
+    public static final String PREF_VIEW = "view_reading_stats";
     public static final int MENU_ID_READING_STATS = 0x70ffff20;
 
     private static final String TAG = "NClientReadStats";
@@ -544,6 +560,17 @@ public class ReadingStatsHelper {
     public static void bindPreference(final PreferenceFragmentCompat fragment) {
         try {
             if (fragment == null) return;
+            final Preference viewPref = fragment.findPreference(PREF_VIEW);
+            if (viewPref != null) {
+                updateViewSummary(viewPref);
+                viewPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        showAllStats(preference.getContext(), preference);
+                        return true;
+                    }
+                });
+            }
             final Preference clearPref = fragment.findPreference(PREF_CLEAR);
             if (clearPref == null) return;
             updateClearSummary(clearPref);
@@ -575,6 +602,11 @@ public class ReadingStatsHelper {
 
     /** galleryId <= 0 means all galleries. Cancel is the default (focused) button. */
     static void confirmClear(final Context ctx, final int galleryId, final Preference pref) {
+        confirmClear(ctx, galleryId, pref, null);
+    }
+
+    /** As above; afterClear (may be null) runs on the UI thread after a successful clear. */
+    static void confirmClear(final Context ctx, final int galleryId, final Preference pref, final Runnable afterClear) {
         try {
             if (ctx == null) return;
             if (ctx instanceof Activity && ((Activity) ctx).isFinishing()) return;
@@ -607,7 +639,14 @@ public class ReadingStatsHelper {
                                 : (zh ? "\u6e05\u9664\u5931\u8d25" : "Clear failed"), Toast.LENGTH_SHORT).show();
                         } catch (Throwable ignored) {
                         }
-                        if (pref != null) updateClearSummary(pref);
+                        if (pref != null) refreshSummaries(pref);
+                        if (ok && afterClear != null) {
+                            try {
+                                afterClear.run();
+                            } catch (Throwable t) {
+                                log("afterClear failed", t);
+                            }
+                        }
                         if (ctx instanceof Activity) {
                             try {
                                 ((Activity) ctx).invalidateOptionsMenu();
@@ -630,6 +669,369 @@ public class ReadingStatsHelper {
             dialog.show();
         } catch (Throwable t) {
             log("confirmClear failed", t);
+        }
+    }
+
+    // ------------------------------------------------------------------ Settings: all stats list
+
+    static final int SORT_LAST_READ = 0;
+    static final int SORT_TIME = 1;
+    static final int SORT_COUNT = 2;
+    private static int sSortMode = SORT_LAST_READ;
+
+    /** One ReadingStats row plus a best-effort title (null when unknown). Pure Java. */
+    static final class Entry {
+        final int gallery;
+        final long count;
+        final long totalMs;
+        final long firstRead;
+        final long lastRead;
+        final long maxPage;
+        final String title;
+
+        Entry(int gallery, long count, long totalMs, long firstRead, long lastRead, long maxPage, String title) {
+            this.gallery = gallery;
+            this.count = count;
+            this.totalMs = totalMs;
+            this.firstRead = firstRead;
+            this.lastRead = lastRead;
+            this.maxPage = maxPage;
+            this.title = title;
+        }
+
+        String displayTitle() {
+            return title == null || title.trim().isEmpty() ? "#" + gallery : title;
+        }
+    }
+
+    /** Descending by last read / total time / count; ties by last read desc, then id asc. */
+    static void sortEntries(List<Entry> list, final int mode) {
+        if (list == null) return;
+        Collections.sort(list, new Comparator<Entry>() {
+            @Override
+            public int compare(Entry a, Entry b) {
+                int r = 0;
+                if (mode == SORT_TIME) r = Long.compare(b.totalMs, a.totalMs);
+                else if (mode == SORT_COUNT) r = Long.compare(b.count, a.count);
+                if (r == 0) r = Long.compare(b.lastRead, a.lastRead);
+                if (r == 0) r = Integer.compare(a.gallery, b.gallery);
+                return r;
+            }
+        });
+    }
+
+    static String firstNonEmpty(String... values) {
+        if (values == null) return null;
+        for (String v : values) {
+            if (v != null && !v.trim().isEmpty()) return v.trim();
+        }
+        return null;
+    }
+
+    /**
+     * Every ReadingStats row, titles from History.title, then Gallery.title_pretty / title_eng /
+     * title_jp. Read-only; never creates the table. If the title lookup fails for any reason the
+     * rows are read again without titles ("#id").
+     */
+    static List<Entry> queryAll() {
+        List<Entry> out = new ArrayList<Entry>();
+        SQLiteDatabase db = database();
+        if (db == null || !db.isOpen() || !tableExists(db)) return out;
+        Cursor c = null;
+        try {
+            c = db.rawQuery("SELECT r.`gallery`,r.`read_count`,r.`total_ms`,r.`first_read`,r.`last_read`,r.`max_page`,"
+                + "(SELECT h.`title` FROM `History` h WHERE h.`id`=r.`gallery` LIMIT 1),"
+                + "(SELECT g.`title_pretty` FROM `Gallery` g WHERE g.`idGallery`=r.`gallery` LIMIT 1),"
+                + "(SELECT g.`title_eng` FROM `Gallery` g WHERE g.`idGallery`=r.`gallery` LIMIT 1),"
+                + "(SELECT g.`title_jp` FROM `Gallery` g WHERE g.`idGallery`=r.`gallery` LIMIT 1)"
+                + " FROM `ReadingStats` r", null);
+            readEntries(c, out, true);
+            return out;
+        } catch (Throwable t) {
+            log("queryAll with titles failed, retrying without titles", t);
+        } finally {
+            closeQuietly(c);
+        }
+        out.clear();
+        c = null;
+        try {
+            c = db.rawQuery("SELECT `gallery`,`read_count`,`total_ms`,`first_read`,`last_read`,`max_page` FROM `ReadingStats`", null);
+            readEntries(c, out, false);
+        } catch (Throwable t) {
+            log("queryAll failed", t);
+            out.clear();
+        } finally {
+            closeQuietly(c);
+        }
+        return out;
+    }
+
+    private static void readEntries(Cursor c, List<Entry> out, boolean withTitles) {
+        if (c == null || !c.moveToFirst()) return;
+        do {
+            String title = null;
+            if (withTitles) {
+                title = firstNonEmpty(c.isNull(6) ? null : c.getString(6), c.isNull(7) ? null : c.getString(7),
+                    c.isNull(8) ? null : c.getString(8), c.isNull(9) ? null : c.getString(9));
+            }
+            out.add(new Entry((int) c.getLong(0), c.getLong(1), c.getLong(2), c.getLong(3), c.getLong(4), c.getLong(5), title));
+        } while (c.moveToNext());
+    }
+
+    /** @return {rows, sum(read_count), sum(total_ms)}; zeros when the table does not exist. */
+    static long[] totals() {
+        Cursor c = null;
+        try {
+            SQLiteDatabase db = database();
+            if (db == null || !db.isOpen() || !tableExists(db)) return new long[3];
+            c = db.rawQuery("SELECT COUNT(*), IFNULL(SUM(`read_count`),0), IFNULL(SUM(`total_ms`),0) FROM `ReadingStats`", null);
+            if (c == null || !c.moveToFirst()) return new long[3];
+            return new long[]{c.getLong(0), c.getLong(1), c.getLong(2)};
+        } catch (Throwable t) {
+            return new long[3];
+        } finally {
+            closeQuietly(c);
+        }
+    }
+
+    private static void updateViewSummary(Preference pref) {
+        try {
+            Context ctx = pref.getContext();
+            if (ctx == null) return;
+            boolean zh = isZh(ctx);
+            long[] t = totals();
+            String s;
+            if (t[0] <= 0) {
+                s = zh ? "\u8fd8\u6ca1\u6709\u9605\u8bfb\u7edf\u8ba1" : "No reading stats yet";
+            } else {
+                s = zh
+                    ? "\u5171 " + t[0] + " \u672c\uff0c\u7d2f\u8ba1 " + formatDuration(t[2], true) + " / " + t[1] + " \u6b21"
+                    : t[0] + " galleries, " + formatDuration(t[2], false) + " in total / " + formatCount(t[1], false);
+            }
+            if (!isEnabled(ctx)) s += zh ? "\uff08\u8bb0\u5f55\u5f00\u5173\u5df2\u5173\u95ed\uff09" : " (recording is off)";
+            pref.setSummary(s);
+        } catch (Throwable t) {
+            log("updateViewSummary failed", t);
+        }
+    }
+
+    /** Refreshes the summaries of both stats preferences (view + clear) of the same screen. */
+    private static void refreshSummaries(Preference pref) {
+        try {
+            if (pref == null) return;
+            Preference view = null;
+            Preference clear = null;
+            if (pref.getPreferenceManager() != null) {
+                view = pref.getPreferenceManager().findPreference(PREF_VIEW);
+                clear = pref.getPreferenceManager().findPreference(PREF_CLEAR);
+            }
+            if (view == null && PREF_VIEW.equals(pref.getKey())) view = pref;
+            if (clear == null && PREF_CLEAR.equals(pref.getKey())) clear = pref;
+            if (view != null) updateViewSummary(view);
+            if (clear != null) updateClearSummary(clear);
+        } catch (Throwable t) {
+            log("refreshSummaries failed", t);
+        }
+    }
+
+    private static String sortLabel(int mode, boolean zh) {
+        if (mode == SORT_TIME) return zh ? "\u6392\u5e8f\uff1a\u65f6\u957f" : "Sort: time";
+        if (mode == SORT_COUNT) return zh ? "\u6392\u5e8f\uff1a\u6b21\u6570" : "Sort: count";
+        return zh ? "\u6392\u5e8f\uff1a\u6700\u8fd1" : "Sort: recent";
+    }
+
+    /** Settings "view_reading_stats": one line per gallery; tap a line for its details. */
+    static void showAllStats(final Context ctx, final Preference pref) {
+        try {
+            if (ctx == null) return;
+            if (ctx instanceof Activity && ((Activity) ctx).isFinishing()) return;
+            final boolean zh = isZh(ctx);
+            final boolean enabled = isEnabled(ctx);
+            final List<Entry> entries = queryAll();
+            if (pref != null) refreshSummaries(pref);
+            if (entries.isEmpty()) {
+                String msg = zh ? "\u8fd8\u6ca1\u6709\u4efb\u4f55\u9605\u8bfb\u7edf\u8ba1\u3002\u6253\u5f00\u9605\u8bfb\u9875\u770b\u6f2b\u753b\u540e\uff0c\u8fd9\u91cc\u4f1a\u6309\u4f5c\u54c1\u5217\u51fa\u9605\u8bfb\u6b21\u6570\u548c\u65f6\u957f\u3002"
+                    : "No reading stats yet. Galleries you read will be listed here with their count and time.";
+                if (!enabled) {
+                    msg += zh ? "\n\n\u8bbe\u7f6e\u91cc\u300c\u8bb0\u5f55\u9605\u8bfb\u65f6\u957f\u4e0e\u6b21\u6570\u300d\u5f53\u524d\u5173\u95ed\uff0c\u6253\u5f00\u540e\u624d\u4f1a\u5f00\u59cb\u8bb0\u5f55\u3002"
+                        : "\n\n\"Record reading time and count\" is off in Settings; turn it on to start recording.";
+                }
+                new MaterialAlertDialogBuilder(ctx)
+                    .setTitle(zh ? "\u9605\u8bfb\u7edf\u8ba1" : "Reading stats")
+                    .setMessage(msg)
+                    .setPositiveButton(zh ? "\u5173\u95ed" : "Close", null)
+                    .show();
+                return;
+            }
+            sortEntries(entries, sSortMode);
+            final EntryAdapter adapter = new EntryAdapter(ctx, entries, zh);
+            String title = zh ? "\u9605\u8bfb\u7edf\u8ba1\uff08" + entries.size() + " \u672c\uff09" : "Reading stats (" + entries.size() + ")";
+            if (!enabled) title += zh ? " \u00b7 \u8bb0\u5f55\u5df2\u5173\u95ed" : " \u00b7 recording off";
+            final AlertDialog dialog = new MaterialAlertDialogBuilder(ctx)
+                .setTitle(title)
+                .setAdapter(adapter, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        Entry e = adapter.getItem(which);
+                        if (e != null) showEntryDetail(ctx, e, pref);
+                    }
+                })
+                .setNeutralButton(sortLabel(sSortMode, zh), null)
+                .setPositiveButton(zh ? "\u5173\u95ed" : "Close", null)
+                .create();
+            dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(DialogInterface d) {
+                    try {
+                        final Button sort = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+                        if (sort == null) return;
+                        // Replaces the default listener so the dialog stays open while re-sorting.
+                        sort.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                sSortMode = (sSortMode + 1) % 3;
+                                sortEntries(entries, sSortMode);
+                                adapter.notifyDataSetChanged();
+                                sort.setText(sortLabel(sSortMode, zh));
+                                ListView lv = dialog.getListView();
+                                if (lv != null) lv.setSelection(0);
+                            }
+                        });
+                    } catch (Throwable t) {
+                        log("sort button setup failed", t);
+                    }
+                }
+            });
+            dialog.show();
+        } catch (Throwable t) {
+            log("showAllStats failed", t);
+        }
+    }
+
+    /** Per-gallery details from the Settings list. Back returns to the list. */
+    private static void showEntryDetail(final Context ctx, final Entry e, final Preference pref) {
+        try {
+            if (ctx == null || e == null) return;
+            if (ctx instanceof Activity && ((Activity) ctx).isFinishing()) return;
+            final boolean zh = isZh(ctx);
+            StringBuilder sb = new StringBuilder();
+            sb.append(zh ? "\u7f16\u53f7\uff1a#" : "ID: #").append(e.gallery).append('\n');
+            sb.append(zh ? "\u9605\u8bfb\u6b21\u6570\uff1a" : "Times read: ").append(e.count).append('\n');
+            sb.append(zh ? "\u7d2f\u8ba1\u65f6\u957f\uff1a" : "Total time: ").append(formatDuration(e.totalMs, zh)).append('\n');
+            sb.append(zh ? "\u9996\u6b21\u9605\u8bfb\uff1a" : "First read: ").append(formatDate(e.firstRead)).append('\n');
+            sb.append(zh ? "\u4e0a\u6b21\u9605\u8bfb\uff1a" : "Last read: ").append(formatDate(e.lastRead)).append('\n');
+            sb.append(zh ? "\u6700\u8fdc\u5230\u8fbe\uff1a\u7b2c " : "Furthest page: ").append(e.maxPage).append(zh ? " \u9875" : "");
+            new MaterialAlertDialogBuilder(ctx)
+                .setTitle(e.displayTitle())
+                .setMessage(sb.toString())
+                .setPositiveButton(zh ? "\u6253\u5f00\u6f2b\u753b" : "Open gallery", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        openGallery(ctx, e.gallery);
+                    }
+                })
+                .setNeutralButton(zh ? "\u8fd4\u56de\u5217\u8868" : "Back", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        showAllStats(ctx, pref);
+                    }
+                })
+                .setNegativeButton(zh ? "\u6e05\u9664\u672c\u4f5c\u7edf\u8ba1" : "Clear for this gallery", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        confirmClear(ctx, e.gallery, pref, new Runnable() {
+                            @Override
+                            public void run() {
+                                showAllStats(ctx, pref);
+                            }
+                        });
+                    }
+                })
+                .show();
+        } catch (Throwable t) {
+            log("showEntryDetail failed", t);
+        }
+    }
+
+    /** Same path as an nhentai.net/g/<id>/ link: GalleryActivity loads the gallery by id. */
+    private static void openGallery(Context ctx, int id) {
+        try {
+            if (ctx == null || id <= 0) return;
+            Intent intent = new Intent(ctx, GalleryActivity.class);
+            intent.setData(Uri.parse(Utility.getBaseUrl() + "g/" + id + "/"));
+            if (!(ctx instanceof Activity)) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(intent);
+        } catch (Throwable t) {
+            log("openGallery failed", t);
+        }
+    }
+
+    private static final class EntryAdapter extends BaseAdapter {
+        private final Context ctx;
+        private final List<Entry> entries;
+        private final boolean zh;
+
+        EntryAdapter(Context ctx, List<Entry> entries, boolean zh) {
+            this.ctx = ctx;
+            this.entries = entries;
+            this.zh = zh;
+        }
+
+        @Override
+        public int getCount() {
+            return entries.size();
+        }
+
+        @Override
+        public Entry getItem(int position) {
+            return position >= 0 && position < entries.size() ? entries.get(position) : null;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            Entry e = getItem(position);
+            return e == null ? position : e.gallery;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            LinearLayout row;
+            TextView title;
+            TextView sub;
+            if (convertView instanceof LinearLayout && ((LinearLayout) convertView).getChildCount() == 2) {
+                row = (LinearLayout) convertView;
+                title = (TextView) row.getChildAt(0);
+                sub = (TextView) row.getChildAt(1);
+            } else {
+                row = new LinearLayout(ctx);
+                row.setOrientation(LinearLayout.VERTICAL);
+                int h = dp(24);
+                int v = dp(10);
+                row.setPadding(h, v, h, v);
+                title = new TextView(ctx);
+                title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+                title.setMaxLines(2);
+                title.setEllipsize(TextUtils.TruncateAt.END);
+                sub = new TextView(ctx);
+                sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+                sub.setAlpha(0.7f);
+                row.addView(title);
+                row.addView(sub);
+            }
+            Entry e = getItem(position);
+            if (e != null) {
+                title.setText(e.displayTitle());
+                StringBuilder sb = new StringBuilder();
+                if (e.title != null && !e.title.trim().isEmpty()) sb.append('#').append(e.gallery).append(" \u00b7 ");
+                sb.append(formatCount(e.count, zh)).append(" \u00b7 ").append(formatDuration(e.totalMs, zh))
+                    .append(" \u00b7 ").append(zh ? "\u4e0a\u6b21 " : "last ").append(formatDate(e.lastRead));
+                sub.setText(sb.toString());
+            }
+            return row;
+        }
+
+        private int dp(int value) {
+            return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, ctx.getResources().getDisplayMetrics());
         }
     }
 

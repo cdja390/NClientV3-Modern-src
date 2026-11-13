@@ -384,6 +384,8 @@
     <string name="auto_mark_overwrite_manual_summary">到达最后一页时，「搁置」「已放弃」和自定义状态也改为「已完成」</string>
     <string name="record_reading_stats">记录阅读时长与次数</string>
     <string name="record_reading_stats_summary">按作品记录阅读次数和有效阅读时长。每打开一次阅读页算一次（旋转屏幕、从后台切回不算）；阅读页在前台的时间全部计入。包含在备份中。</string>
+    <string name="view_reading_stats">查看阅读统计</string>
+    <string name="view_reading_stats_summary">按作品查看阅读次数和累计时长</string>
     <string name="clear_reading_stats">清空阅读统计</string>
     <string name="clear_reading_stats_summary">只清空阅读次数与时长统计，不影响阅读历史、收藏、已下载、阅读状态和断点续读</string>
 </resources>
