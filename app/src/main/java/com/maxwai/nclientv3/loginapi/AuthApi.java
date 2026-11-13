@@ -73,10 +73,18 @@ public final class AuthApi {
         public final String accessToken;
         @Nullable
         public final String refreshToken;
+        /** The "user" object of TokenResponse/RefreshResponse (id, username, slug, avatar_url). */
+        @Nullable
+        public final Map<String, Object> user;
 
         LoginTokens(String accessToken, @Nullable String refreshToken) {
+            this(accessToken, refreshToken, null);
+        }
+
+        LoginTokens(String accessToken, @Nullable String refreshToken, @Nullable Map<String, Object> user) {
             this.accessToken = accessToken;
             this.refreshToken = refreshToken;
+            this.user = user;
         }
     }
 
@@ -163,7 +171,24 @@ public final class AuthApi {
             if (refresh == null) refresh = MiniJson.optString(t, "refresh");
         }
         if (access == null || access.trim().isEmpty()) return null;
-        return new LoginTokens(access.trim(), refresh);
+        Object user = json.get("user");
+        return new LoginTokens(access.trim(), refresh == null || refresh.trim().isEmpty() ? null : refresh.trim(),
+            user instanceof Map ? (Map<String, Object>) user : null);
+    }
+
+    /**
+     * 4.7.1: exchanges a refresh token for a new access + refresh token pair
+     * (POST /api/v2/auth/refresh, RefreshResponse). nhentai rotates the refresh token, so the
+     * returned one must replace the stored one.
+     */
+    @NonNull
+    public static LoginTokens refresh(@NonNull Context context, @NonNull String refreshToken) throws IOException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("refresh_token", refreshToken);
+        Map<String, Object> json = postJson(context, Utility.getBaseUrl() + "api/v2/auth/refresh", body, null);
+        LoginTokens tokens = parseTokens(json);
+        if (tokens == null) throw new IOException("Refresh response carried no access token");
+        return tokens;
     }
 
     /** Creates an API key for the signed-in user; returns the raw key (shown only once). */

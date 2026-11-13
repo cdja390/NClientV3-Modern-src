@@ -30,7 +30,7 @@ public class CustomInterceptor implements Interceptor {
         public void applyCookie(String key, String value) {
             Cookie cookie = Cookie.parse(Login.BASE_HTTP_URL, key + "=" + value + "; Max-Age=31449600; Path=/; SameSite=Lax");
             Global.client.cookieJar().saveFromResponse(Login.BASE_HTTP_URL, Collections.singletonList(cookie));
-            tokenFound |= key.equals("csrftoken");
+            tokenFound |= isClearanceCookie(key);
         }
 
         @Override
@@ -38,15 +38,38 @@ public class CustomInterceptor implements Interceptor {
             if (tokenFound) return true;
             String cookies = CookieManager.getInstance().getCookie(Utility.getBaseUrl());
             if (cookies == null) return false;
-            return cookies.contains("csrftoken");
+            return hasClearanceCookie(cookies);
         }
 
         @Override
         public void onFinish() {
+            // Next challenge starts from scratch (the WebView cookies are wiped before it).
+            tokenFound = false;
         }
     };
     @Nullable
     private final Context context;
+
+    /**
+     * 4.7.1: the rebuilt nhentai site never sets the old Django {@code csrftoken}, so waiting for
+     * it kept the Cloudflare WebView on screen forever after the challenge had been passed (the
+     * "stays on the nhentai web page" report). {@code cf_clearance} is what passing the challenge
+     * leaves behind; csrftoken is still accepted for older mirrors.
+     */
+    static boolean isClearanceCookie(@Nullable String name) {
+        return "cf_clearance".equals(name) || "csrftoken".equals(name);
+    }
+
+    static boolean hasClearanceCookie(@Nullable String cookieHeader) {
+        if (cookieHeader == null) return false;
+        for (String part : cookieHeader.split(";")) {
+            String trimmed = part.trim();
+            int eq = trimmed.indexOf('=');
+            if (eq > 0 && eq < trimmed.length() - 1 && isClearanceCookie(trimmed.substring(0, eq)))
+                return true;
+        }
+        return false;
+    }
 
     public CustomInterceptor(@Nullable Context context, boolean logRequests) {
         this.context = context;

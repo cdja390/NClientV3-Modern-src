@@ -29,6 +29,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -107,6 +108,10 @@ public final class TurnstileDialog {
         ws.setAllowFileAccess(false);
         ws.setAllowContentAccess(false);
         webView.setBackgroundColor(Color.TRANSPARENT);
+        // 4.7.1: the widget lives in a challenges.cloudflare.com frame inside an nhentai.net page;
+        // without third-party cookies it can keep re-verifying instead of handing back a token.
+        CookieManager.getInstance().setAcceptCookie(true);
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {

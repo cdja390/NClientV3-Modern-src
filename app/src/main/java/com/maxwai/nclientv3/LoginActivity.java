@@ -7,8 +7,10 @@ import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.net.Uri;
 import android.webkit.CookieManager;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -47,7 +49,12 @@ import java.util.concurrent.Executors;
  * created for this device.
  */
 public class LoginActivity extends GeneralActivity {
-    static final long WEB_LOGIN_TIMEOUT_MS = 60_000;
+    /**
+     * 4.7.1: idle timeout of the WebView login, restarted on every page load. The 4.7.0 60 s total
+     * ran out while the user was still passing Cloudflare and typing.
+     */
+    static final long WEB_LOGIN_TIMEOUT_MS = 180_000;
+    private static final int MAX_LOGIN_REDIRECTS = 3;
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     CookieWaiter waiter;
@@ -204,15 +211,11 @@ public class LoginActivity extends GeneralActivity {
                     + ((System.nanoTime() - t0) / 1_000_000) + " ms");
                 runOnUiThread(() -> setStatus(getString(R.string.login_status_signing_in)));
                 AuthApi.LoginTokens tokens = AuthApi.login(this, username, password, pow, nonce, captchaToken);
-                // Same storage path as the WebView login: cookie jar + AuthStore.saveUserToken,
-                // expiry read from the token's exp claim.
-                Login.importCookieHeader(this, Login.LOGIN_COOKIE + "=" + tokens.accessToken);
-                if (AuthStore.getUserToken(this) == null) {
-                    // importCookieHeader only stores when the cookie parses; make sure it is kept.
-                    AuthStore.saveUserToken(this, tokens.accessToken,
-                        System.currentTimeMillis() + java.util.concurrent.TimeUnit.DAYS.toMillis(30));
-                    Login.restorePersistedAccessToken(this);
-                }
+                // Same storage path as the WebView login (cookie jar + AuthStore, expiry from the
+                // exp claim). 4.7.1: the refresh token and the returned profile are kept too.
+                Login.saveLoginTokens(this, tokens);
+                LogUtility.d("Login: native login OK, profile " + (Login.getUser() != null)
+                    + ", refresh token " + (tokens.refreshToken != null));
                 runOnUiThread(this::onLoginSucceeded);
             } catch (AuthApi.ApiException e) {
                 runOnUiThread(() -> {
@@ -229,14 +232,19 @@ public class LoginActivity extends GeneralActivity {
         });
     }
 
+    /**
+     * 4.7.1: closes the screen like yosefario's finalizeLogin. 4.7.0 stayed on the form with only a
+     * status line changed, which read as "stuck after the captcha"; the API key can still be
+     * created from this screen later (the button shows while signed in).
+     */
     private void onLoginSucceeded() {
         setBusy(false);
+        if (isFinishing() || isDestroyed()) return;
         if (passwordField.getText() != null) passwordField.getText().clear();
         loadUser();
-        setStatus(getString(R.string.login_status_signed_in));
         Toast.makeText(this, R.string.login_status_signed_in, Toast.LENGTH_SHORT).show();
-        refreshSignedInState();
-        setStatus(getString(R.string.login_status_signed_in_key_hint));
+        setResult(RESULT_OK);
+        finish();
     }
 
     private void loadUser() {
@@ -289,14 +297,67 @@ public class LoginActivity extends GeneralActivity {
 
     // ---- WebView fallback (pre-4.7 behaviour plus a timeout) ----
 
+    private int loginRedirects;
+    @Nullable
+    private String staleAccessToken;
+
     private void startWebLogin() {
         if (busy) return;
         form.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
-        webView.loadUrl(Utility.getBaseUrl() + "login/");
+        loginRedirects = 0;
+        // A token left in the WebView by an older session must not count as a new sign-in.
+        staleAccessToken = cookieValue(CookieManager.getInstance().getCookie(Utility.getBaseUrl()), Login.LOGIN_COOKIE);
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                if (waiter != null) waiter.touch();
+                // After the Cloudflare check the site may land on its home page rather than the
+                // form; send the user back to /login until signed in (bounded, no loops).
+                if (shouldRedirectToLogin(url, loginRedirects, MAX_LOGIN_REDIRECTS)
+                    && !hasNewAccessToken()) {
+                    loginRedirects++;
+                    view.loadUrl(Utility.getBaseUrl() + "login");
+                }
+            }
+        });
+        // No trailing slash: /login/ is a 308 to /login on the rebuilt site.
+        webView.loadUrl(Utility.getBaseUrl() + "login");
         stopWaiter();
         waiter = new CookieWaiter();
         waiter.start();
+    }
+
+    /** Pages of the sign-in flow the WebView may stay on; anything else is sent back to /login. */
+    static boolean shouldRedirectToLogin(@Nullable String url, int redirectsDone, int maxRedirects) {
+        if (url == null || redirectsDone >= maxRedirects) return false;
+        Uri uri = Uri.parse(url);
+        String host = uri.getHost();
+        if (host == null || !Utility.isSiteHost(host)) return false;
+        String path = uri.getPath() == null ? "/" : uri.getPath();
+        return !(path.startsWith("/login") || path.startsWith("/register") || path.startsWith("/reset")
+            || path.startsWith("/cdn-cgi/"));
+    }
+
+    @Nullable
+    static String cookieValue(@Nullable String cookieHeader, @NonNull String name) {
+        if (cookieHeader == null) return null;
+        for (String part : cookieHeader.split(";")) {
+            String trimmed = part.trim();
+            int eq = trimmed.indexOf('=');
+            if (eq <= 0) continue;
+            if (name.equals(trimmed.substring(0, eq))) {
+                String value = trimmed.substring(eq + 1).trim();
+                return value.isEmpty() ? null : value;
+            }
+        }
+        return null;
+    }
+
+    boolean hasNewAccessToken() {
+        String token = cookieValue(CookieManager.getInstance().getCookie(Utility.getBaseUrl()), Login.LOGIN_COOKIE);
+        return token != null && !token.equals(staleAccessToken);
     }
 
     private void stopWebLogin(boolean timedOut) {
@@ -318,29 +379,43 @@ public class LoginActivity extends GeneralActivity {
     class CookieWaiter extends Thread {
         // Utility.threadSleep swallows the interrupt, so cancellation also needs a flag.
         volatile boolean cancelled;
+        private volatile long lastActivity = System.currentTimeMillis();
+
+        void touch() {
+            lastActivity = System.currentTimeMillis();
+        }
 
         @Override
         public void run() {
             CookieManager manager = CookieManager.getInstance();
-            long deadline = System.currentTimeMillis() + WEB_LOGIN_TIMEOUT_MS;
-            String cookies = "";
-            while (cookies == null || !cookies.contains("access_token")) {
-                Utility.threadSleep(100);
+            // 4.7.1: match the cookie by name (access_token, set HttpOnly by the site's /auth/login)
+            // instead of a substring, and ignore a token that was already there before.
+            while (!hasNewAccessToken()) {
+                Utility.threadSleep(150);
                 if (cancelled || isInterrupted()) return;
-                if (System.currentTimeMillis() > deadline) {
+                if (System.currentTimeMillis() - lastActivity > WEB_LOGIN_TIMEOUT_MS) {
                     runOnUiThread(() -> {
                         if (!isFinishing() && !isDestroyed()) stopWebLogin(true);
                     });
                     return;
                 }
-                cookies = manager.getCookie(Utility.getBaseUrl());
             }
             if (cancelled) return;
-            applyAllCookies(cookies);
-            runOnUiThread(LoginActivity.this::finish);
+            manager.flush();
+            applyAllCookies(manager.getCookie(Utility.getBaseUrl()));
+            LogUtility.d("Login: web login cookie imported, refresh token "
+                + (AuthStore.getRefreshToken(LoginActivity.this) != null));
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                Toast.makeText(LoginActivity.this, R.string.login_status_signed_in, Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
+                finish();
+            });
         }
 
         private void applyAllCookies(String cookieString) {
+            // importCookieHeader persists access_token (cookie jar + AuthStore) and, since 4.7.1,
+            // refresh_token (AuthStore), so the sign-in survives the access token's short life.
             Login.importCookieHeader(LoginActivity.this, cookieString);
             User.createUser(LoginActivity.this, null);
         }

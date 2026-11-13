@@ -43,6 +43,12 @@ public class ApiAuthInterceptor implements Interceptor {
             .header("User-Agent", "NClient/4.5.0 (https://github.com/ILFforever/NClientV3)");
 
         String authorization = Login.getUserTokenAuthorizationHeader();
+        // 4.7.1: the access token is short-lived; renew it from the refresh token before falling
+        // back to an API key or going anonymous.
+        if (authorization == null && AuthStore.getRefreshToken(context) != null
+            && !request.url().encodedPath().startsWith("/api/v2/auth/")
+            && Login.refreshUserToken(context))
+            authorization = Login.getUserTokenAuthorizationHeader();
         boolean usingApiKey = false;
         boolean favoritesRequest = request.url().encodedPath().contains("/favorite");
         if (authorization == null && AuthStore.hasValidApiKey(context)) {
@@ -57,6 +63,15 @@ public class ApiAuthInterceptor implements Interceptor {
         Request authenticated = r.header("Authorization", authorization)
             .build();
         Response response = chain.proceed(authenticated);
+        if (!usingApiKey && response.code() == 401 && AuthStore.getRefreshToken(context) != null
+            && Login.refreshUserToken(context)) {
+            // 4.7.1: one retry with the renewed token before the session is declared expired.
+            String renewed = Login.getUserTokenAuthorizationHeader();
+            if (renewed != null && !renewed.equals(authorization)) {
+                response.close();
+                response = chain.proceed(r.header("Authorization", renewed).build());
+            }
+        }
         if (favoritesRequest)
             LogUtility.d("Favorites API response: " + response.code() + " "
                 + response.request().url().encodedPath());
@@ -67,7 +82,10 @@ public class ApiAuthInterceptor implements Interceptor {
             } else if (response.isSuccessful()) {
                 AuthStore.setApiKeyValidation(context, true);
             }
-        } else if (rejected) {
+        } else if (response.code() == 401 && AuthStore.getRefreshToken(context) == null) {
+            // 4.7.1: only 401 means the token is dead, and only once no refresh token is left (a
+            // refresh that failed on the network keeps it for the next try). A 403 from /api/v2/
+            // is a permission, PoW or Cloudflare answer; treating it as expiry signed users out.
             // A user token the server no longer accepts. Clearing it here rather than at each
             // call site is what stops the app from looping on a dead session: every later
             // Login.canAccessAuthenticatedApi check then reports the truth, and callers take

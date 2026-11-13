@@ -14,6 +14,8 @@ public final class AuthStore {
     private static final String KEY_VALID = "valid";
     private static final String KEY_USER_TOKEN = "token";
     private static final String KEY_USER_TOKEN_EXPIRY = "expires_at";
+    /** 4.7.1: nhentai's rotating refresh token, kept so a short-lived access token can be renewed. */
+    private static final String KEY_REFRESH_TOKEN = "refresh_token";
 
     private AuthStore() {
     }
@@ -45,10 +47,27 @@ public final class AuthStore {
         String token = preferences.getString(KEY_USER_TOKEN, null);
         long expiresAt = preferences.getLong(KEY_USER_TOKEN_EXPIRY, 0);
         if (token == null || token.trim().isEmpty() || expiresAt <= System.currentTimeMillis()) {
-            clearUserToken(context);
+            // Only the access token is dropped: the refresh token outlives it and is what renews it.
+            if (token != null)
+                preferences.edit().remove(KEY_USER_TOKEN).remove(KEY_USER_TOKEN_EXPIRY).commit();
             return null;
         }
         return token.trim();
+    }
+
+    public static void saveRefreshToken(@NonNull Context context, @Nullable String refreshToken) {
+        if (refreshToken == null || refreshToken.trim().isEmpty()) return;
+        getUserTokenPreferences(context).edit().putString(KEY_REFRESH_TOKEN, refreshToken.trim()).commit();
+    }
+
+    @Nullable
+    public static String getRefreshToken(@NonNull Context context) {
+        String token = getUserTokenPreferences(context).getString(KEY_REFRESH_TOKEN, null);
+        return token == null || token.trim().isEmpty() ? null : token.trim();
+    }
+
+    public static void clearRefreshToken(@NonNull Context context) {
+        getUserTokenPreferences(context).edit().remove(KEY_REFRESH_TOKEN).commit();
     }
 
     public static long getUserTokenExpiry(@NonNull Context context) {

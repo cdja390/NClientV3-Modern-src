@@ -11,6 +11,7 @@ import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.api.components.Tag;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.components.CustomCookieJar;
+import com.maxwai.nclientv3.loginapi.AuthApi;
 import com.maxwai.nclientv3.loginapi.LoadTags;
 import com.maxwai.nclientv3.loginapi.User;
 import com.maxwai.nclientv3.utility.LogUtility;
@@ -28,6 +29,10 @@ import org.json.JSONObject;
 
 public class Login {
     public static final String LOGIN_COOKIE = "access_token";
+    /** Set by nhentai's web login next to access_token (HttpOnly, Path=/); 4.7.1 keeps it in AuthStore. */
+    public static final String REFRESH_COOKIE = "refresh_token";
+    private static final long REFRESH_FAILURE_COOLDOWN_MS = 30_000;
+    private static long lastFailedRefresh;
     public static HttpUrl BASE_HTTP_URL;
     private static final List<UserListener> userListeners = new CopyOnWriteArrayList<>();
     private static User user;
@@ -87,7 +92,8 @@ public class Login {
      */
     public static synchronized boolean onSessionExpired(@NonNull Context context) {
         if (Global.client == null) return false;
-        if (!hasCookie(LOGIN_COOKIE) && AuthStore.getUserToken(context) == null) return false;
+        if (!hasCookie(LOGIN_COOKIE) && AuthStore.getUserToken(context) == null
+            && AuthStore.getRefreshToken(context) == null) return false;
         LogUtility.d("Session rejected upstream; clearing stored credentials");
         removeCookie(LOGIN_COOKIE);
         // removeCookie empties the in-memory cache wholesale; clearSession reloads what is still
@@ -160,6 +166,11 @@ public class Login {
         java.util.List<Cookie> cookieList = new java.util.ArrayList<>();
         for (String part : cookieHeader.split(";")) {
             Cookie cookie = Cookie.parse(BASE_HTTP_URL, part.trim() + "; Path=/");
+            if (cookie != null && REFRESH_COOKIE.equals(cookie.name())) {
+                // Only kept in AuthStore: it is exchanged through /api/v2/auth/refresh, never sent.
+                AuthStore.saveRefreshToken(context, cookie.value());
+                continue;
+            }
             if (cookie != null && LOGIN_COOKIE.equals(cookie.name())) {
                 cookie = persistentAccessToken(cookie);
                 AuthStore.saveUserToken(context, cookie.value(), cookie.expiresAt());
@@ -212,14 +223,68 @@ public class Login {
             java.util.Collections.singletonList(builder.build()));
     }
 
+    /**
+     * 4.7.1: stores what /api/v2/auth/login or /api/v2/auth/refresh returned: the access token
+     * (cookie jar + AuthStore, expiry from its exp claim), the rotating refresh token and, when the
+     * response carries it, the user profile, so the signed-in state shows without scraping HTML.
+     */
+    public static synchronized void saveLoginTokens(@NonNull Context context, @NonNull AuthApi.LoginTokens tokens) {
+        importCookieHeader(context, LOGIN_COOKIE + "=" + tokens.accessToken);
+        if (AuthStore.getUserToken(context) == null) {
+            AuthStore.saveUserToken(context, tokens.accessToken,
+                System.currentTimeMillis() + TimeUnit.DAYS.toMillis(30));
+            restorePersistedAccessToken(context);
+        }
+        AuthStore.saveRefreshToken(context, tokens.refreshToken);
+        lastFailedRefresh = 0;
+        User parsed = User.fromApi(tokens.user);
+        if (parsed != null) updateUser(parsed);
+    }
+
+    /**
+     * 4.7.1: renews the access token with the stored refresh token. Blocking; background threads
+     * only. Returns false (and keeps the stored state) on network errors; clears the refresh
+     * token only when the server rejects it.
+     */
+    public static synchronized boolean refreshUserToken(@NonNull Context context) {
+        String refreshToken = AuthStore.getRefreshToken(context);
+        if (refreshToken == null || Global.client == null || BASE_HTTP_URL == null) return false;
+        long now = System.currentTimeMillis();
+        if (now - lastFailedRefresh < REFRESH_FAILURE_COOLDOWN_MS) return false;
+        try {
+            AuthApi.LoginTokens tokens = AuthApi.refresh(context, refreshToken);
+            saveLoginTokens(context, tokens);
+            LogUtility.d("Login: access token refreshed");
+            return true;
+        } catch (AuthApi.ApiException e) {
+            lastFailedRefresh = now;
+            LogUtility.e("Login: refresh rejected: HTTP " + e.httpCode);
+            if (e.httpCode == 401) AuthStore.clearRefreshToken(context);
+            return false;
+        } catch (java.io.IOException | RuntimeException e) {
+            lastFailedRefresh = now;
+            LogUtility.e("Login: refresh failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** True while any nhentai user credential is held: access cookie, stored token or refresh token. */
+    public static boolean hasUserSession(@Nullable Context context) {
+        if (hasCookie(LOGIN_COOKIE)) return true;
+        Context c = context != null ? context : applicationContext;
+        if (c == null) return false;
+        return AuthStore.getUserToken(c) != null || AuthStore.getRefreshToken(c) != null;
+    }
+
     public static boolean canAccessAuthenticatedApi(@NonNull Context context) {
-        return getCookieValue(LOGIN_COOKIE) != null || AuthStore.getUserToken(context) != null
-            || AuthStore.hasValidApiKey(context);
+        return hasUserSession(context) || AuthStore.hasValidApiKey(context);
     }
 
     public static boolean isLogged(@Nullable Context context) {
-        boolean loggedIn = hasCookie(LOGIN_COOKIE);
-        LogUtility.d("Login cookie present: " + loggedIn);
+        // 4.7.1: an expired access token with a refresh token left is still a session; logging out
+        // here wiped the refresh token and was why sign-ins did not survive a restart.
+        boolean loggedIn = hasUserSession(context);
+        LogUtility.d("Login session present: " + loggedIn);
         if (loggedIn) {
             if (context != null) ensureUserLoaded(context);
             return true;
@@ -239,7 +304,7 @@ public class Login {
      * assume it is populated. Unlike {@link #isLogged(Context)} this never logs the user out.
      */
     public static void ensureUserLoaded(@NonNull Context context) {
-        if (user != null || !hasCookie(LOGIN_COOKIE)) return;
+        if (user != null || !(hasUserSession(context) || AuthStore.hasValidApiKey(context))) return;
         User.createUser(context, loaded -> {
             if (loaded != null) new LoadTags(context).start();
         });
