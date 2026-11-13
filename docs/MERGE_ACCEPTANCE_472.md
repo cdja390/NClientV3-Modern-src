@@ -2,7 +2,7 @@
 
 比较基线：本地 study b2ee7ed006e6b06790f1b23d1528c339f298f7b5。
 接手源码：feature/4.7，6028d6347ea1b830228bf6d030bc5b67d309379b（已有 P1）。
-代码实施负责人：codex:ab0b8b47。所有子任务只读。
+本记录保留实际测试结果与待验证项。
 
 ## 已确认的行为
 
@@ -77,7 +77,7 @@
 ## 本次 P7 构建（2026-11-13，Asia/Shanghai）
 
 - 使用 Zulu JDK 21 执行 `gradlew.bat --offline assemblePost28Debug testPost28DebugUnitTest assemblePost28Release`，三项成功。XML 140 tests / 0 failures / 0 errors / 0 skipped，LocalizationCompletenessTest 3/3。Debug 与 Release 的 Java 编译均通过 -Werror。
-- 最终产物 `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\release\NClientV3_4.7.2.apk`，18118233 字节，SHA-256 `FA85D897B2221BFAFFE93F5D0F47F0E20068ED5816215122E81082D6C76CB37A`。与 Gradle 原始 Release APK 字节相同。
+- 最终产物 `app\build\outputs\apk\post28\release\NClientV3_4.7.2.apk`，18118233 字节，SHA-256 `FA85D897B2221BFAFFE93F5D0F47F0E20068ED5816215122E81082D6C76CB37A`。与 Gradle 原始 Release APK 字节相同。
 - `aapt2 dump badging`：`com.IlFforever.nclientv3.clone`、`470200`、`4.7.2-Modern`、`NClientV3 2`。`apksigner verify` 报缺失签名清单，确认未签名。
 - DatabaseHelper、主库 Database、依赖、minify 和既有 NH User-Agent 均与接手时一致。资源编译仍报告原有的 update_version_format 和 upload_date_format 位置参数提示。
 - 28 个 JVM 矩阵条目通过。T27–T29、T31 有部分证据，N01–N07 及真机功能验收待完成。华为当前版本仅通过只读 ADB 核对，见第 10 节。
@@ -86,8 +86,8 @@
 
 - 首页无关键词、标签、语言或范围筛选时，启用 EH/EX 可切换「最近」和「热门（日榜）」。双选热门时第一页交替显示 NH 日榜和 EH/EX 热门榜，后续页读取 NH 日榜。仅 EH/EX 热门榜共一页，并应用 EH 全局分类和最低评分。仅 NH 恢复独立保存的排序。
 - 指定三项离线任务全部成功。测试 XML 146 tests / 0 failures / 0 errors / 0 skipped，LocalizationCompletenessTest 3/3。新增覆盖 NH 传输 URL、旧书签、筛选边界、两站顺序、EH/EX 地址和单页与分类评分行为。
-- Release `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\release\NClientV3_4.7.2.apk`，18119993 字节，SHA-256 `8F11901AD7EC8B127A4E0E33791EC95AA5A38AE52E290261DCE36A45DAB678B7`。核验包名 `com.IlFforever.nclientv3.clone`、`470200`、`4.7.2-Modern`，未签名。
-- Debug `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\debug\NClientV3_4.7.2-Modern_debug.apk`，24096491 字节，SHA-256 `5041C77E220FFD3C01FD89FB52086D8C734A51A389B24ED26523C3EB938FB911`。核验包名 `com.IlFforever.nclientv3.clone.debug`、`470200` 和既有 Debug 证书。覆盖更新和真机结果见 10.4。
+- Release `app\build\outputs\apk\post28\release\NClientV3_4.7.2.apk`，18119993 字节，SHA-256 `8F11901AD7EC8B127A4E0E33791EC95AA5A38AE52E290261DCE36A45DAB678B7`。核验包名 `com.IlFforever.nclientv3.clone`、`470200`、`4.7.2-Modern`，未签名。
+- Debug `app\build\outputs\apk\post28\debug\NClientV3_4.7.2-Modern_debug.apk`，24096491 字节，SHA-256 `5041C77E220FFD3C01FD89FB52086D8C734A51A389B24ED26523C3EB938FB911`。核验包名 `com.IlFforever.nclientv3.clone.debug`、`470200` 和既有 Debug 证书。覆盖更新和真机结果见 10.4。
 
 ## 正式版名称复验（2026-11-14，Asia/Shanghai）
 
@@ -259,7 +259,7 @@
 
 ### 10.6 小米 13 正式包核心验收（2026-11-14，Asia/Shanghai）
 
-- 用户签名后的 `D:\workcache\NClientV3-Modern-v4.7.2-Modern-label-signed.apk` 为 18234492 字节，SHA-256 `2DA5291951247C253E073435DB9744935A044EC5BDFAB7CA2ADE869BC83B8D79`。核验标签 `NClientV3 Modern`、`4.7.2-Modern` / `470200`、包名及 v3 签名。与改名后的未签名候选逐项比对，1276 个内容项完全一致，证书与小米已装的 4.7.0 正式包相同。
-- 升级前后分别导出手机 `Download/Backup_20261114_0140.zip` 和 `Download/Backup_20261114_0152.zip`。ADB 原位覆盖成功，设备 APK 哈希匹配，应用 ID 和首次安装时间一致。启动进入主页，显示新名称。
+- 用户签名后的 `NClientV3-Modern-v4.7.2.apk` 为 18234492 字节，SHA-256 `2DA5291951247C253E073435DB9744935A044EC5BDFAB7CA2ADE869BC83B8D79`。核验标签 `NClientV3 Modern`、`4.7.2-Modern` / `470200`、包名及 v3 签名。与改名后的未签名候选逐项比对，1276 个内容项完全一致，证书与小米已装的 4.7.0 正式包相同。
+- 升级前后分别通过应用的导出数据功能生成备份。ADB 原位覆盖成功，设备 APK 哈希匹配，应用 ID 和首次安装时间一致。启动进入主页，显示新名称。
 - 两份导出的 `Database.json` 逐表逐行比对，11 张表一致。包含收藏 254 条、历史 13 条、下载记录 1 条、续读 19 条和阅读统计 6 条。设置变化仅为版本更新和新增默认 NH 来源，正式包界面能查看 6 条阅读统计。原 EH 库无历史、收藏或下载记录，升级后导出可读，带记录的 EH 迁移待验。
 - 正式包选择 NH + EH 及热门（日榜），联网返回 1 / 20，前三行均为 NH、EH 交替排列。按用户要求，本轮仅核验签名、覆盖升级、已有数据和正式版热门首屏。其余项目保留原验收状态。

@@ -140,13 +140,13 @@
    - `ZoomActivity` 的 `changeClosePage(boolean)` 及尾部 7 个 `public` 方法（`autoTurnNextPage`、`getZoomCurrentPage`、`getZoomTotalPages`、`hideBars`、`showBars`、`setVolumeSide`、`getVolumeSide`）不可降级可见性或改名。
    - `MainActivity.changeLanguageRunnable` 对 `ModeType.SEARCH` 调用 `LanguageFilterHelper.reloadSearch(this)` 后直接 `return` 的写法不要“顺手优化”为条件返回，除非实测核对。
 4. **物理目录禁区**：
-   - 严禁写入或修改 `D:\workcache\NClientV3-publish`（保持 `91bae5f`）、`D:\workcache\DSH\nclient\fork\NClientV3`、`d:\workcache\NClientV3-ag` 或 `D:\keys` 下任何密钥文件。
+   - 工作范围限于源码工作区。发布仓、本机密钥和备份由各自维护流程管理。
 
 ---
 
 ## 5. 真机验证排障指南与 Git 分支收口状态
 
-### 5.1 Git 分支与提交结构（`D:\workcache\NClientV3-Modern-src`，当前分支 `migrate/source-v1`）
+### 5.1 Git 分支与提交结构（`NClientV3-Modern-src`，当前分支 `migrate/source-v1`）
 - `eb2e3b4`：上游 `ILFforever/NClientV3` main 基线
 - `8ad520c`：`feat(tag-i18n): snapshot Layer-2 Chinese tag translation and DB v16`（DSH 汉化与 DB v16）
 - `5c00f7c`：`feat(modern): migrate theme panel, Modern UI resources, and assets`（全部 Modern `res/`、`ThemePanelPreference`、`ThemeColors`、`GeneralActivity`）
@@ -157,7 +157,7 @@
 
 ### 5.2 `keystore.properties` 签名读取逻辑与打包任务特性（直接读取 `app/build.gradle.kts` L11-34、L62-70、L129-155、L203-229）
 - `app/build.gradle.kts` 检测 `rootProject.file("keystore.properties")` 是否存在（该文件已列入 `.gitignore`）；若不存在，Release 构建自动跳过 `signingConfig` 赋权，产出未签名包 `app/build/outputs/apk/post28/release/app-post28-release-unsigned.apk`。
-- 接入正式签名时，需在 `D:\workcache\NClientV3-Modern-src\keystore.properties` 提供精确的 4 个属性键：
+- 接入正式签名时，需在 `keystore.properties` 提供精确的 4 个属性键：
   ```properties
   storeFile=<release.jks 绝对或相对路径>
   storePassword=<keystore 密码>

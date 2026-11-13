@@ -2,8 +2,8 @@
 
 ## 1. 仓库与基线状态
 
-- **工作仓**：`D:\workcache\NClientV3-Modern-src`（分支：`migrate/source-v1`）
-- **原只读基线未动**：`D:\workcache\NClientV3-publish` 保持在 `91bae5f`；`D:\workcache\DSH\nclient\fork\NClientV3` 与 `d:\workcache\NClientV3-ag` 均未修改。
+- **源码工作区**：`NClientV3-Modern-src`（分支：`migrate/source-v1`）
+- **历史基线**。本次迁移以已有源码和发布仓记录为参照。
 - **提交栈**：
   1. `eb2e3b4`（上游基线 `ILFforever/NClientV3` main）
   2. `8ad520c` `feat(tag-i18n): snapshot Layer-2 Chinese tag translation and DB v16`
@@ -34,7 +34,7 @@
 - 通过脚本对比 `NClientV3-publish/decoded` 全部非合成 `.method` 与当前 Java 源码（含 `ThemePanelPreference.smali` 中空返回的死方法 `tintPreview` 排查确认）。
 
 ### 2.4 构建、单测与 APK 产物核验结果
-在完成全部源码修改后（未再修改任何源码/资源文件，随后等价提交为 `5f54833`），于 `D:\workcache\NClientV3-Modern-src` 实测通过：
+在完成全部源码修改后（未再修改任何源码/资源文件，随后等价提交为 `5f54833`），于 `NClientV3-Modern-src` 实测通过：
 1. `cmd /c "gradlew.bat assemblePost28Debug testPost28DebugUnitTest --console=plain < nul"` → `BUILD SUCCESSFUL`（Java 编译启用 `-Xlint:unchecked -Werror`，无警告无报错）
    - `FavoriteSyncManagerTest`：17/17 通过（`skipped=0`, `failures=0`, `errors=0`）
    - `UtilityHostTest`：6/6 通过（`skipped=0`, `failures=0`, `errors=0`）
@@ -49,7 +49,7 @@
 以下事项因涉及正式密钥、真机环境或仓库权限，留待后续执行：
 
 1. **正式密钥签名打包**
-   - 在 `D:\workcache\NClientV3-Modern-src\keystore.properties` 填入正式签名配置：
+   - 在 `keystore.properties` 填入正式签名配置：
      ```properties
      storeFile=<正式 release.jks 路径>
      storePassword=<密钥库密码>

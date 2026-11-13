@@ -7,11 +7,9 @@ body:
       label: Checklist
       description: Please confirm that you have done following steps.
       options:
-        - label: I have looked at the common issues and ways to fix them in the [wiki](https://github.com/maxwai/NClientV3/wiki)
+        - label: I have checked the installation and upgrade steps in the project README
           required: true
         - label: I have searched the existing issues for the same bug
-          required: true
-        - label: I have attached the log file as an attachment to this issue
           required: true
   - type: textarea
     attributes:
@@ -59,6 +57,6 @@ body:
   - type: textarea
     attributes:
       label: Additional context
-      description: Add any other context about the problem here.
+      description: Include the selected sources and any relevant log excerpt. Remove cookies, tokens, account details, and personal paths before attaching logs.
     validations:
       required: false

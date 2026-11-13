@@ -2,23 +2,12 @@
 
 ## Supported Versions
 
-Only the latest version is supported. The `pre28` versions are also not supported.
+Security reports are accepted for the latest signed `post28` release of NClientV3 Modern. Include the app version, package name, and Android version when reporting.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please open a private security report in the [Security tab](https://github.com/maxwai/NClientV3/security) of the repo or send an email to [security.penny394@passmail.net](mailto:security.penny394@passmail.net) Please do not create a public issue for the vulnerability.
+Use GitHub's private report form for a security issue in this project. [Report privately](https://github.com/cdja390/NClientV3-Modern-src/security/advisories/new)
 
-Your email should include the following information:
+Describe the affected feature, the impact, and the smallest steps needed to reproduce it. Redact credentials, cookies, and personal data in any attached evidence. Reports in Chinese or English are welcome.
 
-- A description of the vulnerability
-- Steps to reproduce the vulnerability
-- Possible impact of the vulnerability
-- Any suggested mitigation or remediation steps
-
-We will respond to your email as soon as possible and work with you to address any security issues.
-
-If there isn't a response within 5 working days (considering public holidays in Germany), please send a follow-up post or email, depending on how you reported the vulnerability.
-
-## Language
-
-All reports must be done in English
+Use the issue tracker for ordinary bugs and feature requests. [Project issues](https://github.com/cdja390/NClientV3-Modern-src/issues)
