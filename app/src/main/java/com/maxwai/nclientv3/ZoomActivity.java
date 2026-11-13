@@ -300,6 +300,7 @@ public class ZoomActivity extends GeneralActivity {
     private void changeSide() {
         getSharedPreferences("Settings", 0).edit().putBoolean(VOLUME_SIDE_KEY, side = !side).apply();
         Toast.makeText(this, side ? R.string.next_page_volume_up : R.string.next_page_volume_down, Toast.LENGTH_SHORT).show();
+        invalidateOptionsMenu();
     }
 
     public void changeClosePage(boolean next) {
