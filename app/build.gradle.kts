@@ -17,8 +17,8 @@ val keystoreProperties = Properties().apply {
 }
 
 val majorVersion = 4
-val minorVersion = 5
-val patchVersion = 1
+val minorVersion = 6
+val patchVersion = 0
 val buildVersion = 0
 val version = "${majorVersion}.${minorVersion}.${patchVersion}-Modern"
 
