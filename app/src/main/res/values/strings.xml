@@ -527,4 +527,7 @@
     <string name="nothing_shared">Nothing to open</string>
     <!-- Dynamic colour preset (4.6.0) -->
     <string name="theme_color_dynamic">Dynamic (wallpaper)</string>
+    <!-- Hide bottom navigation (4.6.0) -->
+    <string name="hide_bottom_nav_title">Hide bottom navigation bar</string>
+    <string name="hide_bottom_nav_summary">Hide the floating tab bar on Browse, Downloads, Favorites and History. Use the side drawer to switch pages. The reader\'s page bar is not affected.</string>
 </resources>

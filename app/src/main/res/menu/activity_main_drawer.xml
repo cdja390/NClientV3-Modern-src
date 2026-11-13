@@ -4,6 +4,11 @@
     tools:showIn="navigation_view">
     <group android:checkableBehavior="none">
         <item
+            android:id="@+id/nav_browse"
+            android:icon="@drawable/ic_home"
+            android:title="@string/nav_browse"
+            android:visible="false" />
+        <item
             android:id="@+id/downloaded"
             android:icon="@drawable/ic_file"
             android:title="@string/downloaded_manga" />

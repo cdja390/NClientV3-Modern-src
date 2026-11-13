@@ -27,11 +27,13 @@ public final class BarSize {
         final int iconDp = 22;
         final int labelSp = 11;
         final int switchH = 44;
-        final int switchBottom = 86; // 10 + 64 + 12
-        final int listPadWithSwitcher = 148;
-        final int listPadWithoutSwitcher = 96;
-
         View nav = activity.findViewById(R.id.bottom_nav);
+        // 4.6.0: with the bar hidden by the user the page switcher and list sit near the bottom.
+        final boolean userHidden = BottomNavRouter.isHiddenByUser(nav);
+        final int switchBottom = userHidden ? 16 : 86; // 10 + 64 + 12
+        final int listPadWithSwitcher = userHidden ? 76 : 148;
+        final int listPadWithoutSwitcher = userHidden ? 24 : 96;
+
         if (nav != null && nav.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
             ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) nav.getLayoutParams();
             int h = Math.round(barH * d);

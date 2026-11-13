@@ -186,7 +186,7 @@ public class MainActivity extends BaseActivity
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START))
                     drawerLayout.closeDrawer(GravityCompat.START);
-                else if (bottomNavigationView != null && bottomNavigationView.getVisibility() == View.VISIBLE)
+                else if (modeType == ModeType.NORMAL) // 4.6.0: not bar visibility, the bar may be hidden by the user
                     moveTaskToBack(true);
                 else {
                     setEnabled(false);
@@ -200,12 +200,12 @@ public class MainActivity extends BaseActivity
     private void manageDrawer() {
         if (modeType != ModeType.NORMAL) {
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-            bottomNavigationView.setVisibility(View.GONE);
+            BottomNavRouter.applyUserVisibility(bottomNavigationView, false);
         } else {
             ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
             drawerLayout.addDrawerListener(toggle);
             toggle.syncState();
-            bottomNavigationView.setVisibility(View.VISIBLE);
+            BottomNavRouter.applyUserVisibility(bottomNavigationView, true);
         }
     }
 

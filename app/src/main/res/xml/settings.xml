@@ -24,6 +24,7 @@
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/navigation_settings" app:iconSpaceReserved="false">
         <ListPreference android:entries="@array/bar_size_entries" android:title="@string/bar_size" android:key="bar_size" android:summary="@string/bar_size_summary" android:defaultValue="m" android:entryValues="@array/bar_size_values" app:iconSpaceReserved="false" app:isPreferenceVisible="false" app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat android:title="@string/hide_bottom_nav_title" android:key="hide_bottom_nav" android:summary="@string/hide_bottom_nav_summary" android:defaultValue="false" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/title_change_page_buttons" android:key="@string/preference_key_change_page_buttons" android:defaultValue="true" app:iconSpaceReserved="false" />
         <SeekBarPreference android:max="100" android:title="@string/history_size" android:key="@string/preference_key_max_history_size" android:summary="@string/history_size_summary" android:defaultValue="25" app:iconSpaceReserved="false" app:showSeekBarValue="true" />
         <Preference android:title="@string/navigation_settings_per_screen" android:key="@string/preference_key_col_screen" app:iconSpaceReserved="false" />

@@ -392,4 +392,7 @@
     <string name="nothing_shared">没有可打开的内容</string>
     <!-- Dynamic colour preset (4.6.0) -->
     <string name="theme_color_dynamic">动态取色（跟随壁纸）</string>
+    <!-- Hide bottom navigation (4.6.0) -->
+    <string name="hide_bottom_nav_title">隐藏底部导航栏</string>
+    <string name="hide_bottom_nav_summary">隐藏浏览、已下载、收藏、历史页底部的悬浮导航栏，改用侧边抽屉切换页面。阅读器的翻页栏不受影响。</string>
 </resources>

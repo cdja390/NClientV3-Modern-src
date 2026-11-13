@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="liquid_slot" type="id" />
+    <item name="hidden_by_user" type="id" />
 </resources>

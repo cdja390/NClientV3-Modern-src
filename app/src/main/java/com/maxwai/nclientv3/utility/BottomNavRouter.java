@@ -167,7 +167,40 @@ public class BottomNavRouter implements
         if (a == null) return false;
         if (SwipeTabs.rank(a.getClass()) < 0) return false;
         View nav = a.findViewById(R.id.bottom_nav);
-        return nav != null && nav.getVisibility() == View.VISIBLE;
+        return nav != null && (nav.getVisibility() == View.VISIBLE || isHiddenByUser(nav));
+    }
+
+    /** 4.6.0: "Hide bottom navigation bar" setting (key hide_bottom_nav, default off). */
+    public static boolean isHiddenByUser(Context ctx) {
+        return ctx != null && ctx.getSharedPreferences("Settings", 0).getBoolean("hide_bottom_nav", false);
+    }
+
+    /** True when the bar is gone only because of the setting, i.e. it would otherwise show. */
+    public static boolean isHiddenByUser(View nav) {
+        return nav != null && Boolean.TRUE.equals(nav.getTag(R.id.hidden_by_user));
+    }
+
+    /**
+     * 4.6.0: shows or hides bottom_nav. {@code wanted} says whether the screen would show the bar;
+     * the setting can still hide it. Keyed on bottom_nav only - never on page_switcher, whose id
+     * the reader's page bar shares.
+     */
+    public static void applyUserVisibility(View nav, boolean wanted) {
+        if (nav == null) return;
+        boolean hide = wanted && isHiddenByUser(nav.getContext());
+        nav.setTag(R.id.hidden_by_user, hide ? Boolean.TRUE : null);
+        nav.setVisibility(wanted && !hide ? View.VISIBLE : View.GONE);
+    }
+
+    private static void refreshUserVisibility(Activity activity, View nav) {
+        boolean wanted = nav.getVisibility() == View.VISIBLE || isHiddenByUser(nav);
+        if (wanted) applyUserVisibility(nav, true);
+        View nv = activity.findViewById(R.id.nav_view);
+        if (nv instanceof com.google.android.material.navigation.NavigationView) {
+            MenuItem browse = ((com.google.android.material.navigation.NavigationView) nv)
+                .getMenu().findItem(R.id.nav_browse);
+            if (browse != null) browse.setVisible(isHiddenByUser(nav));
+        }
     }
 
     private static void applyStayTransition(Activity a) {
@@ -301,6 +334,10 @@ public class BottomNavRouter implements
             public boolean onNavigationItemSelected(MenuItem item) {
                 closeDrawer(activity);
                 int id = item.getItemId();
+                if (id == R.id.nav_browse) {
+                    switchTo(activity, MainActivity.class);
+                    return true;
+                }
                 if (id == R.id.downloaded) {
                     if (activity instanceof LocalActivity) return true;
                     switchTo(activity, LocalActivity.class);
@@ -373,6 +410,7 @@ public class BottomNavRouter implements
         View v = activity.findViewById(R.id.bottom_nav);
         if (!(v instanceof BottomNavigationView)) return;
         final BottomNavigationView bar = (BottomNavigationView) v;
+        refreshUserVisibility(activity, bar);
 
         final BottomNavRouter router = new BottomNavRouter(activity, bar, selectedId);
         router.adjusting = true;
@@ -437,6 +475,9 @@ public class BottomNavRouter implements
         View v = activity.findViewById(R.id.bottom_nav);
         if (!(v instanceof BottomNavigationView)) return;
         BottomNavigationView bar = (BottomNavigationView) v;
+        refreshUserVisibility(activity, bar);
+        BarSize.apply(activity);
+        setupPermanentDrawerButton(activity);
 
         Object tag = bar.getTag(R.id.liquid_slot);
         if (!(tag instanceof BottomNavRouter)) {
@@ -561,7 +602,7 @@ public class BottomNavRouter implements
     public static void setupPermanentDrawerButton(final Activity activity) {
         if (activity == null) return;
         View nav = activity.findViewById(R.id.bottom_nav);
-        if (nav != null && nav.getVisibility() != View.VISIBLE) return;
+        if (nav != null && nav.getVisibility() != View.VISIBLE && !isHiddenByUser(nav)) return;
 
         View tb = activity.findViewById(R.id.toolbar);
         if (!(tb instanceof Toolbar)) return;
