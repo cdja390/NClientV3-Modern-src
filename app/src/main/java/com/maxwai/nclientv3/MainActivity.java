@@ -186,6 +186,8 @@ public class MainActivity extends BaseActivity
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START))
                     drawerLayout.closeDrawer(GravityCompat.START);
+                else if (bottomNavigationView != null && bottomNavigationView.getVisibility() == View.VISIBLE)
+                    moveTaskToBack(true);
                 else {
                     setEnabled(false);
                     getOnBackPressedDispatcher().onBackPressed();
