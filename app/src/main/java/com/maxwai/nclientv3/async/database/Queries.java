@@ -6,6 +6,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,6 +28,7 @@ import com.maxwai.nclientv3.components.classes.Bookmark;
 import com.maxwai.nclientv3.components.status.Status;
 import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.settings.TagV2;
 import com.maxwai.nclientv3.utility.LogUtility;
 
@@ -37,9 +39,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 @SuppressLint("Range")
@@ -296,7 +301,8 @@ public class Queries {
             "`type` TINYINT(1) NOT NULL , " +
             "`count` INT NOT NULL," +
             "`status` TINYINT(1) NOT NULL," +
-            "`online` TINYINT(1) NOT NULL DEFAULT 0);";
+            "`online` TINYINT(1) NOT NULL DEFAULT 0," +
+            "`name_zh` TEXT);";
 
         static final String IDTAG = "idTag";
         static final String NAME = "name";
@@ -304,17 +310,21 @@ public class Queries {
         static final String COUNT = "count";
         static final String STATUS = "status";
         static final String ONLINE = "online";
+        static final String NAME_ZH = "name_zh";
 
         /**
          * Convert a {@link Cursor} row to a {@link Tag}
          */
         public static Tag cursorToTag(Cursor cursor) {
+            int zhCol = cursor.getColumnIndex(NAME_ZH);
+            String nameZh = zhCol >= 0 && !cursor.isNull(zhCol) ? cursor.getString(zhCol) : null;
             return new Tag(
                 cursor.getString(cursor.getColumnIndex(NAME)),
                 cursor.getInt(cursor.getColumnIndex(COUNT)),
                 cursor.getInt(cursor.getColumnIndex(IDTAG)),
                 TagType.values[cursor.getInt(cursor.getColumnIndex(TYPE))],
-                TagStatus.values()[cursor.getInt(cursor.getColumnIndex(STATUS))]
+                TagStatus.values()[cursor.getInt(cursor.getColumnIndex(STATUS))],
+                nameZh
             );
         }
 
@@ -349,7 +359,7 @@ public class Queries {
             sql.append(" WHERE ");
             sql.append(COUNT).append(">=? ");                                        //min tag count
             if (!query.isEmpty())
-                sql.append("AND ").append(NAME).append(" LIKE ?");  //query if is used
+                sql.append("AND (").append(NAME).append(" LIKE ? OR ").append(NAME_ZH).append(" LIKE ?) ");
             if (type != null)
                 sql.append("AND ").append(TYPE).append("=? ");            //type if is used
             if (online)
@@ -364,7 +374,11 @@ public class Queries {
             //create parameter list
             ArrayList<String> list = new ArrayList<>();
             list.add("" + TagV2.getMinCount());               //minium tags (always provided)
-            if (!query.isEmpty()) list.add('%' + query + '%');    //query
+            if (!query.isEmpty()) {
+                String like = '%' + query + '%';
+                list.add(like);
+                list.add(like);
+            }
             if (type != null) list.add("" + type.getId());      //type of the tag
             LogUtility.d("FILTER URL: " + sql + ", ARGS: " + list);
             return db.rawQuery(sql.toString(), list.toArray(new String[0]));
@@ -467,15 +481,83 @@ public class Queries {
         }
 
         public static void insert(Tag tag, boolean replace) {
+            if (replace) {
+                ContentValues update = new ContentValues(3);
+                update.put(NAME, tag.getName());
+                update.put(TYPE, tag.getType().getId());
+                update.put(COUNT, tag.getCount());
+                int updated = db.update(TABLE_NAME, update, IDTAG + "=?", new String[]{Integer.toString(tag.getId())});
+                if (updated == 0) insertNew(tag);
+            } else {
+                insertNew(tag);
+            }
+            attachTranslation(tag);
+        }
 
-            ContentValues values = new ContentValues(5);
+        private static void insertNew(Tag tag) {
+            ContentValues values = new ContentValues(6);
             values.put(IDTAG, tag.getId());
             values.put(NAME, tag.getName());
             values.put(TYPE, tag.getType().getId());
             values.put(COUNT, tag.getCount());
             values.put(STATUS, tag.getStatus().ordinal());
+            if (tag.getNameZh() != null) values.put(NAME_ZH, tag.getNameZh());
+            db.insertWithOnConflict(TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_IGNORE);
+        }
 
-            db.insertWithOnConflict(TABLE_NAME, null, values, replace ? SQLiteDatabase.CONFLICT_REPLACE : SQLiteDatabase.CONFLICT_IGNORE);
+        private static void attachTranslation(Tag tag) {
+            if (tag.getNameZh() != null && !tag.getNameZh().isEmpty()) return;
+            try (Cursor c = db.query(TABLE_NAME, new String[]{NAME_ZH}, IDTAG + "=?",
+                new String[]{Integer.toString(tag.getId())}, null, null, null)) {
+                if (c.moveToFirst() && !c.isNull(0)) {
+                    String zh = c.getString(0);
+                    if (zh != null && !zh.isEmpty()) tag.setNameZh(zh);
+                }
+            }
+        }
+
+        public static void fillTranslations(int type, JSONObject entries, boolean exactName) throws JSONException {
+            if (db == null || !db.isOpen() || entries == null) return;
+            Map<String, Integer> ids = new HashMap<>();
+            try (Cursor c = db.rawQuery("SELECT " + IDTAG + "," + NAME + " FROM " + TABLE_NAME + " WHERE " + TYPE + "=?",
+                new String[]{Integer.toString(type)})) {
+                while (c.moveToNext()) {
+                    String key = exactName ? c.getString(1) : TagI18n.normalize(c.getString(1));
+                    ids.put(key, c.getInt(0));
+                }
+            }
+            db.beginTransaction();
+            SQLiteStatement stmt = db.compileStatement(
+                "UPDATE " + TABLE_NAME + " SET " + NAME_ZH + "=? WHERE " + IDTAG + "=? AND (" + NAME_ZH + " IS NULL OR " + NAME_ZH + "='')"
+            );
+            try {
+                Iterator<String> names = entries.keys();
+                while (names.hasNext()) {
+                    String name = names.next();
+                    String zh = TagI18n.cleanZh(entries.optString(name, ""));
+                    if (zh == null) continue;
+                    Integer id = ids.get(exactName ? name : TagI18n.normalize(name));
+                    if (id == null) continue;
+                    stmt.clearBindings();
+                    stmt.bindString(1, zh);
+                    stmt.bindLong(2, id);
+                    stmt.executeUpdateDelete();
+                }
+                db.setTransactionSuccessful();
+            } finally {
+                stmt.close();
+                db.endTransaction();
+            }
+        }
+
+        @Nullable
+        public static Tag findByTranslatedName(String nameZh) {
+            if (nameZh == null || nameZh.isEmpty() || db == null || !db.isOpen()) return null;
+            String sql = "SELECT * FROM " + TABLE_NAME + " WHERE " + NAME_ZH + "=? ORDER BY " + COUNT + " DESC LIMIT 1";
+            try (Cursor c = db.rawQuery(sql, new String[]{nameZh})) {
+                if (c.moveToFirst()) return cursorToTag(c);
+                return null;
+            }
         }
 
         public static void insert(Tag tag) {
@@ -557,9 +639,10 @@ public class Queries {
          * Return a list of tags which contain name and are of a certain type
          */
         public static List<Tag> search(String name, TagType type) {
-            String query = "SELECT * FROM " + TABLE_NAME + " WHERE " + NAME + " LIKE ? AND " + TYPE + "=?";
+            String query = "SELECT * FROM " + TABLE_NAME + " WHERE (" + NAME + " LIKE ? OR " + NAME_ZH + " LIKE ?) AND " + TYPE + "=?";
             LogUtility.d(query);
-            Cursor c = db.rawQuery(query, new String[]{'%' + name + '%', "" + type.getId()});
+            String like = '%' + name + '%';
+            Cursor c = db.rawQuery(query, new String[]{like, like, "" + type.getId()});
             return getTagsFromCursor(c);
         }
 
@@ -570,9 +653,10 @@ public class Queries {
          */
         public static Tag searchTag(String name, TagType type) {
             Tag tag = null;
-            String query = "SELECT * FROM " + TABLE_NAME + " WHERE " + NAME + " = ? AND " + TYPE + "=?";
+            String english = TagI18n.extractEnglishName(name);
+            String query = "SELECT * FROM " + TABLE_NAME + " WHERE " + TYPE + "=? AND (" + NAME + "=? OR " + NAME_ZH + "=? OR " + NAME + "=?) LIMIT 1";
             LogUtility.d(query);
-            try (Cursor c = db.rawQuery(query, new String[]{name, "" + type.getId()})) {
+            try (Cursor c = db.rawQuery(query, new String[]{"" + type.getId(), name, name, english})) {
                 if (c.moveToFirst()) tag = cursorToTag(c);
                 return tag;
             }

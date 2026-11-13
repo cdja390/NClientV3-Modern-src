@@ -25,7 +25,7 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     static final String DATABASE_NAME = "Entries.db";
-    private static final int DATABASE_VERSION = 15;
+    private static final int DATABASE_VERSION = 16;
     private final Context context;
 
     public DatabaseHelper(Context context1) {
@@ -97,7 +97,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // Left empty: existing users have no baseline, so their next sync unions as before
         // and records the baseline that later syncs merge against.
         if (oldVersion <= 14) db.execSQL(Queries.FavoriteSyncBaselineTable.CREATE_TABLE);
+        if (oldVersion <= 15) addTagNameZhColumn(db);
 
+    }
+
+    private void addTagNameZhColumn(SQLiteDatabase db) {
+        db.execSQL("ALTER TABLE Tags ADD COLUMN `name_zh` TEXT");
     }
 
     private void addStatusTables(SQLiteDatabase db) {

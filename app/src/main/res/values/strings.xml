@@ -21,6 +21,7 @@
     <string name="preference_key_site_mirror" translatable="false">site_mirror</string>
     <string name="preference_key_api_key" translatable="false">api_key</string>
     <string name="preference_key_language" translatable="false">key_language</string>
+    <string name="preference_key_translate_tags" translatable="false">translate_tags</string>
     <string name="preference_key_disable_lock" translatable="false">disable_lock</string>
     <string name="preference_key_max_history_size" translatable="false">max_history_size</string>
     <string name="preference_key_zoom_one_column" translatable="false">zoom_one_column</string>
@@ -194,6 +195,8 @@
     <string name="next_page_volume_down">Go to next page with down volume</string>
     <string name="change_title_type">Change title type</string>
     <string name="title_type_summary">Select the default title type for the galleries</string>
+    <string name="translate_tags">Translate tags</string>
+    <string name="translate_tags_summary">Show Chinese translation next to the original name</string>
     <string name="search_settings">Search settings</string>
     <string name="global_settings">Global settings</string>
     <string name="images_settings">Images settings</string>

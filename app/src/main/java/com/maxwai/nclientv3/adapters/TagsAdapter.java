@@ -104,7 +104,7 @@ public class TagsAdapter extends RecyclerView.Adapter<TagsAdapter.ViewHolder> im
     public void onBindViewHolder(@NonNull final TagsAdapter.ViewHolder holder, int position) {
         cursor.moveToPosition(position);
         final Tag ent = Queries.TagTable.cursorToTag(cursor);
-        holder.title.setText(ent.getName());
+        holder.title.setText(ent.getDisplayName());
         holder.count.setText(String.format(Locale.US, "%d", ent.getCount()));
         holder.master.setOnClickListener(v -> {
             switch (tagMode) {

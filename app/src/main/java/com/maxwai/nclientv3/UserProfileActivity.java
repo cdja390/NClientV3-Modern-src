@@ -23,6 +23,8 @@ import com.maxwai.nclientv3.adapters.RecentCommentAdapter;
 import com.maxwai.nclientv3.adapters.RecentFavoriteAdapter;
 import com.maxwai.nclientv3.api.InspectorV3;
 import com.maxwai.nclientv3.api.components.GenericGallery;
+import com.maxwai.nclientv3.api.components.Tag;
+import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.api.users.UserProfile;
 import com.maxwai.nclientv3.api.users.UserProfileFetcher;
 import com.maxwai.nclientv3.components.activities.GeneralActivity;
@@ -171,7 +173,8 @@ public class UserProfileActivity extends GeneralActivity {
         favoriteTags.setVisibility(has ? View.VISIBLE : View.GONE);
         for (String tag : tags) {
             Chip chip = (Chip) getLayoutInflater().inflate(R.layout.chip_layout, favoriteTags, false);
-            chip.setText(tag);
+            Tag dbTag = Queries.TagTable.getTagFromTagName(tag);
+            chip.setText(dbTag != null ? dbTag.getDisplayName() : tag);
             chip.setClickable(false);
             favoriteTags.addView(chip);
         }

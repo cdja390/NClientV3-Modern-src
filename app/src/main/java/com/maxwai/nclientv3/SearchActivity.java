@@ -333,7 +333,7 @@ public class SearchActivity extends GeneralActivity {
         List<Tag> allTags = Queries.TagTable.getAllTagOfType(type);
         String[] tagNames = new String[allTags.size()];
         int i = 0;
-        for (Tag t : allTags) tagNames[i++] = t.getName();
+        for (Tag t : allTags) tagNames[i++] = t.getDisplayName();
         autoComplete.setAdapter(new ArrayAdapter<>(SearchActivity.this, android.R.layout.simple_dropdown_item_1line, tagNames));
         loadedTag = type;
     }
@@ -366,7 +366,7 @@ public class SearchActivity extends GeneralActivity {
     }
 
     private void createChip() {
-        String name = autoComplete.getText().toString().toLowerCase(Locale.US);
+        String name = autoComplete.getText().toString().trim().toLowerCase(Locale.US);
         Tag tag = Queries.TagTable.searchTag(name, loadedTag);
         if (tag == null) tag = new Tag(name, 0, customId++, loadedTag, TagStatus.ACCEPTED);
         LogUtility.d("CREATED WITH ID: " + tag.getId());

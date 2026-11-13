@@ -20,6 +20,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.maxwai.nclientv3.BuildConfig;
 import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.async.database.DatabaseHelper;
+import com.maxwai.nclientv3.async.TranslateTags;
 import com.maxwai.nclientv3.async.downloader.DownloadGalleryV2;
 import com.maxwai.nclientv3.settings.Database;
 import com.maxwai.nclientv3.settings.Global;
@@ -56,6 +57,7 @@ public class CrashApplication extends Application {
         NetworkUtil.initConnectivity(this);
         TagV2.initMinCount(this);
         TagV2.initSortByName(this);
+        TranslateTags.startWork(this);
         DownloadGalleryV2.loadDownloads(this);
         registerActivityLifecycleCallbacks(new CustomActivityLifecycleCallback());
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {

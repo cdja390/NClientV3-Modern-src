@@ -9,9 +9,11 @@ import android.util.JsonToken;
 import android.util.JsonWriter;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.maxwai.nclientv3.api.enums.TagStatus;
 import com.maxwai.nclientv3.api.enums.TagType;
+import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.utility.LogUtility;
 
 import java.io.IOException;
@@ -31,6 +33,8 @@ public class Tag implements Parcelable {
         }
     };
     private String name;
+    @Nullable
+    private String nameZh;
     private int count, id;
     private TagType type;
     private TagStatus status = TagStatus.DEFAULT;
@@ -45,11 +49,16 @@ public class Tag implements Parcelable {
     }
 
     public Tag(String name, int count, int id, TagType type, TagStatus status) {
+        this(name, count, id, type, status, null);
+    }
+
+    public Tag(String name, int count, int id, TagType type, TagStatus status, @Nullable String nameZh) {
         this.name = name;
         this.count = count;
         this.id = id;
         this.type = type;
         this.status = status;
+        this.nameZh = nameZh;
     }
 
     public Tag(JsonReader jr) throws IOException {
@@ -89,6 +98,7 @@ public class Tag implements Parcelable {
             type = in.readParcelable(TagType.class.getClassLoader());
         }
         status = TagStatus.values()[in.readByte()];
+        nameZh = in.readString();
     }
 
     public String toQueryTag(TagStatus status) {
@@ -110,6 +120,20 @@ public class Tag implements Parcelable {
 
     public String getName() {
         return name;
+    }
+
+    @NonNull
+    public String getDisplayName() {
+        return TagI18n.formatDisplayName(name, nameZh);
+    }
+
+    @Nullable
+    public String getNameZh() {
+        return nameZh;
+    }
+
+    public void setNameZh(@Nullable String nameZh) {
+        this.nameZh = nameZh;
     }
 
     public int getCount() {
@@ -201,5 +225,6 @@ public class Tag implements Parcelable {
         parcel.writeInt(id);
         parcel.writeParcelable(type, flags);
         parcel.writeByte((byte) status.ordinal());
+        parcel.writeString(nameZh);
     }
 }

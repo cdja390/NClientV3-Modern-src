@@ -19,6 +19,8 @@ import android.util.DisplayMetrics;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.os.LocaleListCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
@@ -45,6 +47,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import me.zhanghai.android.fastscroll.FastScrollerBuilder;
@@ -74,7 +77,7 @@ public class Global {
     private static TitleType titleType;
     private static SortType sortType;
     private static LocalSortType localSortType;
-    private static boolean buttonChangePage, hideMultitask, enableBeta, volumeOverride, zoomOneColumn, keepHistory, lockScreen, onlyTag, showTitles, removeAvoidedGalleries, useRtl;
+    private static boolean buttonChangePage, hideMultitask, enableBeta, volumeOverride, zoomOneColumn, keepHistory, lockScreen, onlyTag, showTitles, removeAvoidedGalleries, useRtl, translateTags;
     private static DataUsageType usageMobile, usageWifi;
     private static String lastVersion, mirror;
     private static int maxHistory, columnCount, maxId, galleryWidth = -1, galleryHeight = -1;
@@ -96,6 +99,21 @@ public class Global {
 
     public static boolean isExactTagMatch() {
         return exactTagMatch;
+    }
+
+    public static boolean isTranslateTags() {
+        return translateTags;
+    }
+
+    public static void setTranslateTags(boolean translateTags) {
+        Global.translateTags = translateTags;
+    }
+
+    public static boolean isChineseLocale() {
+        LocaleListCompat appLocales = AppCompatDelegate.getApplicationLocales();
+        Locale locale = appLocales.isEmpty() ? Locale.getDefault() : appLocales.get(0);
+        if (locale == null) locale = Locale.getDefault();
+        return "zh".equals(locale.getLanguage());
     }
 
     public static int getFavoriteLimit(Context context) {
@@ -288,6 +306,12 @@ public class Global {
             x = Language.ALL.ordinal();
         }
         onlyLanguage = Language.values()[x];
+        String translateKey = context.getString(R.string.preference_key_translate_tags);
+        if (shared.contains(translateKey)) {
+            translateTags = shared.getBoolean(translateKey, false);
+        } else {
+            translateTags = isChineseLocale();
+        }
 
         Login.initLogin(context);
         initHttpClient(context);

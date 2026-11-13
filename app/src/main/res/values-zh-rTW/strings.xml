@@ -116,6 +116,8 @@
     <string name="next_page_volume_down">音量-切換下一頁</string>
     <string name="change_title_type">更改標題類型</string>
     <string name="title_type_summary">為圖庫選擇默認標題類型</string>
+    <string name="translate_tags">翻譯標籤</string>
+    <string name="translate_tags_summary">以「譯文 (原文)」形式顯示標籤</string>
     <string name="search_settings">搜尋設定</string>
     <string name="global_settings">全域設定</string>
     <string name="images_settings">圖像設定</string>

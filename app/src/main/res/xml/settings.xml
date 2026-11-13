@@ -11,6 +11,11 @@
             android:title="@string/change_language"
             app:iconSpaceReserved="false"
             app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            android:key="@string/preference_key_translate_tags"
+            android:title="@string/translate_tags"
+            android:summary="@string/translate_tags_summary"
+            app:iconSpaceReserved="false" />
         <ListPreference
             android:defaultValue="light"
             android:entries="@array/theme"

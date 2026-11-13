@@ -47,6 +47,7 @@ import com.maxwai.nclientv3.api.enums.SpecialTagIds;
 import com.maxwai.nclientv3.api.enums.TagStatus;
 import com.maxwai.nclientv3.api.enums.TagType;
 import com.maxwai.nclientv3.async.ScrapeTags;
+import com.maxwai.nclientv3.async.TranslateTags;
 import com.maxwai.nclientv3.async.VersionChecker;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.async.downloader.DownloadGalleryV2;
@@ -55,6 +56,7 @@ import com.maxwai.nclientv3.components.views.PageSwitcher;
 import com.maxwai.nclientv3.components.widgets.CustomGridLayoutManager;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.Login;
+import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.settings.TagV2;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
@@ -116,7 +118,13 @@ public class MainActivity extends BaseActivity
         }
     };
     final Runnable changeLanguageRunnable = () -> {
-        useNormalMode();
+        if (modeType == ModeType.TAG && inspector != null && inspector.getTag() != null) {
+            Tag tag = inspector.getTag();
+            inspector = InspectorV3.tagInspector(this, tag, 1, Global.getSortType(), resetDataset);
+            modeType = ModeType.TAG;
+        } else {
+            useNormalMode();
+        }
         inspector.start();
     };
     private DrawerLayout drawerLayout;
@@ -196,7 +204,7 @@ public class MainActivity extends BaseActivity
                 actionBar.setTitle(inspector.getSearchTitle());
                 break;
             case TAG:
-                actionBar.setTitle(inspector.getTag().getName());
+                actionBar.setTitle(inspector.getTag().getDisplayName());
                 break;
             case NORMAL:
                 actionBar.setTitle(R.string.app_name);
@@ -333,6 +341,7 @@ public class MainActivity extends BaseActivity
         if (Global.shouldCheckForUpdates(this))
             new VersionChecker(this, true);
         ScrapeTags.startWork(this);
+        TranslateTags.startWork(this);
         firstTime = false;
     }
 
@@ -401,7 +410,7 @@ public class MainActivity extends BaseActivity
             ranges = intent.getParcelableExtra(getPackageName() + ".RANGES");
         }
         HashSet<Tag> tags = null;
-        query = query.trim();
+        query = query == null ? "" : TagI18n.rewriteQuery(query.trim());
         if (advanced) {
             assert tagArrayList != null;//tags is always not null when advanced is set
             tags = new HashSet<>(tagArrayList);
@@ -552,7 +561,7 @@ public class MainActivity extends BaseActivity
 
         showLanguageIcon(menu.findItem(R.id.only_language));
 
-        menu.findItem(R.id.only_language).setVisible(modeType == ModeType.NORMAL);
+        menu.findItem(R.id.only_language).setVisible(modeType == ModeType.NORMAL || modeType == ModeType.TAG);
         menu.findItem(R.id.random_favorite).setVisible(modeType == ModeType.FAVORITE);
 
         initializeSearchItem(menu.findItem(R.id.search));

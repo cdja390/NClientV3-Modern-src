@@ -15,6 +15,7 @@ import com.maxwai.nclientv3.api.enums.TagStatus;
 import com.maxwai.nclientv3.api.enums.TagType;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.utility.LogUtility;
 
 import org.json.JSONArray;
@@ -71,10 +72,15 @@ public class ScrapeTags extends Worker {
         LogUtility.d("Scraping tags");
         try {
             newVersion = getNewVersionCode();
-            if (lastVersion > -1 && lastVersion >= newVersion) return Result.success();
+            if (lastVersion > -1 && lastVersion >= newVersion) {
+                TagI18n.applyBundled(getApplicationContext(), false);
+                return Result.success();
+            }
             List<Tag> tags = Queries.TagTable.getAllFiltered();
             fetchTags();
             for (Tag t : tags) Queries.TagTable.updateStatus(t.getId(), t.getStatus());
+            TagI18n.applyBundled(getApplicationContext(), true);
+            TranslateTags.startWork(getApplicationContext(), true);
         } catch (IOException | JSONException e) {
             LogUtility.w("Error updating Tags", e);
             return Result.failure();

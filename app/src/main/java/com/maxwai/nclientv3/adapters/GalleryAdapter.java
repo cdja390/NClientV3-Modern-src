@@ -190,7 +190,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
             for (int a = 0; a < tagCount; a++) {
                 final Tag tag = tagList.getTag(type, a);
                 Chip c = (Chip) inflater.inflate(R.layout.chip_layout, cg, false);
-                c.setText(tag.getName());
+                c.setText(tag.getDisplayName());
                 c.setOnClickListener(v -> {
                     Intent intent = new Intent(context, MainActivity.class);
                     intent.putExtra(context.getPackageName() + ".TAG", tag);

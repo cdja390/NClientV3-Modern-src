@@ -29,6 +29,7 @@ import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SeekBarPreference;
+import androidx.preference.SwitchPreferenceCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.maxwai.nclientv3.BuildConfig;
@@ -170,6 +171,16 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
 
         fillRoba();
 
+        {
+            Preference translateTags = Objects.requireNonNull(findPreference(getString(R.string.preference_key_translate_tags)));
+            if (!act.getSharedPreferences("Settings", 0).contains(getString(R.string.preference_key_translate_tags))) {
+                ((SwitchPreferenceCompat) translateTags).setChecked(Global.isTranslateTags());
+            }
+            translateTags.setOnPreferenceChangeListener((preference, newValue) -> {
+                Global.setTranslateTags((Boolean) newValue);
+                return true;
+            });
+        }
         {
             Preference apiKey = Objects.requireNonNull(findPreference(getString(R.string.preference_key_api_key)));
             updateApiKeySummary(apiKey);
