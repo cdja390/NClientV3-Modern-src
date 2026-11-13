@@ -106,6 +106,13 @@ public class EhFeedTest {
     }
 
     @Test
+    public void emptyParsedPageDoesNotAdvertiseAnotherPage() {
+        assertEquals(4, new EhFeed.Result(Collections.emptyList(), true).pageCount(4));
+        assertEquals(1, new EhFeed.Result(Collections.emptyList(), true).pageCount(0));
+        assertEquals(5, new EhFeed.Result(page(null, 1).items, true).pageCount(4));
+    }
+
+    @Test
     public void farPagesAreNotWalkedForever() throws Exception {
         EhFeed.Fetcher fetcher = url -> page("c", 1);
         EhFeed.UrlBuilder urls = c -> c == null ? "b" : "b&next=" + c;

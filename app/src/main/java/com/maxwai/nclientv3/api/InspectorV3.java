@@ -22,6 +22,12 @@ import com.maxwai.nclientv3.api.local.LocalGallery;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.ehentai.EhFeed;
 import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
+import com.maxwai.nclientv3.ehentai.EhSettings;
+import com.maxwai.nclientv3.source.GalleryIdentity;
+import com.maxwai.nclientv3.source.GallerySource;
+import com.maxwai.nclientv3.source.MergePage;
+import com.maxwai.nclientv3.source.MergeSource;
+import com.maxwai.nclientv3.source.SourceMerger;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.source.GalleryListParcel;
 import com.maxwai.nclientv3.source.RowCodec;
@@ -72,6 +78,9 @@ public class InspectorV3 extends Thread implements Parcelable {
     private InspectorResponse response;
     private WeakReference<Context> context;
     private String jsonResponse;
+    // Like upstream mergeSeen: a cloned inspector starts with its own set.
+    private final SourceMerger<GenericGallery> sourceMerger =
+        new SourceMerger<>(gallery -> GalleryIdentity.of(gallery).stableKey());
 
     protected InspectorV3(Parcel in) {
         sortType = SortType.values()[in.readByte()];
@@ -393,11 +402,7 @@ public class InspectorV3 extends Thread implements Parcelable {
         LogUtility.d("Finished download: " + url);
     }
 
-    /**
-     * 4.7.1: the main list can show nhentai, e-hentai or both (Settings &gt; gallery sources).
-     * Mixed pages follow yosefario-dev/NClientV3's InspectorV3.mergeAcross: page N of each source,
-     * interleaved, page count = the larger one. If e-hentai fails the nhentai page still shows.
-     */
+    /** 4.7.2: each merged source fails independently; only all-source failure aborts the page. */
     private void loadGalleries() throws IOException, InvalidResponseException {
         Context ctx = context.get();
         EhFeed.Mode mode = EhFeed.modeFor(ctx, requestType);
@@ -407,16 +412,29 @@ public class InspectorV3 extends Thread implements Parcelable {
             pageCount = eh.pageCount(page);
             return;
         }
-        createDocument();
-        parseDocument();
-        if (mode != EhFeed.Mode.BOTH || ctx == null) return;
-        try {
-            EhFeed.Result eh = EhFeed.load(ctx, query, tags, page);
-            galleries = EhFeed.merge(galleries, eh.items);
-            pageCount = Math.max(pageCount, eh.pageCount(page));
-        } catch (IOException | RuntimeException e) {
-            LogUtility.e("Merged list: e-hentai page " + page + " failed: " + e.getMessage());
+        if (mode != EhFeed.Mode.BOTH || ctx == null) {
+            createDocument();
+            parseDocument();
+            return;
         }
+        List<MergeSource<GenericGallery>> sources = new ArrayList<>(2);
+        sources.add(SourceMerger.source(GallerySource.NHENTAI, effectiveSort -> {
+            // Use the original NH transport/parser and isolate any partially parsed failure.
+            InspectorV3 nh = cloneInspector(ctx, null);
+            nh.sortType = effectiveSort;
+            nh.createUrl();
+            if (!nh.createDocument()) throw new IOException("nhentai list request failed");
+            nh.parseDocument();
+            return new MergePage<>(nh.galleries, nh.pageCount);
+        }));
+        sources.add(SourceMerger.source(GalleryIdentity.ehSource(EhSettings.useExhentai(ctx)), effectiveSort -> {
+            EhFeed.Result eh = EhFeed.load(ctx, query, tags, page);
+            return new MergePage<>(EhFeed.wrap(eh.items), eh.pageCount(page));
+        }));
+        MergePage<GenericGallery> merged = sourceMerger.merge(sources, sortType, page,
+            (source, failure) -> LogUtility.e("Merged list: " + source + " page " + page + " failed", failure));
+        galleries = new ArrayList<>(merged.items);
+        pageCount = merged.pageCount;
     }
 
     private void filterDocumentTags() {

@@ -70,3 +70,9 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 - Test: `source/SourceKeyTest`. JVM tests do not call `android.os.Parcel` (`isReturnDefaultValues`).
 
 - P1 handover verification: `docs/MERGE_ACCEPTANCE_472.md` retains all T01-T32, N01-N07 and device checks, with explicit Android Parcel limits and current user decisions. No P1 production code changed.
+
+## Files added or modified in 4.7.2 (P2, independent source merging)
+
+- New `source/MergeSource.java`, `MergePage.java`, `SourceMerger.java`, `SourceCapabilities.java`: request sort intersection, independent failures, last-error propagation, round-robin and source-key dedup; semantics from yosefario-dev/NClientV3 b2ee7ed (Apache-2.0).
+- `api/InspectorV3.java`: adapt the existing NH transport/parser and EH feed to the merger without changing stored sort. `ehentai/EhFeed.java`: empty parsed pages report the current page.
+- Tests: `source/SourceMergerTest` and additional `ehentai/EhFeedTest` empty-page case. Evidence and remaining device checks in `MERGE_ACCEPTANCE_472.md`.

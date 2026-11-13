@@ -176,7 +176,7 @@ public final class EhFeed {
         /** Page count to report for 1-based {@code page}: one more while e-hentai has a next page. */
         public int pageCount(int page) {
             int p = Math.max(1, page);
-            return hasNext ? p + 1 : p;
+            return !items.isEmpty() && hasNext ? p + 1 : p;
         }
     }
 

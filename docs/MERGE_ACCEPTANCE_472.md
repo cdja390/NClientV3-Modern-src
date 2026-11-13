@@ -30,6 +30,15 @@
 - 当前完整通过的新增矩阵条目：T32。T27、T28、T29、T31 有部分证据；其它条目按后续阶段逐项验证。无进度百分比。
 - N01–N07、真机项以及真实账号登录均未验收；历史手机版本不作为本次检查结果。
 
+## 本次 P2 验证（2026-11-13，Asia/Shanghai）
+
+- 新增 MergeSource / MergePage / SourceMerger / SourceCapabilities；InspectorV3 双来源请求逐个捕获异常，任一成功（包括空结果）即可返回，全部失败重抛最后 IOException 或包装最后其它异常。
+- NH 复用原请求和解析器，克隆后采用共同支持的排序并重新生成 URL；不修改保存的排序偏好。HTTP 非成功响应在合并模式中作为 NH 来源失败。
+- 页数取各成功来源最大值；EH 解析结果为空时报告当前页；来源键去重及轮流插入保留尾部。每个 Inspector 的 seen 独立，clone 不复制，第一页重置；不宣称跨站内容去重或跨页稳定去重。
+- 指定三任务通过，debug/release javac 实际重新编译，-Werror 未失败；本次 XML 112 tests / 0 failures / 0 errors / 0 skipped。SourceMergerTest 12，EhFeedTest 7，LocalizationCompletenessTest 2。
+- 本阶段 APK 18048121 字节，SHA-256 509863157FE5D1E915A9F877EB78E7DF424A79233468A9F163B8B336294C30F3。版本仍为 4.7.1，P7 升版。
+- T04、T06-T14、T32 共 11 个条目有完整 JVM 证据；T05 菜单接入待 P4。N01-N07、Android Parcel 和真机验收未完成。
+
 ## 逐项状态
 
 | ID | 本次状态 | 证据/限制 |
@@ -37,17 +46,17 @@
 | T01 | 待验证 | 后续阶段 |
 | T02 | 待验证 | 后续阶段 |
 | T03 | 待验证 | 后续阶段 |
-| T04 | 待验证 | 后续阶段 |
-| T05 | 待验证 | 后续阶段 |
-| T06 | 待验证 | 后续阶段 |
-| T07 | 待验证 | 后续阶段 |
-| T08 | 待验证 | 后续阶段 |
-| T09 | 待验证 | 后续阶段 |
-| T10 | 待验证 | 后续阶段 |
-| T11 | 待验证 | 后续阶段 |
-| T12 | 待验证 | 后续阶段 |
-| T13 | 待验证 | 后续阶段 |
-| T14 | 待验证 | 后续阶段 |
+| T04 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T05 | 部分验证 | 排序交集逻辑通过；P4 接入菜单 |
+| T06 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T07 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T08 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T09 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T10 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T11 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T12 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T13 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
+| T14 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T15 | 待验证 | 后续阶段 |
 | T16 | 待验证 | 后续阶段 |
 | T17 | 待验证 | 后续阶段 |
@@ -160,4 +169,3 @@
 10. 登录（《01》5.1.5 节）：全部 8 项。
 
 **出问题时：** 记录时间（北京时间）和截图。agent 只做只读的 logcat（tag `NCLIENTLOG`）。
-
