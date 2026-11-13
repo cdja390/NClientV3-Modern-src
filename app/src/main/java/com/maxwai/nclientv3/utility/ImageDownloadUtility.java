@@ -19,6 +19,7 @@ import com.bumptech.glide.load.resource.bitmap.Rotate;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.ImageViewTarget;
 import com.bumptech.glide.request.target.Target;
+import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.api.components.Gallery;
 import com.maxwai.nclientv3.components.GlideX;
 import com.maxwai.nclientv3.settings.Global;
@@ -149,6 +150,25 @@ public class ImageDownloadUtility {
 
     private static void loadLogo(ImageView imageView) {
         imageView.setImageDrawable(Global.getLogo(imageView.getResources()));
+    }
+
+    public static void loadAvatar(Activity activity, Uri url, ImageView imageView) {
+        if (activity == null || imageView == null || activity.isFinishing() || activity.isDestroyed()) {
+            return;
+        }
+        if (url == null) {
+            imageView.setImageResource(R.drawable.ic_person);
+            return;
+        }
+        RequestManager glide = GlideX.with(activity);
+        if (glide == null) {
+            return;
+        }
+        glide.load(url)
+            .placeholder(R.drawable.ic_person)
+            .error(R.drawable.ic_person)
+            .circleCrop()
+            .into(imageView);
     }
 
     public static void loadImage(Activity activity, Uri url, ImageView imageView) {

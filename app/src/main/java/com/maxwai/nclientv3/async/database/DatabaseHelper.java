@@ -34,6 +34,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     @Override
+    public void onConfigure(SQLiteDatabase db) {
+        super.onConfigure(db);
+        db.enableWriteAheadLogging();
+        try (Cursor c = db.rawQuery("PRAGMA busy_timeout = 3000", null)) {
+            if (c != null) {
+                c.moveToFirst();
+            }
+        }
+    }
+
+    @Override
     public void onCreate(SQLiteDatabase db) {
         createAllTables(db);
         Database.setDatabase(db);

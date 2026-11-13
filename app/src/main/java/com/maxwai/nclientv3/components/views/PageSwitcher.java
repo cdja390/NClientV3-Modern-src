@@ -121,6 +121,26 @@ public class PageSwitcher extends CardView {
     }
 
 
+    public boolean canTurn(int dir) {
+        if (changer == null) {
+            return false;
+        }
+        if (dir <= 0) {
+            return actualPage > 1;
+        }
+        return actualPage < totalPage;
+    }
+
+    public void turn(int dir) {
+        if (canTurn(dir)) {
+            if (dir <= 0) {
+                changer.onPrevClicked(this);
+            } else {
+                changer.onNextClicked(this);
+            }
+        }
+    }
+
     public interface PageChanger {
         void pageChanged();
 
