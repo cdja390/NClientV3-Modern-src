@@ -16,7 +16,8 @@
  * Based on ShareReceiverActivity from yosefario-dev/NClientV3
  * (https://github.com/yosefario-dev/NClientV3, Apache-2.0).
  * Modified for NClientV3 Modern: PIN lock first, NEW_TASK|CLEAR_TOP instead of CLEAR_TASK,
- * mirror-aware links, page sanitising, no e-hentai branch. See docs/PATCHED_FILES.md
+ * mirror-aware links, page sanitising; e-hentai gallery links (shared or opened) since 4.7.0.
+ * See docs/PATCHED_FILES.md
  */
 package com.maxwai.nclientv3;
 
@@ -56,6 +57,8 @@ public class ShareReceiverActivity extends Activity {
     private Intent buildForward(Intent intent) {
         if (intent == null) return null;
         CharSequence text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+        if (Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() != null)
+            text = intent.getData().toString();
         if (text == null || text.toString().trim().isEmpty())
             text = intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT);
         ShareLinkParser.Result r = ShareLinkParser.parse(text, Utility::isSiteHost);
@@ -67,6 +70,10 @@ public class ShareReceiverActivity extends Activity {
                 break;
             case SITE_URL:
                 out = siteIntent(Uri.parse(r.value));
+                break;
+            case EHENTAI:
+                out = new Intent(this, com.maxwai.nclientv3.ehentai.EhGalleryActivity.class)
+                    .setData(Uri.parse(r.value));
                 break;
             case ID:
             case SEARCH:

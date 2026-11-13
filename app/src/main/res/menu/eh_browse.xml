@@ -13,6 +13,29 @@
         android:title="@string/eh_filter"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/eh_action_fav_folder"
+        android:title="@string/eh_fav_folder"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/eh_action_clear_history"
+        android:title="@string/eh_history_clear"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/eh_action_exhentai"
+        android:checkable="true"
+        android:title="@string/eh_use_exhentai"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/eh_action_account"
+        android:title="@string/eh_account_sign_in"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/eh_action_stats"
+        android:title="@string/eh_stats"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/eh_action_switch_source"
         android:title="@string/eh_switch_to_nhentai"
         app:showAsAction="never" />

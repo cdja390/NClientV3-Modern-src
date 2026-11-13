@@ -49,12 +49,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Entry point of the e-hentai source: front page / search, popular, and (with later phases)
- * favorites, history and downloads. Pages are loaded one at a time, only when the list is
+ * Entry point of the e-hentai source: front page / search, popular, online favorites, local
+ * favorites, reading history and downloads. Pages are loaded one at a time, only when the list is
  * scrolled near its end, so browsing stays within e-hentai's page-load limits.
  */
 public class EhBrowseActivity extends GeneralActivity {
-    enum Section {FRONT, POPULAR}
+    enum Section {FRONT, POPULAR, FAVORITES, SAVED, HISTORY, DOWNLOADS}
+
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final List<Section> sections = new ArrayList<>();
@@ -74,6 +75,13 @@ public class EhBrowseActivity extends GeneralActivity {
     private boolean loading;
     private boolean endReached;
     private int generation;
+    /** Online favorites folder, -1 for all. */
+    private int favcat = -1;
+    @NonNull
+    private String[] folderNames = new String[EhFavoritesParser.SLOT_COUNT];
+    @Nullable
+    private String authSnapshot;
+    private final java.text.DateFormat dateFormat = java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT);
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -113,7 +121,7 @@ public class EhBrowseActivity extends GeneralActivity {
             }
         });
         refresh.setOnRefreshListener(() -> reload(true));
-        messageAction.setOnClickListener(v -> reload(true));
+        adapter.setExtraText(this::extraText);
 
         query = getIntent().getStringExtra(EhIntents.EXTRA_QUERY);
         buildSections();
@@ -122,6 +130,7 @@ public class EhBrowseActivity extends GeneralActivity {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 section = sections.get(tab.getPosition());
+                invalidateOptionsMenu();
                 reload(false);
             }
 
@@ -145,6 +154,7 @@ public class EhBrowseActivity extends GeneralActivity {
                 }
             }
         });
+        authSnapshot = authState();
         reload(false);
     }
 
@@ -152,6 +162,23 @@ public class EhBrowseActivity extends GeneralActivity {
     protected void onResume() {
         super.onResume();
         updateTitle();
+        String now = authState();
+        if (!now.equals(authSnapshot)) {
+            authSnapshot = now;
+            invalidateOptionsMenu();
+            reload(false);
+        } else if (isLocal(section)) {
+            reload(false);
+        }
+    }
+
+    @NonNull
+    private String authState() {
+        return EhAuth.isLoggedIn(this) + ":" + EhAuth.hasExhentaiAccess(this) + ":" + EhSettings.useExhentai(this);
+    }
+
+    private static boolean isLocal(@NonNull Section s) {
+        return s == Section.SAVED || s == Section.HISTORY || s == Section.DOWNLOADS;
     }
 
     @Override
@@ -163,13 +190,36 @@ public class EhBrowseActivity extends GeneralActivity {
     protected void buildSections() {
         sections.add(Section.FRONT);
         sections.add(Section.POPULAR);
+        sections.add(Section.FAVORITES);
+        sections.add(Section.SAVED);
+        sections.add(Section.HISTORY);
+        sections.add(Section.DOWNLOADS);
     }
 
     @NonNull
     private String sectionTitle(@NonNull Section s) {
         switch (s) {
             case POPULAR: return getString(R.string.eh_section_popular);
+            case FAVORITES: return getString(R.string.eh_section_favorites);
+            case SAVED: return getString(R.string.eh_section_saved);
+            case HISTORY: return getString(R.string.eh_section_history);
+            case DOWNLOADS: return getString(R.string.eh_section_downloads);
             default: return getString(R.string.eh_section_front);
+        }
+    }
+
+    @Nullable
+    private String extraText(@NonNull EhGalleryInfo info) {
+        if (!(info instanceof EhDatabase.Entry)) return null;
+        EhDatabase.Entry e = (EhDatabase.Entry) info;
+        switch (section) {
+            case HISTORY:
+                return getString(R.string.eh_history_line, e.lastPage, Math.max(e.pages, e.lastPage),
+                    Math.max(1, e.readSeconds / 60), dateFormat.format(new java.util.Date(e.time)));
+            case DOWNLOADS:
+                return EhDownloads.describe(this, e);
+            default:
+                return null;
         }
     }
 
@@ -183,6 +233,9 @@ public class EhBrowseActivity extends GeneralActivity {
         if (section == Section.FRONT && ((shown != 0 && shown != EhCategory.ALL) || minRating >= 2)) {
             filterBar.setVisibility(View.VISIBLE);
             filterBar.setText(describeFilter(shown, minRating));
+        } else if (section == Section.FAVORITES && EhAuth.isLoggedIn(this)) {
+            filterBar.setVisibility(View.VISIBLE);
+            filterBar.setText(getString(R.string.eh_fav_current, folderLabel(favcat)));
         } else {
             filterBar.setVisibility(View.GONE);
         }
@@ -217,9 +270,42 @@ public class EhBrowseActivity extends GeneralActivity {
         if (!loadLocalSection()) loadPage(null);
     }
 
-    /** Sections backed by ehentai.db load synchronously; returns false for online sections. */
+    /** Sections backed by ehentai.db; returns false for online sections. */
     protected boolean loadLocalSection() {
-        return false;
+        if (section == Section.FAVORITES && !EhAuth.isLoggedIn(this)) {
+            refresh.setRefreshing(false);
+            endReached = true;
+            showMessage(getString(R.string.eh_favorites_sign_in), getString(R.string.eh_account_sign_in), this::openLogin);
+            return true;
+        }
+        if (!isLocal(section)) return false;
+        final Section s = section;
+        final int gen = generation;
+        endReached = true;
+        refresh.setRefreshing(true);
+        io.execute(() -> {
+            EhDatabase db = EhDatabase.get(this);
+            List<EhDatabase.Entry> list = s == Section.HISTORY ? db.history()
+                : s == Section.SAVED ? db.favorites() : db.downloads();
+            runOnUiThread(() -> {
+                if (gen != generation || isFinishing()) return;
+                int empty = s == Section.HISTORY ? R.string.eh_history_empty
+                    : s == Section.SAVED ? R.string.eh_saved_empty : R.string.eh_downloads_empty;
+                showList(list, getString(empty));
+            });
+        });
+        return true;
+    }
+
+    private void openLogin() {
+        startActivity(new Intent(this, EhLoginActivity.class));
+    }
+
+    @NonNull
+    private String folderLabel(int slot) {
+        if (slot < 0) return getString(R.string.eh_fav_all);
+        String n = slot < folderNames.length ? folderNames[slot] : null;
+        return n == null || n.isEmpty() ? getString(R.string.eh_fav_folder_default, slot) : n;
     }
 
     private void loadMore() {
@@ -232,6 +318,8 @@ public class EhBrowseActivity extends GeneralActivity {
         switch (s) {
             case POPULAR:
                 return cursor == null ? EhUrls.popularUrl(ex) : null;
+            case FAVORITES:
+                return EhUrls.favoritesUrl(ex, favcat, null, cursor);
             default:
                 return EhUrls.searchUrl(ex, query, EhSettings.shownCategories(this), EhSettings.minRating(this), cursor);
         }
@@ -248,23 +336,36 @@ public class EhBrowseActivity extends GeneralActivity {
         refresh.setRefreshing(true);
         io.execute(() -> {
             try {
-                EhListParser.Page page = EhRepository.loadList(this, url);
+                EhListParser.Page page;
+                String[] folders = null;
+                if (section == Section.FAVORITES) {
+                    EhRepository.FavoritesPage fp = EhRepository.loadFavorites(this, url);
+                    page = fp.page;
+                    folders = fp.folders;
+                } else {
+                    page = EhRepository.loadList(this, url);
+                }
+                final String[] newFolders = folders;
                 runOnUiThread(() -> {
                     if (gen != generation || isFinishing()) return;
+                    if (newFolders != null) {
+                        folderNames = newFolders;
+                        updateTitle();
+                    }
                     loading = false;
                     refresh.setRefreshing(false);
                     if (cursor == null) adapter.setItems(page.items);
                     else adapter.addItems(page.items);
                     nextCursor = page.nextCursor;
                     endReached = page.nextCursor == null;
-                    if (adapter.isEmpty()) showMessage(getString(R.string.eh_no_results), false);
+                    if (adapter.isEmpty()) showMessage(getString(R.string.eh_no_results), null, null);
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     if (gen != generation || isFinishing()) return;
                     loading = false;
                     refresh.setRefreshing(false);
-                    if (adapter.isEmpty()) showMessage(EhUi.describe(this, e), true);
+                    if (adapter.isEmpty()) showMessage(EhUi.describe(this, e), getString(R.string.eh_retry), () -> reload(true));
                     else com.google.android.material.snackbar.Snackbar
                         .make(recycler, EhUi.describe(this, e), com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
                         .setAction(R.string.eh_retry, v -> loadMore()).show();
@@ -273,9 +374,13 @@ public class EhBrowseActivity extends GeneralActivity {
         });
     }
 
-    protected void showMessage(@NonNull String text, boolean retry) {
+    protected void showMessage(@NonNull String text, @Nullable String action, @Nullable Runnable onAction) {
         message.setText(text);
-        messageAction.setVisibility(retry ? View.VISIBLE : View.GONE);
+        messageAction.setVisibility(action == null ? View.GONE : View.VISIBLE);
+        if (action != null) messageAction.setText(action);
+        messageAction.setOnClickListener(v -> {
+            if (onAction != null) onAction.run();
+        });
         messageBox.setVisibility(View.VISIBLE);
     }
 
@@ -283,12 +388,30 @@ public class EhBrowseActivity extends GeneralActivity {
         refresh.setRefreshing(false);
         adapter.setItems(list);
         endReached = true;
-        if (list.isEmpty()) showMessage(emptyText, false);
+        if (list.isEmpty()) showMessage(emptyText, null, null);
         else messageBox.setVisibility(View.GONE);
     }
 
     protected boolean onItemLongPress(@NonNull EhGalleryInfo info) {
-        return false;
+        if (section != Section.HISTORY && section != Section.SAVED && section != Section.DOWNLOADS) return false;
+        final Section s = section;
+        int text = s == Section.HISTORY ? R.string.eh_history_remove
+            : s == Section.SAVED ? R.string.eh_local_favorite_remove : R.string.eh_download_delete;
+        new MaterialAlertDialogBuilder(this)
+            .setTitle(info.title)
+            .setItems(new CharSequence[]{getString(text)}, (d, w) -> {
+                if (s == Section.DOWNLOADS) {
+                    EhDownloads.confirmDelete(this, info, () -> adapter.remove(info));
+                    return;
+                }
+                io.execute(() -> {
+                    if (s == Section.HISTORY) EhDatabase.get(this).removeHistory(info.key.gid);
+                    else EhDatabase.get(this).setFavorite(info, false);
+                });
+                adapter.remove(info);
+            })
+            .show();
+        return true;
     }
 
     @Override
@@ -316,6 +439,20 @@ public class EhBrowseActivity extends GeneralActivity {
         return true;
     }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean loggedIn = EhAuth.isLoggedIn(this);
+        MenuItem account = menu.findItem(R.id.eh_action_account);
+        account.setTitle(loggedIn ? getString(R.string.eh_account_sign_out) : getString(R.string.eh_account_sign_in));
+        MenuItem ex = menu.findItem(R.id.eh_action_exhentai);
+        ex.setVisible(loggedIn);
+        ex.setChecked(EhSettings.useExhentai(this));
+        menu.findItem(R.id.eh_action_fav_folder).setVisible(section == Section.FAVORITES && loggedIn);
+        menu.findItem(R.id.eh_action_clear_history).setVisible(section == Section.HISTORY);
+        menu.findItem(R.id.eh_action_filter).setVisible(section == Section.FRONT);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
     /** Runs a search on the front-page section. */
     protected void search(@Nullable String q) {
         query = q == null || q.trim().isEmpty() ? null : q.trim();
@@ -340,6 +477,54 @@ public class EhBrowseActivity extends GeneralActivity {
             showFilterDialog();
             return true;
         }
+        if (id == R.id.eh_action_account) {
+            if (!EhAuth.isLoggedIn(this)) openLogin();
+            else new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.eh_account_sign_out)
+                .setMessage(R.string.eh_account_sign_out_confirm)
+                .setPositiveButton(android.R.string.ok, (d, w) -> {
+                    EhAuth.logout(this);
+                    EhLoginActivity.clearWebCookies();
+                    authSnapshot = authState();
+                    invalidateOptionsMenu();
+                    reload(false);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+            return true;
+        }
+        if (id == R.id.eh_action_exhentai) {
+            boolean want = !EhSettings.useExhentai(this);
+            if (want && !EhAuth.hasExhentaiAccess(this)) {
+                checkExhentaiAccess();
+                return true;
+            }
+            EhSettings.setUseExhentai(this, want);
+            authSnapshot = authState();
+            invalidateOptionsMenu();
+            reload(false);
+            return true;
+        }
+        if (id == R.id.eh_action_fav_folder) {
+            showFolderDialog();
+            return true;
+        }
+        if (id == R.id.eh_action_clear_history) {
+            new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.eh_history_clear)
+                .setMessage(R.string.eh_history_clear_confirm)
+                .setPositiveButton(android.R.string.ok, (d, w) -> io.execute(() -> {
+                    EhDatabase.get(this).clearHistory();
+                    runOnUiThread(() -> reload(false));
+                }))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+            return true;
+        }
+        if (id == R.id.eh_action_stats) {
+            showStats();
+            return true;
+        }
         if (id == R.id.eh_action_switch_source) {
             startActivity(new Intent(this, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
@@ -347,6 +532,62 @@ public class EhBrowseActivity extends GeneralActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    /** ExHentai needs an igneous cookie; ask the site for one before switching. */
+    private void checkExhentaiAccess() {
+        refresh.setRefreshing(true);
+        io.execute(() -> {
+            String igneous = null;
+            try {
+                igneous = EhClient.fetchIgneous(this);
+            } catch (Exception ignore) {
+                // Reported below as no access.
+            }
+            final boolean ok = igneous != null;
+            if (ok) EhAuth.storeIgneous(this, igneous);
+            runOnUiThread(() -> {
+                refresh.setRefreshing(false);
+                if (!ok) {
+                    new MaterialAlertDialogBuilder(this)
+                        .setMessage(R.string.eh_exhentai_unavailable)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+                    return;
+                }
+                EhSettings.setUseExhentai(this, true);
+                authSnapshot = authState();
+                invalidateOptionsMenu();
+                reload(false);
+            });
+        });
+    }
+
+    private void showFolderDialog() {
+        String[] labels = new String[EhFavoritesParser.SLOT_COUNT + 1];
+        labels[0] = getString(R.string.eh_fav_all);
+        for (int i = 0; i < EhFavoritesParser.SLOT_COUNT; i++) labels[i + 1] = folderLabel(i);
+        new MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.eh_fav_folder)
+            .setSingleChoiceItems(labels, favcat + 1, (d, which) -> {
+                favcat = which - 1;
+                d.dismiss();
+                reload(false);
+            })
+            .show();
+    }
+
+    private void showStats() {
+        io.execute(() -> {
+            long[] st = EhDatabase.get(this).stats();
+            int saved = EhDatabase.get(this).favorites().size();
+            int downloads = EhDatabase.get(this).downloads().size();
+            runOnUiThread(() -> new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.eh_stats)
+                .setMessage(getString(R.string.eh_stats_body, st[0], st[1], st[2] / 60, saved, downloads))
+                .setPositiveButton(android.R.string.ok, null)
+                .show());
+        });
     }
 
     private void showFilterDialog() {

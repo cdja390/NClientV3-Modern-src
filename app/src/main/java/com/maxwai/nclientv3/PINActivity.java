@@ -109,7 +109,8 @@ public class PINActivity extends GeneralActivity {
         String cls = forward.getComponent().getClassName();
         if (!cls.equals(MainActivity.class.getName()) && !cls.equals(GalleryActivity.class.getName())
             && !cls.equals(RandomActivity.class.getName())
-            && !cls.equals(TagFilterActivity.class.getName())) return null;
+            && !cls.equals(TagFilterActivity.class.getName())
+            && !cls.equals(com.maxwai.nclientv3.ehentai.EhGalleryActivity.class.getName())) return null;
         forward.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return forward;
     }

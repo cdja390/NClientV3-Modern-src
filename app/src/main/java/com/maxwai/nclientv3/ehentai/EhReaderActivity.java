@@ -61,6 +61,12 @@ public class EhReaderActivity extends GeneralActivity {
     private static final int PRELOAD_DISTANCE = 2;
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
+    /** ehentai.db writes, kept off the network queue. */
+    private final ExecutorService dbIo = Executors.newSingleThreadExecutor();
+    private long resumedAt;
+    @Nullable
+    private File offlineDir;
+    private boolean offlineChecked;
     private EhGalleryKey key;
     private EhGalleryInfo info;
     private ViewPager2 pager;
@@ -164,8 +170,27 @@ public class EhReaderActivity extends GeneralActivity {
         seek.setProgress(current - 1);
     }
 
-    /** Called whenever a page becomes the current one. */
+    /** Called whenever a page becomes the current one: remembers it for "continue reading". */
     protected void onPageShown(int index) {
+        final long gid = key.gid;
+        dbIo.execute(() -> EhDatabase.get(this).saveProgress(gid, index, 0));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        resumedAt = System.currentTimeMillis();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (key == null) return;
+        final long seconds = resumedAt == 0 ? 0 : (System.currentTimeMillis() - resumedAt) / 1000;
+        resumedAt = 0;
+        final long gid = key.gid;
+        final int page = Math.max(1, current);
+        if (!dbIo.isShutdown()) dbIo.execute(() -> EhDatabase.get(this).saveProgress(gid, page, seconds));
     }
 
     @Override
@@ -177,6 +202,7 @@ public class EhReaderActivity extends GeneralActivity {
     @Override
     protected void onDestroy() {
         io.shutdownNow();
+        dbIo.shutdown();
         super.onDestroy();
     }
 
@@ -228,7 +254,11 @@ public class EhReaderActivity extends GeneralActivity {
     /** Local file for a page when the gallery was downloaded, else null. */
     @Nullable
     protected File localFile(int index) {
-        return null;
+        if (!offlineChecked) {
+            offlineChecked = true;
+            offlineDir = EhDownloads.existingDir(this, key);
+        }
+        return EhDownloads.findPage(offlineDir, index);
     }
 
     private final class PageAdapter extends RecyclerView.Adapter<PageHolder> {

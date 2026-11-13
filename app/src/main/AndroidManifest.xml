@@ -204,6 +204,10 @@
             android:label="@string/eh_title"
             android:parentActivityName=".ehentai.EhBrowseActivity" />
         <activity
+            android:name=".ehentai.EhLoginActivity"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/eh_login_title" />
+        <activity
             android:name=".ehentai.EhReaderActivity"
             android:configChanges="orientation|screenSize"
             android:label="@string/eh_title"
@@ -222,6 +226,21 @@
                 <category android:name="android.intent.category.DEFAULT" />
 
                 <data android:mimeType="text/plain" />
+            </intent-filter>
+            <!-- 4.7.0: e-hentai / exhentai gallery links -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="e-hentai.org" />
+                <data android:host="g.e-hentai.org" />
+                <data android:host="www.e-hentai.org" />
+                <data android:host="exhentai.org" />
+                <data android:pathPrefix="/g/" />
             </intent-filter>
         </activity>
 

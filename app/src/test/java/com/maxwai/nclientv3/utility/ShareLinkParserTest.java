@@ -48,6 +48,21 @@ public class ShareLinkParserTest {
     }
 
     @Test
+    public void ehentaiLinksOpenTheEhentaiGallery() {
+        assertEquals("EHENTAI:https://e-hentai.org/g/4325674/08c0da7832/",
+            parse("https://e-hentai.org/g/4325674/08c0da7832/"));
+        assertEquals("EHENTAI:https://e-hentai.org/g/4325674/08c0da7832/",
+            parse("看看 https://g.e-hentai.org/g/4325674/08C0DA7832/?p=1 这个"));
+        assertEquals("EHENTAI:https://exhentai.org/g/4325674/08c0da7832/",
+            parse("(https://exhentai.org/g/4325674/08c0da7832)."));
+        // Missing token or a look-alike host is not an e-hentai gallery.
+        assertEquals("SEARCH:https://e-hentai.org/g/4325674/",
+            parse("https://e-hentai.org/g/4325674/"));
+        assertEquals("SEARCH:https://e-hentai.org.evil.example/g/1/0123456789/",
+            parse("https://e-hentai.org.evil.example/g/1/0123456789/"));
+    }
+
+    @Test
     public void numbersOpenById() {
         assertEquals("ID:177013", parse("177013"));
         assertEquals("ID:177013", parse(" #177013 "));

@@ -140,4 +140,54 @@ public final class EhRepository {
             SHAPE.remove(key.gid);
         }
     }
+
+    /** One favorites.php page together with the account's folder names. */
+    public static final class FavoritesPage {
+        @NonNull
+        public final EhListParser.Page page;
+        @NonNull
+        public final String[] folders;
+
+        FavoritesPage(@NonNull EhListParser.Page page, @NonNull String[] folders) {
+            this.page = page;
+            this.folders = folders;
+        }
+    }
+
+    @NonNull
+    public static FavoritesPage loadFavorites(@NonNull Context context, @NonNull String url) throws IOException {
+        String html = EhClient.getHtml(context, url);
+        return new FavoritesPage(EhListParser.parse(html, url.contains("exhentai.org")), EhFavoritesParser.folderNames(html));
+    }
+
+    /** Folder names offered by the add-to-favorites popup and whether the gallery is in one. */
+    public static final class FavoriteState {
+        @NonNull
+        public final String[] folders;
+        public final boolean favorited;
+
+        FavoriteState(@NonNull String[] folders, boolean favorited) {
+            this.folders = folders;
+            this.favorited = favorited;
+        }
+    }
+
+    @NonNull
+    public static FavoriteState loadFavoriteState(@NonNull Context context, @NonNull EhGalleryKey key) throws IOException {
+        String html = EhClient.getHtml(context, EhUrls.favoritePopupUrl(key));
+        return new FavoriteState(EhFavoritesParser.folderNames(html), EhFavoritesParser.popupHasFavorite(html));
+    }
+
+    /** Puts the gallery in folder {@code slot} (0-9), or removes it from favorites when slot < 0. */
+    public static void setOnlineFavorite(@NonNull Context context, @NonNull EhGalleryKey key, int slot,
+                                         boolean alreadyFavorited) throws IOException {
+        okhttp3.FormBody body = new okhttp3.FormBody.Builder()
+            .add("favcat", slot < 0 ? "favdel" : Integer.toString(slot))
+            .add("favnote", "")
+            .add("apply", alreadyFavorited ? "Apply Changes" : "Add to Favorites")
+            .add("update", "1")
+            .build();
+        EhClient.postForm(context, EhUrls.favoritePopupUrl(key), body);
+        forget(key);
+    }
 }

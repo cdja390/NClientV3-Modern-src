@@ -176,6 +176,41 @@ public final class EhClient {
         }
     }
 
+    /**
+     * Visits ExHentai with the stored member cookies and returns the {@code igneous} cookie it
+     * hands out, or null when the account has no ExHentai access ("mystery" or nothing).
+     */
+    @Nullable
+    public static String fetchIgneous(@NonNull Context context) throws IOException {
+        OkHttpClient noRedirect = client(context).newBuilder().followRedirects(false).followSslRedirects(false).build();
+        okhttp3.HttpUrl url = okhttp3.HttpUrl.parse(EhUrls.HOST_EX);
+        for (int hop = 0; hop < 4 && url != null; hop++) {
+            try {
+                EhRateLimiter.acquire();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new InterruptedIOException("cancelled");
+            }
+            Request request = new Request.Builder().url(url).header("Cookie", EhAuth.cookieHeader(context, true)).build();
+            try (Response response = noRedirect.newCall(request).execute()) {
+                for (String setCookie : response.headers("Set-Cookie")) {
+                    String value = cookieValue(setCookie, "igneous");
+                    if (EhAuth.validIgneous(value)) return value;
+                }
+                String location = response.isRedirect() ? response.header("Location") : null;
+                url = location == null ? null : url.resolve(location);
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    static String cookieValue(@Nullable String setCookie, @NonNull String name) {
+        if (setCookie == null || !setCookie.startsWith(name + "=")) return null;
+        int end = setCookie.indexOf(';');
+        return setCookie.substring(name.length() + 1, end < 0 ? setCookie.length() : end).trim();
+    }
+
     /** Headers Glide needs for exhentai thumbnails (s.exhentai.org checks the cookies). */
     @Nullable
     public static String cookieFor(@NonNull Context context, @Nullable String url) {

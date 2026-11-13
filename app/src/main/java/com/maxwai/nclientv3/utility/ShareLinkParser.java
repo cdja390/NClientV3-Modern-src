@@ -15,8 +15,8 @@
  *
  * Routing order adapted from ShareReceiverActivity in yosefario-dev/NClientV3
  * (https://github.com/yosefario-dev/NClientV3, Apache-2.0).
- * Modified for NClientV3 Modern: pure-Java parser, mirror-aware host check, page sanitising,
- * no e-hentai branch. See docs/PATCHED_FILES.md
+ * Modified for NClientV3 Modern: pure-Java parser, mirror-aware host check, page sanitising;
+ * e-hentai/exhentai gallery links since 4.7.0. See docs/PATCHED_FILES.md
  */
 package com.maxwai.nclientv3.utility;
 
@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  */
 public final class ShareLinkParser {
 
-    public enum Kind {EMPTY, GALLERY, SITE_URL, ID, SEARCH}
+    public enum Kind {EMPTY, GALLERY, SITE_URL, ID, SEARCH, EHENTAI}
 
     /** Decides whether a URL host belongs to the site (configured mirror or original domain). */
     public interface HostCheck {
@@ -44,7 +44,10 @@ public final class ShareLinkParser {
     public static final class Result {
         @NonNull
         public final Kind kind;
-        /** Gallery id for GALLERY/ID, sanitised URL for SITE_URL, query for SEARCH. */
+        /**
+         * Gallery id for GALLERY/ID, sanitised URL for SITE_URL, query for SEARCH, canonical
+         * gallery URL for EHENTAI.
+         */
         @NonNull
         public final String value;
 
@@ -82,6 +85,8 @@ public final class ShareLinkParser {
             } catch (Exception e) {
                 continue;
             }
+            com.maxwai.nclientv3.ehentai.EhGalleryKey eh = com.maxwai.nclientv3.ehentai.EhGalleryKey.findIn(url);
+            if (eh != null) return new Result(Kind.EHENTAI, eh.url());
             if (!hosts.isSiteHost(uri.getHost())) continue;
             String path = uri.getRawPath() == null ? "" : uri.getRawPath();
             Matcher g = GALLERY_PATH.matcher(path);

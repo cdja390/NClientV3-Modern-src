@@ -27,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -37,6 +38,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.components.activities.GeneralActivity;
 import com.maxwai.nclientv3.utility.Utility;
@@ -61,6 +63,11 @@ public class EhGalleryActivity extends GeneralActivity {
     private TextView message;
     private MaterialButton morePreviews;
     protected MaterialButton readButton, downloadButton, favoriteButton;
+    private int resumePage;
+    private boolean localFavorite;
+    @Nullable
+    private EhDatabase.Entry downloadRow;
+    private boolean favoriteBusy;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -91,8 +98,8 @@ public class EhGalleryActivity extends GeneralActivity {
         rv.setAdapter(previews);
         morePreviews.setOnClickListener(v -> loadMorePreviews());
         readButton.setOnClickListener(v -> openReader(startPage()));
-        downloadButton.setVisibility(View.GONE);
-        favoriteButton.setVisibility(View.GONE);
+        downloadButton.setOnClickListener(v -> onDownloadClicked());
+        favoriteButton.setOnClickListener(v -> onFavoriteClicked());
         String thumb = getIntent().getStringExtra(EhIntents.EXTRA_THUMB);
         if (thumb != null) EhUi.loadThumb(findViewById(R.id.eh_cover), thumb);
         load(false);
@@ -104,14 +111,161 @@ public class EhGalleryActivity extends GeneralActivity {
         super.onDestroy();
     }
 
-    /** First page to open with the Read button (resume support is added by later phases). */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshLocalState();
+    }
+
+    /** History, local favorite and download state from ehentai.db. */
+    private void refreshLocalState() {
+        if (io.isShutdown()) return;
+        io.execute(() -> {
+            EhDatabase db = EhDatabase.get(this);
+            int last = db.lastPage(key.gid);
+            boolean fav = db.isFavorite(key.gid);
+            EhDatabase.Entry dl = db.download(key.gid);
+            runOnUiThread(() -> {
+                if (isDestroyed()) return;
+                resumePage = last;
+                localFavorite = fav;
+                downloadRow = dl;
+                updateButtons();
+            });
+        });
+    }
+
+    private void updateButtons() {
+        readButton.setText(resumePage > 1 ? getString(R.string.eh_continue_page, resumePage) : getString(R.string.eh_read));
+        if (EhAuth.isLoggedIn(this)) {
+            String name = detail == null ? null : detail.favoriteName;
+            favoriteButton.setText(name == null ? getString(R.string.eh_favorite) : name);
+        } else {
+            favoriteButton.setText(localFavorite ? R.string.eh_local_favorite_saved : R.string.eh_favorite);
+        }
+        EhDatabase.Entry d = downloadRow;
+        if (d == null) downloadButton.setText(R.string.eh_download);
+        else if (d.state == EhDatabase.STATE_DONE) downloadButton.setText(R.string.eh_downloaded);
+        else if (d.state == EhDatabase.STATE_QUEUED || d.state == EhDatabase.STATE_RUNNING)
+            downloadButton.setText(getString(R.string.eh_download_state_running, d.done, Math.max(d.pages, d.done)));
+        else downloadButton.setText(R.string.eh_download_resume);
+        downloadButton.setEnabled(detail != null || d != null);
+        invalidateOptionsMenu();
+    }
+
+    /** First page to open with the Read button: where the last session stopped. */
     protected int startPage() {
-        return 1;
+        return Math.max(1, resumePage);
     }
 
     protected void openReader(int page) {
-        if (detail == null) return;
-        startActivity(EhIntents.reader(this, detail, page));
+        EhGalleryInfo info = detail != null ? detail : downloadRow;
+        if (info == null) return;
+        io.execute(() -> EhDatabase.get(this).recordOpen(info));
+        startActivity(EhIntents.reader(this, info, page));
+    }
+
+    private void onDownloadClicked() {
+        EhDatabase.Entry d = downloadRow;
+        if (d == null) {
+            if (detail == null) return;
+            final EhGalleryInfo info = detail;
+            io.execute(() -> {
+                EhDownloads.enqueue(this, info);
+                runOnUiThread(() -> Toast.makeText(this, R.string.eh_download_queued, Toast.LENGTH_SHORT).show());
+            });
+            refreshLocalState();
+            return;
+        }
+        if (d.state == EhDatabase.STATE_DONE) {
+            EhDownloads.confirmDelete(this, d, () -> {
+                downloadRow = null;
+                updateButtons();
+            });
+            return;
+        }
+        if (d.state == EhDatabase.STATE_QUEUED || d.state == EhDatabase.STATE_RUNNING) {
+            new MaterialAlertDialogBuilder(this)
+                .setTitle(d.title)
+                .setItems(new CharSequence[]{getString(R.string.eh_download_pause), getString(R.string.eh_download_delete)},
+                    (dialog, which) -> {
+                        if (which == 0) io.execute(() -> EhDownloads.pauseAll(this));
+                        else {
+                            io.execute(() -> EhDownloads.pauseAll(this));
+                            EhDownloads.confirmDelete(this, d, () -> downloadRow = null);
+                        }
+                        refreshLocalState();
+                    })
+                .show();
+            return;
+        }
+        io.execute(() -> EhDownloads.resume(this, d));
+        refreshLocalState();
+    }
+
+    private void onFavoriteClicked() {
+        if (!EhAuth.isLoggedIn(this)) {
+            toggleLocalFavorite();
+            return;
+        }
+        if (favoriteBusy) return;
+        favoriteBusy = true;
+        io.execute(() -> {
+            try {
+                EhRepository.FavoriteState st = EhRepository.loadFavoriteState(this, key);
+                runOnUiThread(() -> {
+                    favoriteBusy = false;
+                    showFavoriteDialog(st);
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    favoriteBusy = false;
+                    Toast.makeText(this, EhUi.describe(this, e), Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    private void showFavoriteDialog(@NonNull EhRepository.FavoriteState st) {
+        int n = EhFavoritesParser.SLOT_COUNT;
+        String[] labels = new String[st.favorited ? n + 1 : n];
+        for (int i = 0; i < n; i++) {
+            String name = st.folders[i];
+            labels[i] = name == null || name.isEmpty() ? getString(R.string.eh_fav_folder_default, i) : name;
+        }
+        if (st.favorited) labels[n] = getString(R.string.eh_fav_remove);
+        new MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.eh_favorite)
+            .setItems(labels, (d, which) -> {
+                final int slot = which >= n ? -1 : which;
+                final String label = slot < 0 ? null : labels[slot];
+                io.execute(() -> {
+                    try {
+                        EhRepository.setOnlineFavorite(this, key, slot, st.favorited);
+                        runOnUiThread(() -> {
+                            if (detail != null) detail.favoriteName = label;
+                            updateButtons();
+                            Toast.makeText(this, slot < 0 ? getString(R.string.eh_fav_removed)
+                                : getString(R.string.eh_fav_added, label), Toast.LENGTH_SHORT).show();
+                        });
+                    } catch (Exception e) {
+                        runOnUiThread(() -> Toast.makeText(this, EhUi.describe(this, e), Toast.LENGTH_LONG).show());
+                    }
+                });
+            })
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+    }
+
+    private void toggleLocalFavorite() {
+        EhGalleryInfo info = detail != null ? detail : downloadRow;
+        if (info == null) return;
+        final boolean now = !localFavorite;
+        localFavorite = now;
+        updateButtons();
+        io.execute(() -> EhDatabase.get(this).setFavorite(info, now));
+        Toast.makeText(this, now ? R.string.eh_local_favorite_added : R.string.eh_local_favorite_removed,
+            Toast.LENGTH_SHORT).show();
     }
 
     private void load(boolean refresh) {
@@ -127,10 +281,13 @@ public class EhGalleryActivity extends GeneralActivity {
                     bind(d);
                 });
             } catch (Exception e) {
+                EhDatabase.Entry offline = EhDatabase.get(this).download(key.gid);
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
                     progress.setVisibility(View.GONE);
-                    if (detail == null) {
+                    if (detail == null && offline != null && offline.state == EhDatabase.STATE_DONE) {
+                        bindOffline(offline, EhUi.describe(this, e));
+                    } else if (detail == null) {
                         scroll.setVisibility(View.GONE);
                         message.setText(EhUi.describe(this, e));
                         messageBox.setVisibility(View.VISIBLE);
@@ -170,8 +327,31 @@ public class EhGalleryActivity extends GeneralActivity {
         onDetailBound(d);
     }
 
-    /** Hook for later phases (favorite state, download state, history). */
     protected void onDetailBound(@NonNull EhGalleryDetail d) {
+        updateButtons();
+        // Keep stored copies of the gallery info fresh (title, cover, page count).
+        io.execute(() -> {
+            EhDatabase db = EhDatabase.get(this);
+            if (db.isFavorite(d.key.gid)) db.setFavorite(d, true);
+        });
+    }
+
+    /** Offline view of a downloaded gallery when the site cannot be reached. */
+    private void bindOffline(@NonNull EhDatabase.Entry e, @NonNull String why) {
+        downloadRow = e;
+        scroll.setVisibility(View.VISIBLE);
+        setTitle(e.title);
+        ((TextView) findViewById(R.id.eh_title)).setText(e.title);
+        findViewById(R.id.eh_title_jpn).setVisibility(View.GONE);
+        EhUi.bindCategory(findViewById(R.id.eh_category), e.category);
+        java.io.File cover = EhDownloads.localPage(this, e.key, 1);
+        com.bumptech.glide.RequestManager g = com.maxwai.nclientv3.components.GlideX.with(findViewById(R.id.eh_cover));
+        if (cover != null && g != null) g.load(cover).into((ImageView) findViewById(R.id.eh_cover));
+        ((TextView) findViewById(R.id.eh_info)).setText(getString(R.string.eh_offline_info, e.pages, why));
+        findViewById(R.id.eh_previews_title).setVisibility(View.GONE);
+        morePreviews.setVisibility(View.GONE);
+        readButton.setEnabled(e.pages > 0);
+        updateButtons();
     }
 
     private void line(StringBuilder b, int label, String value) {
@@ -263,6 +443,13 @@ public class EhGalleryActivity extends GeneralActivity {
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem local = menu.findItem(R.id.eh_action_local_favorite);
+        if (local != null) local.setChecked(localFavorite);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
@@ -277,6 +464,10 @@ public class EhGalleryActivity extends GeneralActivity {
         }
         if (id == R.id.eh_action_browser) {
             openInBrowser(key.url());
+            return true;
+        }
+        if (id == R.id.eh_action_local_favorite) {
+            toggleLocalFavorite();
             return true;
         }
         if (id == R.id.eh_action_refresh) {
