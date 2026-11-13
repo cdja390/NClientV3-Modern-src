@@ -384,7 +384,7 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
         {
             Preference bug = Objects.requireNonNull(findPreference(getString(R.string.preference_key_bug)));
             bug.setOnPreferenceClickListener(preference -> {
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/cdja390/NClientV3-Modern/issues/new"));
+                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/cdja390/NClientV3-Modern-src/issues/new"));
                 startActivity(i);
                 return true;
             });
