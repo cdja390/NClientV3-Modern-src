@@ -50,6 +50,7 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
     private Cursor cursor;
     private boolean force = false;
     private boolean sortByTitle = false;
+    private Filter filter;
 
     /**
      * Snapshot of the rows currently bound, kept so a refresh can diff against a plain list on a
@@ -245,7 +246,8 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
 
     @Override
     public Filter getFilter() {
-        return new Filter() {
+        if (filter != null) return filter;
+        filter = new Filter() {
             @Override
             protected FilterResults performFiltering(CharSequence constraint) {
                 constraint = constraint.toString().toLowerCase(Locale.US);
@@ -316,6 +318,7 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
                 setRefresh(false);
             }
         };
+        return filter;
     }
 
     public void setSortByTitle(boolean sortByTitle) {
