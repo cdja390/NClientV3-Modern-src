@@ -41,6 +41,8 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.components.activities.GeneralActivity;
+import com.maxwai.nclientv3.components.status.Status;
+import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.util.List;
@@ -68,6 +70,7 @@ public class EhGalleryActivity extends GeneralActivity {
     @Nullable
     private EhDatabase.Entry downloadRow;
     private boolean favoriteBusy;
+    private String readingStatus;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -107,7 +110,7 @@ public class EhGalleryActivity extends GeneralActivity {
 
     @Override
     protected void onDestroy() {
-        io.shutdownNow();
+        io.shutdown();
         super.onDestroy();
     }
 
@@ -119,20 +122,43 @@ public class EhGalleryActivity extends GeneralActivity {
 
     /** History, local favorite and download state from ehentai.db. */
     private void refreshLocalState() {
-        if (io.isShutdown()) return;
+        if (key == null || io.isShutdown()) return;
         io.execute(() -> {
             EhDatabase db = EhDatabase.get(this);
-            int last = db.lastPage(key.gid);
-            boolean fav = db.isFavorite(key.gid);
-            EhDatabase.Entry dl = db.download(key.gid);
+            int last = db.lastPage(key);
+            boolean fav = db.isFavorite(key);
+            EhDatabase.Entry dl = db.download(key);
+            String status = db.readingStatus(key);
             runOnUiThread(() -> {
                 if (isDestroyed()) return;
                 resumePage = last;
                 localFavorite = fav;
                 downloadRow = dl;
+                applyReadingStatus(status);
                 updateButtons();
             });
         });
+    }
+
+    private void applyReadingStatus(@Nullable String name) {
+        readingStatus = name;
+        Status status = StatusManager.getByName(name);
+        findViewById(R.id.eh_title).setBackgroundColor(status == null ? 0 : status.color);
+    }
+
+    private void chooseReadingStatus() {
+        List<String> names = StatusManager.getNames();
+        names.add(0, getString(R.string.remove_status));
+        new MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.change_status_title)
+            .setSingleChoiceItems(names.toArray(new String[0]), Math.max(0, names.indexOf(readingStatus)), (dialog, which) -> {
+                dialog.dismiss();
+                String chosen = which == 0 ? null : names.get(which);
+                io.execute(() -> EhDatabase.get(this).setReadingStatus(key, chosen));
+                applyReadingStatus(chosen);
+            })
+            .setNegativeButton(R.string.cancel, null)
+            .show();
     }
 
     private void updateButtons() {
@@ -281,11 +307,13 @@ public class EhGalleryActivity extends GeneralActivity {
                     bind(d);
                 });
             } catch (Exception e) {
-                EhDatabase.Entry offline = EhDatabase.get(this).download(key.gid);
+                EhDatabase.Entry offline = EhDatabase.get(this).download(key);
+                boolean hasOffline = offline != null && offline.state == EhDatabase.STATE_DONE
+                    && EhDownloads.localPage(this, offline.key, 1) != null;
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
                     progress.setVisibility(View.GONE);
-                    if (detail == null && offline != null && offline.state == EhDatabase.STATE_DONE) {
+                    if (detail == null && hasOffline) {
                         bindOffline(offline, EhUi.describe(this, e));
                     } else if (detail == null) {
                         scroll.setVisibility(View.GONE);
@@ -332,7 +360,7 @@ public class EhGalleryActivity extends GeneralActivity {
         // Keep stored copies of the gallery info fresh (title, cover, page count).
         io.execute(() -> {
             EhDatabase db = EhDatabase.get(this);
-            if (db.isFavorite(d.key.gid)) db.setFavorite(d, true);
+            if (db.isFavorite(d.key)) db.setFavorite(d, true);
         });
     }
 
@@ -374,9 +402,7 @@ public class EhGalleryActivity extends GeneralActivity {
                 Chip chip = new Chip(this);
                 chip.setText(tag);
                 chip.setEnsureMinTouchTargetSize(false);
-                final String q = tagQuery(e.getKey(), tag);
-                chip.setOnClickListener(v -> startActivity(EhIntents.search(this, q)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)));
+                chip.setOnClickListener(v -> startActivity(EhIntents.tag(this, getIntent(), e.getKey(), tag)));
                 group.addView(chip);
             }
             box.addView(group);
@@ -468,6 +494,10 @@ public class EhGalleryActivity extends GeneralActivity {
         }
         if (id == R.id.eh_action_local_favorite) {
             toggleLocalFavorite();
+            return true;
+        }
+        if (id == R.id.eh_action_status) {
+            chooseReadingStatus();
             return true;
         }
         if (id == R.id.eh_action_refresh) {

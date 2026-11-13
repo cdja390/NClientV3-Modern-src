@@ -57,6 +57,14 @@
 - 指定三任务成功。XML 130 tests / 0 failures / 0 errors / 0 skipped，SourcePolicyTest 5，LocalizationCompletenessTest 3。release APK 18068217 字节，SHA-256 1BDC6BE7CC746B65D1A228058945C8F21201803309AE7E787B610EB99556FD0F。P4 产物版本仍为 4.7.1-Modern。
 - JVM 矩阵 T01-T26、T32 共 27 项有通过证据。选框、排序菜单、徽标及切换时序仍待设备验证。
 
+## 本次 P5 验证（2026-11-13，Asia/Shanghai）
+
+- 合并列表使用保留来源、长 gid、token 的详情 Intent。详情标签映射到公共标签请求，独立 EH 页面继续走自己的搜索。合成标签 ID 不进入 NH 标签表。
+- ehentai.db v2 将历史、收藏和下载改为 (ex, gid) 主键。下载查询还核对 token。旧目录按升级时的记录或导入的旧备份保留归属；新目录区分 EH 和 EX。离线详情只有在确认该来源已有下载且本地首页存在时才显示。
+- EH / EX 阅读状态独立存储，使用已有状态名称和颜色。主列表返回时依来源键重绘打开的条目；EH 请求缓存还区分 token。方案 B 采用独立详情及阅读器界面，属于用户已同意的界面差异，阅读交互另验。
+- 指定三任务成功。XML 132 tests / 0 failures / 0 errors / 0 skipped，本地化 3/3。release APK 18073945 字节，SHA-256 7B7D284D808EA4949476BB86EDEFB78007A113F2B02EC6DBFB95FAE61E55653F。
+- 从旧版与当前 Java 源码提取建表及升级 SQL，在内存 SQLite 以 64 位 gid 执行，确认历史进度、收藏和下载字段保留，同 gid 的 EH/EX 行及状态可共存，旧下载目录归属只匹配原来源。Android 升级、恢复、列表着色及线下回退仍待真机确认。
+
 ## 逐项状态
 
 | ID | 本次状态 | 证据/限制 |
@@ -91,7 +99,7 @@
 | T28 | 部分验证 | SourceKeyTest 混合字段流；Android Parcel 待验 |
 | T29 | 部分验证 | 保留旧 kind 读取分支；真实解包待验 |
 | T30 | 待验证 | 后续阶段 |
-| T31 | 部分验证 | 来源键单测和调用点审查；UI 待验 |
+| T31 | 部分验证 | 来源键单测、SQLite 同 gid 异来源状态、回调检查；Android 着色待验 |
 | T32 | 通过 | LocalizationCompletenessTest 3/3 |
 | N01 | 待验证 | 未做网络/设备验收 |
 | N02 | 待验证 | 未做网络/设备验收 |

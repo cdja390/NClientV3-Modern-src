@@ -89,3 +89,9 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 - `MainActivity.java`, `InspectorV3.java`, and `PageSwitcher.java` reset list paging for a new source selection and guard callbacks on the main thread. `ListAdapter.java` marks both sources in a merged list. Sort options use the source intersection.
 - `EhSettings.java`, `EhAuth.java`, `EhBrowseActivity.java`, `EhFeed.java`, and `EhRepository.java` coordinate host changes and reset the list and detail caches.
 - `SearchActivity.java`, `GeneralPreferenceFragment.java`, and the three `strings_472.xml` files expose the request rating and source choices. Tests cover source migration and the three locale resource sets.
+
+## Files added or modified in 4.7.2 (P5, detail routes)
+
+- `EhIntents.java`, `EhSimpleGallery.java`, `EhGalleryActivity.java`, and new `EhTags.java` route merged detail tags to MainActivity. The namespace mapping follows EHentaiSource at b2ee7ed. `InspectorV3.java` handles the synthetic tag IDs while retaining the NH server query.
+- `EhDatabase.java` migrates to a source-qualified primary key for history, favorites and downloads and adds reading status. `EhDownloads.java`, `EhDownloadWorker.java`, and `EhRepository.java` isolate EH and EX offline files, progress and caches.
+- `ListAdapter.java` and `MainActivity.java` refresh reading status using SourceKey. `EhMiscTest.java` covers tag mapping and distinct cache and download identities.

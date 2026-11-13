@@ -68,13 +68,13 @@ public class EhDownloadWorker extends Worker {
 
     /** Returns false when the whole queue should stop (quota, ban, cancellation). */
     private boolean download(@NonNull Context c, @NonNull EhDatabase db, @NonNull EhDatabase.Entry e) {
-        int notId = (int) (e.key.gid % 100000) + 470000;
+        int notId = (int) (e.key.gid % 100000) + (e.key.exhentai ? 570000 : 470000);
         NotificationCompat.Builder n = new NotificationCompat.Builder(c, Global.CHANNEL_ID1)
             .setSmallIcon(R.drawable.ic_file)
             .setContentTitle(e.title)
             .setOnlyAlertOnce(true)
             .setOngoing(true);
-        db.setDownloadProgress(e.key.gid, EhDatabase.STATE_RUNNING, -1);
+        db.setDownloadProgress(e.key, EhDatabase.STATE_RUNNING, -1);
         try {
             int pages = e.pages;
             if (pages <= 0) {
@@ -88,7 +88,7 @@ public class EhDownloadWorker extends Worker {
             int failures = 0;
             for (int index = 1; index <= pages; index++) {
                 if (isStopped()) {
-                    db.setDownloadProgress(e.key.gid, EhDatabase.STATE_PAUSED, done);
+                    db.setDownloadProgress(e.key, EhDatabase.STATE_PAUSED, done);
                     cancel(notId);
                     return false;
                 }
@@ -103,7 +103,7 @@ public class EhDownloadWorker extends Worker {
                 } catch (EhException ex) {
                     if (ex.kind == EhException.Kind.QUOTA_EXCEEDED || ex.kind == EhException.Kind.IP_BANNED
                         || ex.kind == EhException.Kind.SAD_PANDA) {
-                        db.setDownloadProgress(e.key.gid, EhDatabase.STATE_PAUSED, done);
+                        db.setDownloadProgress(e.key, EhDatabase.STATE_PAUSED, done);
                         finish(c, notId, n, e.title, EhUi.describe(c, ex));
                         return false;
                     }
@@ -112,22 +112,22 @@ public class EhDownloadWorker extends Worker {
                     if (isStopped()) continue;
                     if (++failures >= MAX_CONSECUTIVE_FAILURES) throw io;
                 }
-                db.setDownloadProgress(e.key.gid, EhDatabase.STATE_RUNNING, done);
+                db.setDownloadProgress(e.key, EhDatabase.STATE_RUNNING, done);
                 n.setProgress(pages, done, false)
                     .setContentText(c.getString(R.string.eh_download_state_running, done, pages));
                 notify(c, notId, n);
             }
             boolean complete = done >= pages;
-            db.setDownloadProgress(e.key.gid, complete ? EhDatabase.STATE_DONE : EhDatabase.STATE_FAILED, done);
+            db.setDownloadProgress(e.key, complete ? EhDatabase.STATE_DONE : EhDatabase.STATE_FAILED, done);
             finish(c, notId, n, e.title, complete ? c.getString(R.string.eh_download_state_done, pages)
                 : c.getString(R.string.eh_download_state_failed, done, pages));
             return true;
         } catch (IOException ex) {
             LogUtility.e("e-hentai download failed", ex);
             Integer done = null;
-            EhDatabase.Entry now = db.download(e.key.gid);
+            EhDatabase.Entry now = db.download(e.key);
             if (now != null) done = now.done;
-            db.setDownloadProgress(e.key.gid, EhDatabase.STATE_FAILED, done == null ? -1 : done);
+            db.setDownloadProgress(e.key, EhDatabase.STATE_FAILED, done == null ? -1 : done);
             finish(c, notId, n, e.title, EhUi.describe(c, ex));
             return !isStopped();
         }

@@ -42,3 +42,15 @@ Compatibility:
   not in the backup; a restored download whose files are missing reads online.
 - e-hentai login cookies (`EHentaiAuth` preferences) are **never** exported.
 - Entries.db, its tables and `Database.json` are unchanged.
+
+## EHentaiBackup.json additions (4.7.2)
+
+The wrapper and the three existing tables keep their names and fields. Restore in 4.7.2
+qualifies identity by `ex` and `gid`. For downloads, the token also identifies the files.
+
+- `reading_status` adds gallery associations using `ex`, `gid`, `token`, and `status`.
+- `legacy_download_dirs` records which source owns an older `gid_token` folder. The upgrade
+  creates these entries from existing download rows. Old backups without this table fill
+  missing directory ownership using their download rows. Existing ownership takes precedence.
+- When restoring a new backup on 4.7.0 or 4.7.1, those versions ignore the added tables and can
+  represent at most one EH/EX row per gid in the legacy tables.

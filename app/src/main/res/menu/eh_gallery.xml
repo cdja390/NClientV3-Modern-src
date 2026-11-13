@@ -12,6 +12,10 @@
         android:title="@string/eh_local_favorite"
         app:showAsAction="never" />
     <item
+        android:id="@+id/eh_action_status"
+        android:title="@string/change_status"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/eh_action_browser"
         android:title="@string/eh_open_in_browser"
         app:showAsAction="never" />

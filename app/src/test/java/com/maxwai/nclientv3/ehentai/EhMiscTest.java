@@ -2,11 +2,36 @@ package com.maxwai.nclientv3.ehentai;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
+import com.maxwai.nclientv3.api.components.Tag;
+import com.maxwai.nclientv3.api.enums.TagType;
 
 import org.junit.Test;
 
 /** Small helpers of the e-hentai source. */
 public class EhMiscTest {
+
+    @Test
+    public void mergedTagMappingRetainsCommonTypesAndUsesSyntheticIds() {
+        Tag artist = EhTags.forMergedSearch("artist", "an artist");
+        Tag other = EhTags.forMergedSearch("female", "an artist");
+        assertEquals(TagType.ARTIST, artist.getType());
+        assertEquals(TagType.TAG, other.getType());
+        assertTrue(artist.getId() < -1);
+        assertNotEquals(artist, other);
+        assertEquals("artist:\"an artist$\"", EhFeed.buildQuery(null, java.util.Collections.singleton(artist)));
+    }
+
+    @Test
+    public void cachedPagesAndDownloadFoldersDistinguishEhFromEx() {
+        EhGalleryKey eh = new EhGalleryKey(123, "0123456789", false);
+        EhGalleryKey ex = new EhGalleryKey(123, "0123456789", true);
+        assertNotEquals(eh, ex);
+        assertNotEquals(eh, new EhGalleryKey(123, "a123456789", false));
+        assertNotEquals(EhDownloads.folderName(eh), EhDownloads.folderName(ex));
+    }
 
     @Test
     public void tagSearchSyntax() {

@@ -23,6 +23,8 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.maxwai.nclientv3.MainActivity;
+
 /** Intent extras shared by the e-hentai screens. */
 public final class EhIntents {
     static final String EXTRA_GID = "eh_gid";
@@ -33,6 +35,7 @@ public final class EhIntents {
     static final String EXTRA_PAGES = "eh_pages";
     static final String EXTRA_START = "eh_start";
     static final String EXTRA_QUERY = "eh_query";
+    private static final String EXTRA_MERGED = "eh_merged";
 
     private EhIntents() {
     }
@@ -48,6 +51,21 @@ public final class EhIntents {
     @NonNull
     public static Intent gallery(@NonNull Context context, @NonNull EhGalleryInfo info) {
         return gallery(context, info.key, info.title, info.thumb);
+    }
+
+    @NonNull
+    static Intent mergedGallery(@NonNull Context context, @NonNull EhGalleryInfo info) {
+        return gallery(context, info).putExtra(EXTRA_MERGED, true);
+    }
+
+    @NonNull
+    static Intent tag(@NonNull Context context, @NonNull Intent gallery, String namespace, String name) {
+        if (!gallery.getBooleanExtra(EXTRA_MERGED, false))
+            return search(context, EhGalleryActivity.tagQuery(namespace, name)).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        String pkg = context.getPackageName();
+        return new Intent(context, MainActivity.class)
+            .putExtra(pkg + ".ISBYTAG", true)
+            .putExtra(pkg + ".TAG", EhTags.forMergedSearch(namespace, name));
     }
 
     @NonNull

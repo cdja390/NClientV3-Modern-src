@@ -48,12 +48,14 @@ import java.util.Set;
  */
 public final class EhDatabase extends SQLiteOpenHelper {
     public static final String NAME = "ehentai.db";
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
 
     public static final String HISTORY = "history";
     public static final String FAVORITES = "favorites";
     public static final String DOWNLOADS = "downloads";
-    static final String[] TABLES = {HISTORY, FAVORITES, DOWNLOADS};
+    private static final String STATUS = "reading_status";
+    private static final String LEGACY_DIRS = "legacy_download_dirs";
+    static final String[] TABLES = {HISTORY, FAVORITES, DOWNLOADS, STATUS, LEGACY_DIRS};
 
     public static final int STATE_QUEUED = 0;
     public static final int STATE_RUNNING = 1;
@@ -62,8 +64,11 @@ public final class EhDatabase extends SQLiteOpenHelper {
     public static final int STATE_PAUSED = 4;
 
     private static final String GALLERY_COLUMNS =
-        "gid INTEGER PRIMARY KEY, token TEXT NOT NULL, ex INTEGER NOT NULL DEFAULT 0, title TEXT, "
+        "gid INTEGER NOT NULL, token TEXT NOT NULL, ex INTEGER NOT NULL DEFAULT 0, title TEXT, "
             + "thumb TEXT, category INTEGER NOT NULL DEFAULT 0, pages INTEGER NOT NULL DEFAULT 0";
+    private static final String BY_SOURCE = "ex=? AND gid=?";
+    private static final String BY_DOWNLOAD = BY_SOURCE + " AND token=?";
+    private static final String IDENTITY = ", PRIMARY KEY (ex, gid))";
     private static final Set<String> COMMON = new HashSet<>(Arrays.asList(
         "gid", "token", "ex", "title", "thumb", "category", "pages"));
     private static final Map<String, Set<String>> COLUMNS = new LinkedHashMap<>();
@@ -72,6 +77,8 @@ public final class EhDatabase extends SQLiteOpenHelper {
         COLUMNS.put(HISTORY, with("last_page", "read_count", "read_seconds", "last_read"));
         COLUMNS.put(FAVORITES, with("added"));
         COLUMNS.put(DOWNLOADS, with("state", "done", "added"));
+        COLUMNS.put(STATUS, new HashSet<>(Arrays.asList("gid", "ex", "token", "status")));
+        COLUMNS.put(LEGACY_DIRS, new HashSet<>(Arrays.asList("gid", "ex", "token")));
     }
 
     private static Set<String> with(String... extra) {
@@ -102,15 +109,28 @@ public final class EhDatabase extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + HISTORY + " (" + GALLERY_COLUMNS + ", last_page INTEGER NOT NULL DEFAULT 1, "
             + "read_count INTEGER NOT NULL DEFAULT 0, read_seconds INTEGER NOT NULL DEFAULT 0, "
-            + "last_read INTEGER NOT NULL DEFAULT 0)");
-        db.execSQL("CREATE TABLE " + FAVORITES + " (" + GALLERY_COLUMNS + ", added INTEGER NOT NULL DEFAULT 0)");
+            + "last_read INTEGER NOT NULL DEFAULT 0" + IDENTITY);
+        db.execSQL("CREATE TABLE " + FAVORITES + " (" + GALLERY_COLUMNS + ", added INTEGER NOT NULL DEFAULT 0" + IDENTITY);
         db.execSQL("CREATE TABLE " + DOWNLOADS + " (" + GALLERY_COLUMNS + ", state INTEGER NOT NULL DEFAULT 0, "
-            + "done INTEGER NOT NULL DEFAULT 0, added INTEGER NOT NULL DEFAULT 0)");
+            + "done INTEGER NOT NULL DEFAULT 0, added INTEGER NOT NULL DEFAULT 0" + IDENTITY);
+        db.execSQL("CREATE TABLE " + STATUS + " (gid INTEGER NOT NULL, ex INTEGER NOT NULL DEFAULT 0, "
+            + "token TEXT NOT NULL, status TEXT NOT NULL" + IDENTITY);
+        db.execSQL("CREATE TABLE " + LEGACY_DIRS + " (gid INTEGER NOT NULL, token TEXT NOT NULL, "
+            + "ex INTEGER NOT NULL, PRIMARY KEY (gid, token))");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Version 1 is the first schema.
+        if (oldVersion == 1) {
+            String[] oldTables = {HISTORY, FAVORITES, DOWNLOADS};
+            for (String table : oldTables) db.execSQL("ALTER TABLE " + table + " RENAME TO " + table + "_v1");
+            onCreate(db);
+            for (String table : oldTables) {
+                db.execSQL("INSERT INTO " + table + " SELECT * FROM " + table + "_v1");
+                db.execSQL("DROP TABLE " + table + "_v1");
+            }
+            db.execSQL("INSERT INTO " + LEGACY_DIRS + " (gid, token, ex) SELECT gid, token, ex FROM " + DOWNLOADS);
+        }
     }
 
     /** Row of one of the tables, with the extra columns that table has. */
@@ -172,14 +192,24 @@ public final class EhDatabase extends SQLiteOpenHelper {
     }
 
     @Nullable
-    private Entry one(@NonNull String table, long gid) {
-        try (Cursor c = getReadableDatabase().query(table, null, "gid=?", new String[]{Long.toString(gid)},
+    private Entry one(@NonNull String table, @NonNull EhGalleryKey key) {
+        boolean download = DOWNLOADS.equals(table);
+        try (Cursor c = getReadableDatabase().query(table, null, download ? BY_DOWNLOAD : BY_SOURCE,
+            download ? downloadArgs(key) : sourceArgs(key),
             null, null, null)) {
             return c.moveToFirst() ? read(c) : null;
         } catch (RuntimeException e) {
             LogUtility.e("ehentai.db read failed", e);
             return null;
         }
+    }
+
+    private static String[] sourceArgs(EhGalleryKey key) {
+        return new String[]{key.exhentai ? "1" : "0", Long.toString(key.gid)};
+    }
+
+    private static String[] downloadArgs(EhGalleryKey key) {
+        return new String[]{key.exhentai ? "1" : "0", Long.toString(key.gid), key.token};
     }
 
     /** Updates the gallery columns of an existing row, or inserts one with {@code extra}. */
@@ -191,10 +221,16 @@ public final class EhDatabase extends SQLiteOpenHelper {
         if (info.pages <= 0) v.remove("pages");
         if (info.category == EhCategory.UNKNOWN) v.remove("category");
         v.putAll(extra);
-        if (db.update(table, v, "gid=?", new String[]{Long.toString(info.key.gid)}) == 0) {
-            ContentValues all = galleryValues(info);
-            all.putAll(extra);
-            db.insertWithOnConflict(table, null, all, SQLiteDatabase.CONFLICT_REPLACE);
+        db.beginTransaction();
+        try {
+            if (db.update(table, v, BY_SOURCE, sourceArgs(info.key)) == 0) {
+                ContentValues all = galleryValues(info);
+                all.putAll(extra);
+                db.insertOrThrow(table, null, all);
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
         }
     }
 
@@ -207,26 +243,26 @@ public final class EhDatabase extends SQLiteOpenHelper {
             ContentValues extra = new ContentValues();
             extra.put("last_read", System.currentTimeMillis());
             upsert(HISTORY, info, extra);
-            db.execSQL("UPDATE " + HISTORY + " SET read_count = read_count + 1 WHERE gid = ?",
-                new Object[]{info.key.gid});
+            db.execSQL("UPDATE " + HISTORY + " SET read_count = read_count + 1 WHERE " + BY_SOURCE,
+                sourceArgs(info.key));
         } catch (RuntimeException e) {
             LogUtility.e("ehentai.db write failed", e);
         }
     }
 
-    public void saveProgress(long gid, int page, long addSeconds) {
+    public void saveProgress(@NonNull EhGalleryKey key, int page, long addSeconds) {
         try {
             getWritableDatabase().execSQL("UPDATE " + HISTORY + " SET last_page = ?, last_read = ?, "
-                    + "read_seconds = read_seconds + ? WHERE gid = ?",
-                new Object[]{Math.max(1, page), System.currentTimeMillis(), Math.max(0, addSeconds), gid});
+                    + "read_seconds = read_seconds + ? WHERE " + BY_SOURCE,
+                new Object[]{Math.max(1, page), System.currentTimeMillis(), Math.max(0, addSeconds), key.exhentai ? 1 : 0, key.gid});
         } catch (RuntimeException e) {
             LogUtility.e("ehentai.db write failed", e);
         }
     }
 
     /** Last page read (1-based), or 0 when the gallery was never opened. */
-    public int lastPage(long gid) {
-        Entry e = one(HISTORY, gid);
+    public int lastPage(@NonNull EhGalleryKey key) {
+        Entry e = one(HISTORY, key);
         return e == null ? 0 : e.lastPage;
     }
 
@@ -235,8 +271,8 @@ public final class EhDatabase extends SQLiteOpenHelper {
         return list(HISTORY, "last_read DESC");
     }
 
-    public void removeHistory(long gid) {
-        getWritableDatabase().delete(HISTORY, "gid=?", new String[]{Long.toString(gid)});
+    public void removeHistory(@NonNull EhGalleryKey key) {
+        getWritableDatabase().delete(HISTORY, BY_SOURCE, sourceArgs(key));
     }
 
     public void clearHistory() {
@@ -257,13 +293,13 @@ public final class EhDatabase extends SQLiteOpenHelper {
 
     // ---- local favorites ----
 
-    public boolean isFavorite(long gid) {
-        return one(FAVORITES, gid) != null;
+    public boolean isFavorite(@NonNull EhGalleryKey key) {
+        return one(FAVORITES, key) != null;
     }
 
     public void setFavorite(@NonNull EhGalleryInfo info, boolean favorite) {
         if (!favorite) {
-            getWritableDatabase().delete(FAVORITES, "gid=?", new String[]{Long.toString(info.key.gid)});
+            getWritableDatabase().delete(FAVORITES, BY_SOURCE, sourceArgs(info.key));
             return;
         }
         ContentValues extra = new ContentValues();
@@ -279,23 +315,32 @@ public final class EhDatabase extends SQLiteOpenHelper {
     // ---- downloads ----
 
     public void putDownload(@NonNull EhGalleryInfo info, int state) {
-        ContentValues extra = new ContentValues();
-        extra.put("state", state);
-        Entry old = one(DOWNLOADS, info.key.gid);
-        if (old == null) extra.put("added", System.currentTimeMillis());
-        upsert(DOWNLOADS, info, extra);
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            ContentValues extra = new ContentValues();
+            extra.put("state", state);
+            if (download(info.key) == null) {
+                extra.put("added", System.currentTimeMillis());
+                extra.put("done", 0);
+            }
+            upsert(DOWNLOADS, info, extra);
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
-    public void setDownloadProgress(long gid, int state, int done) {
+    public void setDownloadProgress(@NonNull EhGalleryKey key, int state, int done) {
         ContentValues v = new ContentValues();
         v.put("state", state);
         if (done >= 0) v.put("done", done);
-        getWritableDatabase().update(DOWNLOADS, v, "gid=?", new String[]{Long.toString(gid)});
+        getWritableDatabase().update(DOWNLOADS, v, BY_DOWNLOAD, downloadArgs(key));
     }
 
     @Nullable
-    public Entry download(long gid) {
-        return one(DOWNLOADS, gid);
+    public Entry download(@NonNull EhGalleryKey key) {
+        return one(DOWNLOADS, key);
     }
 
     @NonNull
@@ -303,8 +348,37 @@ public final class EhDatabase extends SQLiteOpenHelper {
         return list(DOWNLOADS, "added DESC");
     }
 
-    public void removeDownload(long gid) {
-        getWritableDatabase().delete(DOWNLOADS, "gid=?", new String[]{Long.toString(gid)});
+    public void removeDownload(@NonNull EhGalleryKey key) {
+        getWritableDatabase().delete(DOWNLOADS, BY_DOWNLOAD, downloadArgs(key));
+    }
+
+    boolean ownsLegacyDownloadDir(@NonNull EhGalleryKey key) {
+        try (Cursor c = getReadableDatabase().query(LEGACY_DIRS, new String[]{"gid"}, BY_DOWNLOAD,
+            downloadArgs(key), null, null, null)) {
+            return c.moveToFirst();
+        }
+    }
+
+    @Nullable
+    public String readingStatus(@NonNull EhGalleryKey key) {
+        try (Cursor c = getReadableDatabase().query(STATUS, new String[]{"status"}, BY_SOURCE,
+            sourceArgs(key), null, null, null)) {
+            return c.moveToFirst() ? c.getString(0) : null;
+        }
+    }
+
+    public void setReadingStatus(@NonNull EhGalleryKey key, @Nullable String status) {
+        SQLiteDatabase db = getWritableDatabase();
+        if (status == null) {
+            db.delete(STATUS, BY_SOURCE, sourceArgs(key));
+            return;
+        }
+        ContentValues values = new ContentValues();
+        values.put("gid", key.gid);
+        values.put("ex", key.exhentai ? 1 : 0);
+        values.put("token", key.token);
+        values.put("status", status);
+        db.insertWithOnConflict(STATUS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
     }
 
     // ---- backup ----
@@ -341,7 +415,7 @@ public final class EhDatabase extends SQLiteOpenHelper {
         return out;
     }
 
-    /** Merges backed-up rows (same gallery id replaces the local row). Returns rows written. */
+    /** Merges backed-up rows by source and id. Returns rows written. */
     int restore(@NonNull Map<String, List<Map<String, Object>>> tables) {
         SQLiteDatabase db = getWritableDatabase();
         int written = 0;
@@ -361,7 +435,18 @@ public final class EhDatabase extends SQLiteOpenHelper {
                         else v.put(c.getKey(), o.toString());
                     }
                     if (!v.containsKey("gid") || v.getAsString("token") == null) continue;
-                    if (db.insertWithOnConflict(t.getKey(), null, v, SQLiteDatabase.CONFLICT_REPLACE) != -1) written++;
+                    int conflict = LEGACY_DIRS.equals(t.getKey()) ? SQLiteDatabase.CONFLICT_IGNORE
+                        : SQLiteDatabase.CONFLICT_REPLACE;
+                    if (db.insertWithOnConflict(t.getKey(), null, v, conflict) != -1) {
+                        written++;
+                        if (DOWNLOADS.equals(t.getKey()) && !tables.containsKey(LEGACY_DIRS)) {
+                            ContentValues legacy = new ContentValues();
+                            legacy.put("gid", v.getAsLong("gid"));
+                            legacy.put("token", v.getAsString("token"));
+                            legacy.put("ex", v.containsKey("ex") ? v.getAsInteger("ex") : 0);
+                            db.insertWithOnConflict(LEGACY_DIRS, null, legacy, SQLiteDatabase.CONFLICT_IGNORE);
+                        }
+                    }
                 }
             }
             db.setTransactionSuccessful();

@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Offline copies of e-hentai galleries. Files live in {@code <NClientV3 folder>/EHentai/<gid>_<token>/}
+ * Offline copies of e-hentai galleries. Files live in source-specific folders under {@code EHentai}
  * when shared storage is usable, else in the app's own external files folder; the rows in
  * ehentai.db keep the queue and progress.
  */
@@ -63,15 +63,27 @@ public final class EhDownloads {
 
     @NonNull
     static String folderName(@NonNull EhGalleryKey key) {
+        return (key.exhentai ? "ex_" : "eh_") + legacyFolderName(key);
+    }
+
+    private static String legacyFolderName(EhGalleryKey key) {
         return key.gid + "_" + key.token;
     }
 
     /** Existing folder of a downloaded gallery, or null. */
     @Nullable
     public static File existingDir(@NonNull Context context, @NonNull EhGalleryKey key) {
-        for (File root : roots(context)) {
+        if (!key.hasFileToken()) return null;
+        List<File> roots = roots(context);
+        for (File root : roots) {
             File dir = new File(root, folderName(key));
             if (dir.isDirectory()) return dir;
+        }
+        if (EhDatabase.get(context).ownsLegacyDownloadDir(key)) {
+            for (File root : roots) {
+                File dir = new File(root, legacyFolderName(key));
+                if (dir.isDirectory()) return dir;
+            }
         }
         return null;
     }
@@ -79,6 +91,7 @@ public final class EhDownloads {
     /** Folder to write into (the existing one, else under the first writable root). */
     @NonNull
     static File targetDir(@NonNull Context context, @NonNull EhGalleryKey key) throws IOException {
+        if (!key.hasFileToken()) throw new IOException("invalid e-hentai download token");
         File existing = existingDir(context, key);
         if (existing != null) return existing;
         for (File root : roots(context)) {
@@ -153,18 +166,18 @@ public final class EhDownloads {
         EhDatabase db = EhDatabase.get(context);
         for (EhDatabase.Entry e : db.downloads()) {
             if (e.state == EhDatabase.STATE_QUEUED || e.state == EhDatabase.STATE_RUNNING)
-                db.setDownloadProgress(e.key.gid, EhDatabase.STATE_PAUSED, -1);
+                db.setDownloadProgress(e.key, EhDatabase.STATE_PAUSED, -1);
         }
     }
 
     public static void resume(@NonNull Context context, @NonNull EhGalleryInfo info) {
-        EhDatabase.get(context).setDownloadProgress(info.key.gid, EhDatabase.STATE_QUEUED, -1);
+        EhDatabase.get(context).setDownloadProgress(info.key, EhDatabase.STATE_QUEUED, -1);
         start(context);
     }
 
     /** Deletes the files and the row. */
     public static void delete(@NonNull Context context, @NonNull EhGalleryKey key) {
-        EhDatabase.get(context).removeDownload(key.gid);
+        EhDatabase.get(context).removeDownload(key);
         File dir = existingDir(context, key);
         if (dir == null) return;
         File[] files = dir.listFiles();

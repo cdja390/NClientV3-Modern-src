@@ -61,6 +61,7 @@ import com.maxwai.nclientv3.source.SourcePreferences;
 import com.maxwai.nclientv3.source.SourcePolicy;
 import com.maxwai.nclientv3.source.SourceDialogs;
 import com.maxwai.nclientv3.source.GallerySource;
+import com.maxwai.nclientv3.source.SourceKey;
 import com.maxwai.nclientv3.settings.Login;
 import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.settings.TagV2;
@@ -112,7 +113,7 @@ public class MainActivity extends BaseActivity
     private InspectorV3 inspector = null;
     private NavigationView navigationView;
     private ModeType modeType = ModeType.UNKNOWN;
-    private int idOpenedGallery = -1;//Position in the recycler of the opened gallery
+    private SourceKey openedGallery;
     private boolean inspecting = false, filteringTag = false;
     private SortType temporaryType;
     private Snackbar snackbar = null;
@@ -299,8 +300,8 @@ public class MainActivity extends BaseActivity
         GlassBar.attach(pageSwitcher);
     }
 
-    public void setIdOpenedGallery(int idOpenedGallery) {
-        this.idOpenedGallery = idOpenedGallery;
+    public void setOpenedGallery(SourceKey key) {
+        openedGallery = key;
     }
 
     private void findUsefulViews() {
@@ -547,9 +548,9 @@ public class MainActivity extends BaseActivity
         if (SafeMode.consumeChange(this) && adapter != null) {
             adapter.notifyDataSetChanged();
         }
-        if (idOpenedGallery != -1) {
-            adapter.updateColor(idOpenedGallery);
-            idOpenedGallery = -1;
+        if (openedGallery != null && adapter != null) {
+            adapter.updateColor(openedGallery);
+            openedGallery = null;
         }
         loadStringLogin();
         // Paint whatever we already know, then fill in the profile if this is a cold start (or a

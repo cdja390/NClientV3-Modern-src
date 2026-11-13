@@ -172,8 +172,7 @@ public class EhReaderActivity extends GeneralActivity {
 
     /** Called whenever a page becomes the current one: remembers it for "continue reading". */
     protected void onPageShown(int index) {
-        final long gid = key.gid;
-        dbIo.execute(() -> EhDatabase.get(this).saveProgress(gid, index, 0));
+        dbIo.execute(() -> EhDatabase.get(this).saveProgress(key, index, 0));
     }
 
     @Override
@@ -188,9 +187,8 @@ public class EhReaderActivity extends GeneralActivity {
         if (key == null) return;
         final long seconds = resumedAt == 0 ? 0 : (System.currentTimeMillis() - resumedAt) / 1000;
         resumedAt = 0;
-        final long gid = key.gid;
         final int page = Math.max(1, current);
-        if (!dbIo.isShutdown()) dbIo.execute(() -> EhDatabase.get(this).saveProgress(gid, page, seconds));
+        if (!dbIo.isShutdown()) dbIo.execute(() -> EhDatabase.get(this).saveProgress(key, page, seconds));
     }
 
     @Override

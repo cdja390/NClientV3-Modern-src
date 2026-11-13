@@ -35,9 +35,10 @@ public final class EhRepository {
     private static final int MAX_GALLERIES = 8;
     /** "gid:previewPage" -> parsed page; gid -> previews per page and page count. */
     private static final Map<String, EhGalleryDetail> PREVIEW_PAGES = lru(48);
-    private static final Map<Long, int[]> SHAPE = lru(MAX_GALLERIES * 4);
-    /** "gid:index" -> resolved viewer result. */
+    private static final Map<EhGalleryKey, int[]> SHAPE = lru(MAX_GALLERIES * 4);
     private static final Map<String, EhPageParser.Result> IMAGES = lru(400);
+    private static final java.util.concurrent.atomic.AtomicInteger CACHE_GENERATION =
+        new java.util.concurrent.atomic.AtomicInteger();
 
     private EhRepository() {
     }
@@ -61,7 +62,8 @@ public final class EhRepository {
     @NonNull
     public static EhGalleryDetail loadGallery(@NonNull Context context, @NonNull EhGalleryKey key, int previewPage,
                                               boolean refresh) throws IOException {
-        String cacheKey = key.gid + ":" + previewPage;
+        String cacheKey = key + ":" + previewPage;
+        int generation = CACHE_GENERATION.get();
         if (!refresh) {
             synchronized (PREVIEW_PAGES) {
                 EhGalleryDetail cached = PREVIEW_PAGES.get(cacheKey);
@@ -70,9 +72,11 @@ public final class EhRepository {
         }
         EhGalleryDetail d = EhGalleryParser.parse(EhClient.getHtml(context, EhUrls.galleryUrl(key, previewPage)), key);
         synchronized (PREVIEW_PAGES) {
-            PREVIEW_PAGES.put(cacheKey, d);
-            if (previewPage == 0 || !SHAPE.containsKey(key.gid))
-                SHAPE.put(key.gid, new int[]{previewPage == 0 ? d.previewsPerPage() : guessPerPage(d, previewPage), d.pages});
+            if (generation == CACHE_GENERATION.get()) {
+                PREVIEW_PAGES.put(cacheKey, d);
+                if (previewPage == 0 || !SHAPE.containsKey(key))
+                    SHAPE.put(key, new int[]{previewPage == 0 ? d.previewsPerPage() : guessPerPage(d, previewPage), d.pages});
+            }
         }
         return d;
     }
@@ -89,7 +93,7 @@ public final class EhRepository {
     public static String pageUrl(@NonNull Context context, @NonNull EhGalleryKey key, int index) throws IOException {
         int perPage;
         synchronized (PREVIEW_PAGES) {
-            int[] shape = SHAPE.get(key.gid);
+            int[] shape = SHAPE.get(key);
             perPage = shape == null ? -1 : shape[0];
         }
         if (perPage <= 0) perPage = loadGallery(context, key, 0, false).previewsPerPage();
@@ -118,7 +122,8 @@ public final class EhRepository {
     @NonNull
     public static EhPageParser.Result resolveImage(@NonNull Context context, @NonNull EhGalleryKey key, int index,
                                                    boolean reload) throws IOException {
-        String cacheKey = key.gid + ":" + index;
+        String cacheKey = key + ":" + index;
+        int generation = CACHE_GENERATION.get();
         EhPageParser.Result previous;
         synchronized (IMAGES) {
             previous = IMAGES.get(cacheKey);
@@ -129,12 +134,13 @@ public final class EhRepository {
             pageUrl = EhUrls.withReloadKey(pageUrl, previous.reloadKey);
         EhPageParser.Result r = EhPageParser.parse(EhClient.getHtml(context, pageUrl));
         synchronized (IMAGES) {
-            IMAGES.put(cacheKey, r);
+            if (generation == CACHE_GENERATION.get()) IMAGES.put(cacheKey, r);
         }
         return r;
     }
 
     public static void clearCaches() {
+        CACHE_GENERATION.incrementAndGet();
         synchronized (PREVIEW_PAGES) {
             PREVIEW_PAGES.clear();
             SHAPE.clear();
@@ -145,9 +151,14 @@ public final class EhRepository {
     }
 
     public static void forget(@NonNull EhGalleryKey key) {
+        CACHE_GENERATION.incrementAndGet();
+        String prefix = key + ":";
         synchronized (PREVIEW_PAGES) {
-            PREVIEW_PAGES.keySet().removeIf(k -> k.startsWith(key.gid + ":"));
-            SHAPE.remove(key.gid);
+            PREVIEW_PAGES.keySet().removeIf(k -> k.startsWith(prefix));
+            SHAPE.remove(key);
+        }
+        synchronized (IMAGES) {
+            IMAGES.keySet().removeIf(k -> k.startsWith(prefix));
         }
     }
 

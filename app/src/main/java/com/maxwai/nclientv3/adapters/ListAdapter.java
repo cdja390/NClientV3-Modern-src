@@ -20,6 +20,10 @@ import com.maxwai.nclientv3.api.enums.Language;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.components.activities.BaseActivity;
 import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
+import com.maxwai.nclientv3.ehentai.EhDatabase;
+import com.maxwai.nclientv3.ehentai.EhGalleryKey;
+import com.maxwai.nclientv3.components.status.Status;
+import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.ehentai.EhUi;
 import com.maxwai.nclientv3.source.GalleryIdentity;
 import com.maxwai.nclientv3.source.GallerySource;
@@ -128,12 +132,12 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
               /*Intent intent = new Intent(context, GalleryActivity.class);
               intent.putExtra(context.getPackageName() + ".ID", ent.getId());
               context.startActivity(intent);*/
+            if (context instanceof MainActivity)
+                ((MainActivity) context).setOpenedGallery(GalleryIdentity.of(ent));
             if (ent instanceof EhSimpleGallery) {
                 context.startActivity(((EhSimpleGallery) ent).open(context));
                 return;
             }
-            if (context instanceof MainActivity)
-                ((MainActivity) context).setIdOpenedGallery(ent.getId());
             downloadGallery(ent);
             holder.overlay.setVisibility((queryString != null && ent.hasIgnoredTags(queryString)) ? View.VISIBLE : View.GONE);
         });
@@ -145,24 +149,25 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
             return true;
         });
         String statusKey = GalleryIdentity.of(ent).stableKey();
-        Integer cached = statuses.get(statusKey);
-        int statusColor = cached == null ? 0 : cached;
-        if (statusColor == 0 && GalleryIdentity.persistsInNhentaiTables(ent)) {
-            statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
-            statuses.put(statusKey, statusColor);
-        }
-        holder.title.setBackgroundColor(statusColor);
+        holder.title.setBackgroundColor(statuses.computeIfAbsent(statusKey, ignored -> statusColor(GalleryIdentity.of(ent))));
     }
 
-    public void updateColor(int id) {
-        if (id < 0) return;
-        String statusKey = new SourceKey(GallerySource.NHENTAI, id, null).stableKey();
-        statuses.put(statusKey, Queries.StatusMangaTable.getStatus(id).color);
+    private int statusColor(SourceKey key) {
+        if (key.source == GallerySource.NHENTAI) return Queries.StatusMangaTable.getStatus((int) key.id).color;
+        if (key.token == null) return 0;
+        String name = EhDatabase.get(context).readingStatus(new EhGalleryKey(key.id, key.token,
+            key.source == GallerySource.EXHENTAI));
+        Status status = StatusManager.getByName(name);
+        return status == null ? 0 : status.color;
+    }
+
+    public void updateColor(SourceKey key) {
+        statuses.remove(key.stableKey());
         for (int i = 0; i < mDataset.size(); i++) {
             SimpleGallery gallery = mDataset.get(i);
             if (gallery == null) continue;
             SourceKey row = GalleryIdentity.of(gallery);
-            if (GalleryIdentity.sameIdentity(GallerySource.NHENTAI, id, row.source, row.id)) {
+            if (key.equals(row)) {
                 notifyItemChanged(i);
                 return;
             }

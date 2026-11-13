@@ -445,11 +445,17 @@ public class InspectorV3 extends Thread implements Parcelable {
 
     private void filterDocumentTags() {
         if (galleries == null || tags == null) return;
+        Collection<Tag> exactTags = new ArrayList<>(tags.size());
+        for (Tag tag : tags) {
+            // The server matches the name in the query. A synthesized EH tag has no NH id.
+            Tag exact = tag.getId() < -1 ? Queries.TagTable.searchTag(tag.getName(), tag.getType()) : tag;
+            if (exact != null) exactTags.add(exact);
+        }
         ArrayList<SimpleGallery> galleryTag = new ArrayList<>(galleries.size());
         for (GenericGallery gal : galleries) {
             assert gal instanceof SimpleGallery;
             SimpleGallery gallery = (SimpleGallery) gal;
-            if (gallery.hasTags(tags)) {
+            if (gallery.hasTags(exactTags)) {
                 galleryTag.add(gallery);
             }
         }
@@ -549,6 +555,7 @@ public class InspectorV3 extends Thread implements Parcelable {
     public Tag getTag() {
         Tag t = null;
         if (tags == null) return null;
+        for (Tag tt : tags) if (tt.getId() < -1) return tt;
         for (Tag tt : tags) {
             if (tt.getType() != TagType.LANGUAGE)
                 return tt;

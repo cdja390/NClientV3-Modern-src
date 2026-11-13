@@ -407,7 +407,7 @@ public class EhBrowseActivity extends GeneralActivity {
                     return;
                 }
                 io.execute(() -> {
-                    if (s == Section.HISTORY) EhDatabase.get(this).removeHistory(info.key.gid);
+                        if (s == Section.HISTORY) EhDatabase.get(this).removeHistory(info.key);
                     else EhDatabase.get(this).setFavorite(info, false);
                 });
                 adapter.remove(info);

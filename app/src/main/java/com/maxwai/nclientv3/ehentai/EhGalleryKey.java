@@ -77,17 +77,21 @@ public final class EhGalleryKey {
         return EhUrls.galleryUrl(this, 0);
     }
 
+    boolean hasFileToken() {
+        return token.matches("[0-9a-f]{10}");
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof EhGalleryKey)) return false;
         EhGalleryKey k = (EhGalleryKey) o;
-        return gid == k.gid && token.equals(k.token);
+        return gid == k.gid && exhentai == k.exhentai && token.equals(k.token);
     }
 
     @Override
     public int hashCode() {
-        return Long.hashCode(gid) * 31 + token.hashCode();
+        return (Long.hashCode(gid) * 31 + token.hashCode()) * 31 + Boolean.hashCode(exhentai);
     }
 
     @NonNull

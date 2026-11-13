@@ -98,7 +98,7 @@ public class EhSimpleGallery extends SimpleGallery {
 
     @NonNull
     public android.content.Intent open(@NonNull android.content.Context context) {
-        return EhIntents.gallery(context, info);
+        return EhIntents.mergedGallery(context, info);
     }
 
     @Override
