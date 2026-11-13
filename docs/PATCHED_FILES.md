@@ -76,3 +76,9 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 - New `source/MergeSource.java`, `MergePage.java`, `SourceMerger.java`, `SourceCapabilities.java`: request sort intersection, independent failures, last-error propagation, round-robin and source-key dedup; semantics from yosefario-dev/NClientV3 b2ee7ed (Apache-2.0).
 - `api/InspectorV3.java`: adapt the existing NH transport/parser and EH feed to the merger without changing stored sort. `ehentai/EhFeed.java`: empty parsed pages report the current page.
 - Tests: `source/SourceMergerTest` and additional `ehentai/EhFeedTest` empty-page case. Evidence and remaining device checks in `MERGE_ACCEPTANCE_472.md`.
+
+## Files added or modified in 4.7.2 (P3, EH query and cursor alignment)
+
+- `ehentai/EhFeed.java`, new `EhPager.java`, `EhUrls.java`, `EhCategory.java`: all tag terms, request category/page/rating filters and global defaults, 24-query/4-page LRU and upstream cursor boundaries. Explicit Private and evicted-page cursor behavior match b2ee7ed.
+- `api/components/Ranges.java`: optional EH request rating with legacy six-int Parcel reader preserved; `api/InspectorV3.java` passes ranges to EH. Rating UI follows in P4.
+- Tests: `ehentai/EhSearchPagerTest`, updated `EhFeedTest`. No real Android Parcel test is claimed.

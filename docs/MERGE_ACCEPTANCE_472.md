@@ -39,6 +39,16 @@
 - 本阶段 APK 18048121 字节，SHA-256 509863157FE5D1E915A9F877EB78E7DF424A79233468A9F163B8B336294C30F3。版本仍为 4.7.1，P7 升版。
 - T04、T06-T14、T32 共 11 个条目有完整 JVM 证据；T05 菜单接入待 P4。N01-N07、Android Parcel 和真机验收未完成。
 
+## 本次 P3 验证（2026-11-13，Asia/Shanghai）
+
+- 标签不限数量，保留双引号/避免前缀及热门占位适配；CATEGORY 映射覆盖普通十分类和显式 Private（上游 f_cats=1023），无请求分类才继承全局分类。
+- Ranges 支持最低评分、页数映射；未给评分时继承全局，0 显式关闭。评分不进入 NH 查询语法。搜索页评分控件将在 P4 接入。
+- Ranges 无评分时仍写旧六个 int；有评分时写 marker + 六个 int + rating。真实 Android 往返仍待验。
+- EhPager：24 条查询链、每链 4 页 LRU、MAX_WALK=8；第1页刷新链；淘汰页重新请求但沿用已记游标判定下一页，与上游一致。模拟测试覆盖动态末页变化、缓存淘汰、连续超过8页。
+- 最终指定三任务通过；XML 124 tests / 0 failures / 0 errors / 0 skipped。EhSearchPagerTest 12，本地化 2。APK 18051049 字节，SHA-256 C3BCC9314CF63C1E364849F7B0B6E0020CB850876F372C02BFE8DA45F4048264。
+- JVM 矩阵有证据条目：T04、T06-T26、T32，共23项；真实网络、Android Parcel和真机项未验收。
+- 本次用户进一步明确：方案 B 保留独立 EH 阅读器，同时补齐垂直/条漫、边缘点击、音量键、自动翻页、自动阅读状态等阅读交互和设置；不得把这些差异作为已接受保留项。后续逐项验收。
+
 ## 逐项状态
 
 | ID | 本次状态 | 证据/限制 |
@@ -57,18 +67,18 @@
 | T12 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T13 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T14 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
-| T15 | 待验证 | 后续阶段 |
-| T16 | 待验证 | 后续阶段 |
-| T17 | 待验证 | 后续阶段 |
-| T18 | 待验证 | 后续阶段 |
-| T19 | 待验证 | 后续阶段 |
-| T20 | 待验证 | 后续阶段 |
-| T21 | 待验证 | 后续阶段 |
-| T22 | 待验证 | 后续阶段 |
-| T23 | 待验证 | 后续阶段 |
-| T24 | 待验证 | 后续阶段 |
-| T25 | 待验证 | 后续阶段 |
-| T26 | 待验证 | 后续阶段 |
+| T15 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T16 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T17 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T18 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T19 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T20 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T21 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T22 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T23 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T24 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T25 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T26 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
 | T27 | 部分验证 | SourceKeyTest 字段流；Android Parcel 待验 |
 | T28 | 部分验证 | SourceKeyTest 混合字段流；Android Parcel 待验 |
 | T29 | 部分验证 | 保留旧 kind 读取分支；真实解包待验 |

@@ -64,6 +64,13 @@ public final class EhUrls {
     @NonNull
     public static String searchUrl(boolean exhentai, @Nullable String query, int shownCategories,
                                    int minRating, @Nullable String cursor) {
+        return searchUrl(exhentai, query, shownCategories, minRating, -1, -1, cursor);
+    }
+
+    /** Request page/rating filters; -1 means unspecified. */
+    @NonNull
+    public static String searchUrl(boolean exhentai, @Nullable String query, int shownCategories,
+                                   int minRating, int minPages, int maxPages, @Nullable String cursor) {
         StringBuilder b = new StringBuilder(host(exhentai));
         char sep = '?';
         int exclude = EhCategory.excludeMaskForShown(shownCategories);
@@ -75,8 +82,11 @@ public final class EhUrls {
             b.append(sep).append("f_search=").append(encode(query.trim()));
             sep = '&';
         }
-        if (minRating >= 2 && minRating <= 5) {
-            b.append(sep).append("advsearch=1&f_srdd=").append(minRating);
+        if ((minRating > 0 && minRating <= 5) || minPages > 0 || maxPages > 0) {
+            b.append(sep).append("advsearch=1");
+            if (minRating > 0 && minRating <= 5) b.append("&f_srdd=").append(minRating);
+            if (minPages > 0) b.append("&f_spf=").append(minPages);
+            if (maxPages > 0) b.append("&f_spt=").append(maxPages);
             sep = '&';
         }
         if (cursor != null && !cursor.isEmpty()) b.append(sep).append("next=").append(encode(cursor));

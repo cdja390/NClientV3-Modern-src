@@ -29,6 +29,7 @@ import androidx.annotation.Nullable;
 
 import com.maxwai.nclientv3.api.components.GenericGallery;
 import com.maxwai.nclientv3.api.components.Tag;
+import com.maxwai.nclientv3.api.components.Ranges;
 import com.maxwai.nclientv3.source.GalleryIdentity;
 import com.maxwai.nclientv3.api.enums.ApiRequestType;
 import com.maxwai.nclientv3.api.enums.TagStatus;
@@ -39,9 +40,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -59,19 +58,10 @@ public final class EhFeed {
     public static final String MODE_EH = "eh";
     public static final String MODE_BOTH = "both";
     static final int MAX_WALK = 8;
-    static final int MAX_TAG_TERMS = 12;
-    private static final int MAX_CHAINS = 16;
     /** Query nhentai's "popular" home page is rewritten to (InspectorV3.tryByAllPopular). */
     private static final String NH_POPULAR_PLACEHOLDER = "-nclientv3";
 
     public enum Mode {NH, EH, BOTH}
-
-    private static final Map<String, List<String>> CHAINS = new LinkedHashMap<>(16, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, List<String>> eldest) {
-            return size() > MAX_CHAINS;
-        }
-    };
 
     private EhFeed() {
     }
@@ -119,25 +109,23 @@ public final class EhFeed {
     @Nullable
     static String tagTerm(@Nullable String name, @Nullable String namespace, boolean avoided) {
         if (name == null || namespace == null) return null;
-        String value = name.trim().replace("\"", "");
+        String value = name.trim();
         if (value.isEmpty()) return null;
         String core = (namespace.isEmpty() ? "" : namespace + ":") + "\"" + value + "$\"";
         return avoided ? "-" + core : core;
     }
 
-    /** Free text plus up to {@link #MAX_TAG_TERMS} tag terms, the way yosefario builds f_search. */
+    /** Free text and all distinct tag terms, matching yosefario buildSearchQuery. */
     @NonNull
     public static String buildQuery(@Nullable String query, @Nullable Collection<Tag> tags) {
         StringBuilder b = new StringBuilder();
         if (query != null && !NH_POPULAR_PLACEHOLDER.equals(query.trim())) append(b, query);
         if (tags != null) {
-            int added = 0;
             for (Tag tag : tags) {
-                if (tag == null || added >= MAX_TAG_TERMS) continue;
+                if (tag == null) continue;
                 String term = tagTerm(tag.getName(), namespace(tag.getType()), tag.getStatus() == TagStatus.AVOIDED);
                 if (term != null && b.indexOf(term) < 0) {
                     append(b, term);
-                    added++;
                 }
             }
         }
@@ -183,58 +171,55 @@ public final class EhFeed {
     /** Page {@code page} (1-based) of the list whose first page is {@code urls.url(null)}. */
     @NonNull
     static Result page(@NonNull UrlBuilder urls, int page, @NonNull Fetcher fetcher) throws IOException {
-        String key = urls.url(null);
-        List<String> chain;
-        synchronized (CHAINS) {
-            chain = CHAINS.get(key);
-            if (chain == null || page <= 1) {
-                chain = new ArrayList<>();
-                CHAINS.put(key, chain);
-            }
-        }
-        synchronized (chain) {
-            if (page <= 1) {
-                EhListParser.Page p = fetcher.fetch(key);
-                chain.clear();
-                chain.add(p.nextCursor);
-                return new Result(p.items, p.nextCursor != null);
-            }
-            if (chain.isEmpty()) {
-                EhListParser.Page first = fetcher.fetch(key);
-                chain.add(first.nextCursor);
-            }
-            // chain.get(i) is the cursor that opens page i + 2.
-            if (page - 1 - chain.size() >= MAX_WALK) return new Result(new ArrayList<>(), false);
-            while (chain.size() < page - 1) {
-                String cursor = chain.get(chain.size() - 1);
-                if (cursor == null) return new Result(new ArrayList<>(), false);
-                chain.add(fetcher.fetch(urls.url(cursor)).nextCursor);
-            }
-            String cursor = chain.get(page - 2);
-            if (cursor == null) return new Result(new ArrayList<>(), false);
-            EhListParser.Page p = fetcher.fetch(urls.url(cursor));
-            if (chain.size() == page - 1) chain.add(p.nextCursor);
-            else chain.set(page - 1, p.nextCursor);
-            return new Result(p.items, p.nextCursor != null);
-        }
+        return EhPager.page(urls, page, fetcher);
     }
 
-    static void resetChains() {
-        synchronized (CHAINS) {
-            CHAINS.clear();
+    public static void resetChains() {
+        EhPager.reset();
+    }
+
+    /** CATEGORY tags override global categories, including an unrecognized explicit category. */
+    static int shownCategories(@Nullable Collection<Tag> tags, int globalShown) {
+        int shown = 0;
+        boolean specified = false;
+        if (tags != null) {
+            for (Tag tag : tags) {
+                if (tag != null && TagType.CATEGORY.equals(tag.getType())) {
+                    specified = true;
+                    shown |= tag.getName() != null && "private".equalsIgnoreCase(tag.getName().trim())
+                        ? EhCategory.REQUEST_PRIVATE : EhCategory.fromLabel(tag.getName()).bit;
+                }
+            }
         }
+        return specified ? shown : globalShown;
+    }
+
+    static String searchUrl(boolean ex, @Nullable String query, @Nullable Collection<Tag> tags,
+                            @Nullable Ranges ranges, int globalShown, int globalRating, @Nullable String cursor) {
+        int rating = ranges != null && ranges.getMinRating() != Ranges.UNDEFINED
+            ? ranges.getMinRating() : globalRating;
+        int minPages = ranges == null ? Ranges.UNDEFINED : ranges.getFromPage();
+        int maxPages = ranges == null ? Ranges.UNDEFINED : ranges.getToPage();
+        return EhUrls.searchUrl(ex, buildQuery(query, tags), shownCategories(tags, globalShown),
+            rating, minPages, maxPages, cursor);
     }
 
     /** Loads page {@code page} of the e-hentai list matching the main list's query and tags. */
     @NonNull
     public static Result load(@NonNull Context context, @Nullable String query, @Nullable Collection<Tag> tags,
                               int page) throws IOException {
+        return load(context, query, tags, null, page);
+    }
+
+    @NonNull
+    public static Result load(@NonNull Context context, @Nullable String query, @Nullable Collection<Tag> tags,
+                              @Nullable Ranges ranges, int page) throws IOException {
         final boolean ex = EhSettings.useExhentai(context);
         final String search = buildQuery(query, tags);
         final int shown = EhSettings.shownCategories(context);
         final int minRating = EhSettings.minRating(context);
         final Context app = context.getApplicationContext();
-        Result r = page(cursor -> EhUrls.searchUrl(ex, search, shown, minRating, cursor), page,
+        Result r = page(cursor -> searchUrl(ex, query, tags, ranges, shown, minRating, cursor), page,
             url -> EhRepository.loadList(app, url));
         LogUtility.d("EhFeed: page " + page + " '" + search + "' -> " + r.items.size() + " galleries");
         return r;

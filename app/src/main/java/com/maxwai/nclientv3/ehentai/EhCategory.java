@@ -41,6 +41,8 @@ public enum EhCategory {
 
     /** All real category bits. */
     public static final int ALL = 0x3ff;
+    /** Upstream explicit CATEGORY Private: hide all ordinary categories; not a global UI category. */
+    public static final int REQUEST_PRIVATE = 0x400;
 
     public final int bit;
     @NonNull
@@ -94,6 +96,7 @@ public enum EhCategory {
      */
     public static int excludeMaskForShown(int shownBits) {
         int shown = shownBits & ALL;
+        if ((shownBits & REQUEST_PRIVATE) != 0) return ALL & ~shown;
         if (shown == 0 || shown == ALL) return 0;
         return ALL & ~shown;
     }

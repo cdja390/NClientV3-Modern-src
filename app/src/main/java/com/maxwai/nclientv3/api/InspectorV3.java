@@ -407,7 +407,7 @@ public class InspectorV3 extends Thread implements Parcelable {
         Context ctx = context.get();
         EhFeed.Mode mode = EhFeed.modeFor(ctx, requestType);
         if (mode == EhFeed.Mode.EH && ctx != null) {
-            EhFeed.Result eh = EhFeed.load(ctx, query, tags, page);
+            EhFeed.Result eh = EhFeed.load(ctx, query, tags, ranges, page);
             galleries = EhFeed.wrap(eh.items);
             pageCount = eh.pageCount(page);
             return;
@@ -428,7 +428,7 @@ public class InspectorV3 extends Thread implements Parcelable {
             return new MergePage<>(nh.galleries, nh.pageCount);
         }));
         sources.add(SourceMerger.source(GalleryIdentity.ehSource(EhSettings.useExhentai(ctx)), effectiveSort -> {
-            EhFeed.Result eh = EhFeed.load(ctx, query, tags, page);
+            EhFeed.Result eh = EhFeed.load(ctx, query, tags, ranges, page);
             return new MergePage<>(EhFeed.wrap(eh.items), eh.pageCount(page));
         }));
         MergePage<GenericGallery> merged = sourceMerger.merge(sources, sortType, page,

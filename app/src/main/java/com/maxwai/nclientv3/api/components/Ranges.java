@@ -23,6 +23,9 @@ public class Ranges implements Parcelable {
             return new Ranges[size];
         }
     };
+    // Version marker only when an EH rating is present; legacy six-int parcels still read.
+    private static final int PARCEL_WITH_RATING = Integer.MIN_VALUE;
+    private int minRating = UNDEFINED;
     private int fromPage = UNDEFINED, toPage = UNDEFINED;
     private int fromDate = UNDEFINED, toDate = UNDEFINED;
     private TimeUnit fromDateUnit = UNDEFINED_DATE, toDateUnit = UNDEFINED_DATE;
@@ -32,7 +35,9 @@ public class Ranges implements Parcelable {
 
     protected Ranges(Parcel in) {
         int date;
-        fromPage = in.readInt();
+        int first = in.readInt();
+        boolean withRating = first == PARCEL_WITH_RATING;
+        fromPage = withRating ? in.readInt() : first;
         toPage = in.readInt();
         fromDate = in.readInt();
         toDate = in.readInt();
@@ -40,11 +45,21 @@ public class Ranges implements Parcelable {
         fromDateUnit = date == -1 ? UNDEFINED_DATE : TimeUnit.values()[date];
         date = in.readInt();
         toDateUnit = date == -1 ? UNDEFINED_DATE : TimeUnit.values()[date];
+        if (withRating) minRating = in.readInt();
     }
 
     public boolean isDefault() {
         return fromDate == UNDEFINED && toDate == UNDEFINED
-            && toPage == UNDEFINED && fromPage == UNDEFINED;
+            && toPage == UNDEFINED && fromPage == UNDEFINED && minRating == UNDEFINED;
+    }
+
+    public int getMinRating() {
+        return minRating;
+    }
+
+    /** EH-only request filter; UNDEFINED inherits the global setting, 0 explicitly removes it. */
+    public void setMinRating(int rating) {
+        minRating = rating >= 0 && rating <= 5 ? rating : UNDEFINED;
     }
 
     public int getFromPage() {
@@ -101,12 +116,14 @@ public class Ranges implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        if (minRating != UNDEFINED) dest.writeInt(PARCEL_WITH_RATING);
         dest.writeInt(fromPage);
         dest.writeInt(toPage);
         dest.writeInt(fromDate);
         dest.writeInt(toDate);
         dest.writeInt(fromDateUnit == UNDEFINED_DATE ? -1 : fromDateUnit.ordinal());
         dest.writeInt(toDateUnit == UNDEFINED_DATE ? -1 : toDateUnit.ordinal());
+        if (minRating != UNDEFINED) dest.writeInt(minRating);
     }
 
     @Override
