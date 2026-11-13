@@ -19,6 +19,7 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 | `app/src/main/res/layout/dialog_turnstile.xml` | `res/layout/dialog_turnstile.xml` | unchanged (4.7.0) |
 | `app/src/main/java/com/maxwai/nclientv3/LoginActivity.java` | flow of `LoginActivity.java` | native form added in front of the existing WebView login, which stays as a 60 s fallback; optional API-key button (4.7.0) |
 | `app/src/main/java/com/maxwai/nclientv3/ehentai/Eh*Parser.java`, `EhUrls.java`, `EhCategory.java`, `EhGalleryKey.java`, `EhGalleryDetail.java`, `EhAuth.java` | `api/source/ehentai/EHentaiSearchParser.java`, `EHentaiGalleryPageParser.java`, `EHentaiViewerLoader.java`, `EHentaiUrls.java`, `EHentaiCategory.java`, `EHentaiFavorites.java`, `EHentaiAuth.java` | rewritten on OkHttp + jsoup without GeckoView; only selectors, URL shapes and cookie names are reused (4.7.0) |
+| `app/src/main/java/com/maxwai/nclientv3/ehentai/EhLoginActivity.java` | `EHentaiLoginActivity.java` | system WebView instead of GeckoView, cookie polling, paste-cookies dialog (4.7.0) |
 
 ## Files modified in 4.6.0
 
@@ -54,3 +55,4 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
   offline reading, resume and reading statistics; backup of ehentai.db:
   `async/database/export/Exporter.java` (one extra zip entry) and `Importer.java` (one
   branch). Format and compatibility: `docs/BACKUP_FORMAT.md`.
+- Version 4.7.0 (`app/build.gradle.kts`: `minorVersion = 7`, versionCode 470000).
