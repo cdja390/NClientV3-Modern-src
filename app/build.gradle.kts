@@ -183,7 +183,7 @@ dependencies {
     implementation("com.github.bumptech.glide:okhttp3-integration:5.0.7@aar")
     annotationProcessor("com.github.bumptech.glide:compiler:5.0.7")
     // For Http Connection
-    implementation("com.squareup.okhttp3:okhttp-urlconnection:5.4.0")
+    implementation("com.squareup.okhttp3:okhttp-urlconnection:5.5.1")
     // Used to store the cookies between runs
     implementation("com.github.franmontiel:PersistentCookieJar:v1.0.1")
     // To parse HTML
