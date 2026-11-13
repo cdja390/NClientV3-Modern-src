@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.WindowInsets;
@@ -41,8 +42,13 @@ import com.maxwai.nclientv3.components.views.ZoomFragment;
 import com.maxwai.nclientv3.files.GalleryFolder;
 import com.maxwai.nclientv3.settings.DefaultDialogs;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.utility.AutoPageTurner;
+import com.maxwai.nclientv3.utility.DownloadWhileReadingHelper;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.ReadingSessionHelper;
+import com.maxwai.nclientv3.utility.ReadingStatsHelper;
 import com.maxwai.nclientv3.utility.Utility;
+import com.maxwai.nclientv3.utility.VolumeDirectionHelper;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
@@ -93,6 +99,7 @@ public class ZoomActivity extends GeneralActivity {
         }
         final int page = Objects.requireNonNull(getIntent().getExtras()).getInt(getPackageName() + ".PAGE", 1) - 1;
         directory = gallery.getGalleryFolder();
+        maybeDownloadWhileReading();
         //toolbar setup
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -232,7 +239,15 @@ public class ZoomActivity extends GeneralActivity {
 
         goToPage(page);
         setPageText(page + 1);
+        ReadingSessionHelper.onSessionStart(this, page + 1);
+        ReadingStatsHelper.onSessionStart(this, page + 1, savedInstanceState);
         seekBar.setProgress(page);
+    }
+
+    private void maybeDownloadWhileReading() {
+        if (gallery != null) {
+            DownloadWhileReadingHelper.onReadStart(this, gallery, actualPage);
+        }
     }
 
     private void setUserInput(boolean enabled) {
@@ -242,6 +257,9 @@ public class ZoomActivity extends GeneralActivity {
     private void setPageText(int page) {
         pageManagerLabel.setText(getString(R.string.page_format, page, gallery.getPageCount()));
         cornerPageViewer.setText(getString(R.string.page_format, page, gallery.getPageCount()));
+        DownloadWhileReadingHelper.onPageChanged(this, gallery, page - 1);
+        ReadingSessionHelper.onPageChanged(this, gallery, page);
+        ReadingStatsHelper.onPageChanged(this, gallery, page);
     }
 
 
@@ -454,12 +472,16 @@ public class ZoomActivity extends GeneralActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_zoom, menu);
+        AutoPageTurner.setupMenu(this, menu);
+        VolumeDirectionHelper.setupMenu(this, menu);
         Utility.tintMenu(this, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (AutoPageTurner.onMenuItemSelected(this, item)) return true;
+        if (VolumeDirectionHelper.onMenuItemSelected(this, item)) return true;
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
@@ -657,6 +679,7 @@ public class ZoomActivity extends GeneralActivity {
 
     @Override
     protected void onDestroy() {
+        AutoPageTurner.onDestroy(this);
         super.onDestroy();
         if (mWebtoonRecyclerView != null && webtoonScrollListener != null) {
             mWebtoonRecyclerView.removeOnScrollListener(webtoonScrollListener);
@@ -665,6 +688,72 @@ public class ZoomActivity extends GeneralActivity {
         if (mWebtoonAdapter != null) {
             mWebtoonAdapter.setClickListener(null);
         }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        ReadingStatsHelper.onTouch(this, ev);
+        if (AutoPageTurner.onDispatchTouchEvent(this, ev)) {
+            return true;
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    protected void onPause() {
+        if (gallery != null) {
+            Queries.ResumeTable.insert(gallery.getId(), actualPage + 1);
+        }
+        AutoPageTurner.onPause(this);
+        ReadingSessionHelper.onLeave(this, gallery);
+        ReadingStatsHelper.onPause(this, gallery);
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ReadingStatsHelper.onResume(this, gallery);
+    }
+
+    public boolean autoTurnNextPage() {
+        if (gallery != null && actualPage < gallery.getPageCount() - 1) {
+            changeClosePage(true);
+            return true;
+        }
+        return false;
+    }
+
+    public int getZoomCurrentPage() {
+        return actualPage + 1;
+    }
+
+    public int getZoomTotalPages() {
+        return gallery != null ? gallery.getPageCount() : 0;
+    }
+
+    public void hideBars() {
+        if (!isHidden) {
+            isHidden = true;
+            applyVisibilityFlag();
+            animateLayout();
+        }
+    }
+
+    public void showBars() {
+        if (isHidden) {
+            isHidden = false;
+            applyVisibilityFlag();
+            animateLayout();
+        }
+    }
+
+    public void setVolumeSide(boolean side) {
+        this.side = side;
+    }
+
+    public boolean getVolumeSide() {
+        return side;
     }
 
     public class SectionsPagerAdapter extends FragmentStateAdapter {

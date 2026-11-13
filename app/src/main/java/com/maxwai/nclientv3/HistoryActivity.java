@@ -4,6 +4,7 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.widget.Toolbar;
@@ -12,6 +13,10 @@ import com.maxwai.nclientv3.adapters.ListAdapter;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.components.activities.BaseActivity;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.utility.BottomNavRouter;
+import com.maxwai.nclientv3.utility.GlassBar;
+import com.maxwai.nclientv3.utility.HistoryClearHelper;
+import com.maxwai.nclientv3.utility.SearchImeHelper;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.util.ArrayList;
@@ -24,7 +29,8 @@ public class HistoryActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         //Global.initActivity(this);
-        setContentView(R.layout.activity_bookmark);
+        setContentView(R.layout.activity_history);
+        BottomNavRouter.install(this, R.id.history);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar actionBar = Objects.requireNonNull(getSupportActionBar());
@@ -37,18 +43,36 @@ public class HistoryActivity extends BaseActivity {
         adapter.addGalleries(new ArrayList<>(Queries.HistoryTable.getHistory()));
         changeLayout(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
         recycler.setAdapter(adapter);
+        syncEmpty();
+    }
+
+    private void syncEmpty() {
+        if (adapter == null) return;
+        View emptyView = findViewById(R.id.history_empty);
+        if (emptyView == null) return;
+        emptyView.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        BottomNavRouter.sync(this, R.id.history);
+        GlassBar.refresh(this);
+        if (BottomNavRouter.hasHistoryChanged(this) && adapter != null) {
+            adapter.restartDataset(new ArrayList<>(Queries.HistoryTable.getHistory()));
+        }
+        syncEmpty();
+        SearchImeHelper.refreshHistory(this);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            finish();
+            BottomNavRouter.backHome(this);
             return true;
         } else if (item.getItemId() == R.id.cancelAll) {
-            Queries.HistoryTable.emptyHistory();
-            adapter.restartDataset(new ArrayList<>(1));
+            HistoryClearHelper.onClearClicked(this);
             return true;
-
         }
         return super.onOptionsItemSelected(item);
     }
@@ -67,6 +91,7 @@ public class HistoryActivity extends BaseActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.history, menu);
+        SearchImeHelper.installHistory(this, menu.findItem(R.id.search));
         Utility.tintMenu(this, menu);
         return true;
     }

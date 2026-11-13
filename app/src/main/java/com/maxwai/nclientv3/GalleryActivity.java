@@ -7,6 +7,8 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Layout;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,6 +19,7 @@ import android.widget.Button;
 import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -42,7 +45,10 @@ import com.maxwai.nclientv3.settings.AuthRequest;
 import com.maxwai.nclientv3.settings.Favorites;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.Login;
+import com.maxwai.nclientv3.utility.DownloadWhileReadingHelper;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.ReadingStatsHelper;
+import com.maxwai.nclientv3.utility.ResumeHelper;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.io.File;
@@ -162,7 +168,9 @@ public class GalleryActivity extends BaseActivity {
         adapter = new GalleryAdapter(this, gallery, Global.getColumnCount());
         recycler.setAdapter(adapter);
         lookup();
-        if (zoom > 0 && Global.getDownloadPolicy() != Global.DataUsageType.NONE) {
+        if (zoom <= 0) {
+            ResumeHelper.handleResumeOnLoad(this, gallery, adapter != null ? adapter.getDirectory() : null);
+        } else if (Global.getDownloadPolicy() != Global.DataUsageType.NONE) {
             Intent intent = new Intent(this, ZoomActivity.class);
             intent.putExtra(getPackageName() + ".GALLERY", this.gallery);
             intent.putExtra(getPackageName() + ".DIRECTORY", adapter.getDirectory());
@@ -177,13 +185,17 @@ public class GalleryActivity extends BaseActivity {
         if (page < 0) return;
         Snackbar snack = Snackbar.make(toolbar, getString(R.string.resume_from_page, page), Snackbar.LENGTH_LONG);
         //Should be already compensated
-        snack.setAction(R.string.resume, v -> new Thread(() -> {
-            runOnUiThread(() -> recycler.scrollToPosition(page));
-            if (Global.getColumnCount() != 1) return;
-            Utility.threadSleep(500);
-            runOnUiThread(() -> recycler.scrollToPosition(page));
-        }).start());
+        snack.setAction(R.string.resume, v -> openZoomPage(page));
         snack.show();
+    }
+
+    private void openZoomPage(int page) {
+        if (page <= 0) return;
+        Intent intent = new Intent(this, ZoomActivity.class);
+        intent.putExtra(getPackageName() + ".GALLERY", this.gallery);
+        intent.putExtra(getPackageName() + ".DIRECTORY", adapter != null ? adapter.getDirectory() : null);
+        intent.putExtra(getPackageName() + ".PAGE", page);
+        startActivity(intent);
     }
 
     private void applyTitle() {
@@ -201,15 +213,52 @@ public class GalleryActivity extends BaseActivity {
 
         collapsing.setOnLongClickListener(listener);
         findViewById(R.id.toolbar).setOnLongClickListener(listener);
-        if (title.length() > 100) {
-            collapsing.setExpandedTitleTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
-            collapsing.setMaxLines(5);
-        } else {
-            collapsing.setExpandedTitleTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large);
-            collapsing.setMaxLines(4);
-        }
-        actionBar.setTitle(title);
+        collapsing.setMaxLines(1);
+        actionBar.setTitle("");
+        TextView fullTitle = findViewById(R.id.gallery_full_title);
+        fullTitle.setText(title);
+        fullTitle.setMaxLines(2);
+        fullTitle.setEllipsize(TextUtils.TruncateAt.END);
+        TextView expand = findViewById(R.id.title_expand);
+        TitleToggle toggle = new TitleToggle(fullTitle, expand);
+        expand.setOnClickListener(toggle);
+        fullTitle.post(toggle);
 
+    }
+
+    private static class TitleToggle implements View.OnClickListener, Runnable {
+        private final TextView title;
+        private final TextView button;
+        private boolean expanded;
+
+        TitleToggle(TextView title, TextView button) {
+            this.title = title;
+            this.button = button;
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (expanded) {
+                title.setMaxLines(2);
+                title.setEllipsize(TextUtils.TruncateAt.END);
+                button.setText("\u5c55\u5f00");
+                expanded = false;
+            } else {
+                title.setMaxLines(Integer.MAX_VALUE);
+                title.setEllipsize(null);
+                button.setText("\u6536\u8d77");
+                expanded = true;
+            }
+        }
+
+        @Override
+        public void run() {
+            Layout layout = title.getLayout();
+            if (layout == null) return;
+            int lineCount = layout.getLineCount();
+            if (lineCount <= 0) return;
+            button.setVisibility(layout.getEllipsisCount(lineCount - 1) == 0 ? View.GONE : View.VISIBLE);
+        }
     }
 
     @Override
@@ -232,6 +281,7 @@ public class GalleryActivity extends BaseActivity {
         menuItemsVisible(menu);
         Utility.tintMenu(this, menu);
         updateColumnCount(false);
+        ReadingStatsHelper.setupGalleryMenu(this, menu, gallery);
         return true;
     }
 
@@ -257,6 +307,7 @@ public class GalleryActivity extends BaseActivity {
 
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
+        if (ReadingStatsHelper.onGalleryMenuItemSelected(this, item, gallery)) return true;
         int id = item.getItemId();
         if (id == R.id.download_gallery) {
             if (Global.hasStoragePermission(this))
@@ -283,6 +334,7 @@ public class GalleryActivity extends BaseActivity {
                 Favorites.toastOutcome(this, outcome);
                 if (!outcome.isSuccess()) return;
                 isLocalFavorite = favorite;
+                if (isLocalFavorite) DownloadWhileReadingHelper.onFavorite(this, gallery);
                 item.setIcon(isLocalFavorite ? R.drawable.ic_favorite : R.drawable.ic_favorite_border);
                 Global.setTint(this, item.getIcon());
             });

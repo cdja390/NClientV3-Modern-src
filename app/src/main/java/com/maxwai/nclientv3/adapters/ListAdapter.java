@@ -24,6 +24,7 @@ import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.TagV2;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.SafeMode;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
@@ -64,6 +65,7 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
             if (Global.isDestroyed(context)) return;
 
             ImageDownloadUtility.loadImage(context, ent.getThumbnail(), holder.imgView);
+            SafeMode.apply(holder.imgView);
         } catch (VerifyError ignore) {
         }
     }

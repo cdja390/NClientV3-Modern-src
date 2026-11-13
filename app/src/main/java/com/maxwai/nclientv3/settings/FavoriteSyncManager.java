@@ -72,6 +72,7 @@ public final class FavoriteSyncManager {
     private static final int READ_BURST_PAGES = 14;
     private static final int MAX_ATTEMPTS = 4;
     private static final AtomicBoolean RUNNING = new AtomicBoolean(false);
+    public static volatile int syncMaxPages;
     /**
      * Whoever currently wants callbacks. A sync outlives the screen that started it, so listeners
      * subscribe and unsubscribe independently of the run rather than being handed to it: an
@@ -105,6 +106,11 @@ public final class FavoriteSyncManager {
      *
      * @return false if a sync is already in flight; subscribed listeners still hear that one out
      */
+    public static boolean sync(@NonNull Context context, int maxPages) {
+        syncMaxPages = maxPages;
+        return sync(context);
+    }
+
     public static boolean sync(@NonNull Context context) {
         if (!RUNNING.compareAndSet(false, true)) return false;
         progress = new Progress(false, 0, 0);
@@ -141,6 +147,7 @@ public final class FavoriteSyncManager {
                     }
                 });
             } finally {
+                syncMaxPages = 0;
                 RUNNING.set(false);
             }
         }, "favorite-sync").start();
@@ -251,6 +258,21 @@ public final class FavoriteSyncManager {
             boolean hasBaseline = hasBaseline(context);
             Set<Integer> baseline = hasBaseline
                 ? Queries.FavoriteSyncBaselineTable.getBaselineIds() : new HashSet<>();
+
+            if (syncMaxPages > 0) {
+                int added = 0;
+                long newestRemoteTime = System.currentTimeMillis();
+                for (Map.Entry<Integer, JSONObject> entry : remoteItems.entrySet()) {
+                    if (localIds.contains(entry.getKey())) {
+                        Queries.FavoriteTable.refreshFavoriteListItem(entry.getValue());
+                    } else {
+                        Queries.FavoriteTable.addFavoriteListItem(entry.getValue(), newestRemoteTime - added);
+                        added++;
+                    }
+                }
+                listener.onComplete(new Result(added, 0, 0, 0, 0, false));
+                return;
+            }
 
             Plan plan = plan(remoteIds, localIdsOldestFirst, baseline, hasBaseline);
 
@@ -389,8 +411,10 @@ public final class FavoriteSyncManager {
                     items.put(item.getInt("id"), item);
                 }
             }
-            listener.onProgress(false, page, pageCount);
+            int reportedTotal = syncMaxPages > 0 ? Math.min(pageCount, syncMaxPages) : pageCount;
+            listener.onProgress(false, page, reportedTotal);
             page++;
+            if (syncMaxPages > 0 && page > syncMaxPages) return items;
         } while (page <= pageCount);
         return items;
     }

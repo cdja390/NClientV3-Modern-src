@@ -6,6 +6,7 @@ import android.util.JsonToken;
 
 import androidx.annotation.Nullable;
 
+import com.maxwai.nclientv3.utility.AvatarHelper;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.io.IOException;
@@ -104,9 +105,7 @@ public class UserProfile {
 
     @Nullable
     public Uri getAvatarUrl() {
-        if (avatarUrl == null || avatarUrl.isEmpty()) return null;
-        if (avatarUrl.startsWith("http")) return Uri.parse(avatarUrl);
-        return Uri.parse(String.format(Locale.US, "https://%s/%s", Utility.getImageHost(), avatarUrl));
+        return AvatarHelper.normalizeAvatarUri(avatarUrl, id);
     }
 
     @Nullable

@@ -35,7 +35,9 @@ import com.maxwai.nclientv3.async.downloader.GalleryDownloaderV2;
 import com.maxwai.nclientv3.components.classes.MultichoiceAdapter;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
+import com.maxwai.nclientv3.utility.LocalTagFilterHelper;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.SafeMode;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.io.File;
@@ -208,12 +210,12 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
     private CopyOnWriteArrayList<Object> createHash(List<GalleryDownloaderV2> galleryDownloaders, List<LocalGallery> dataset) {
         HashMap<String, Object> hashMap = new HashMap<>(dataset.size() + galleryDownloaders.size());
         for (LocalGallery gall : dataset) {
-            if (gall != null && gall.getTitle().toLowerCase(Locale.US).contains(lastQuery))
+            if (gall != null && LocalTagFilterHelper.matchesLocal(gall, lastQuery))
                 hashMap.put(gall.getTrueTitle(), gall);
         }
 
         for (GalleryDownloaderV2 gall : galleryDownloaders) {
-            if (gall != null && gall.getPathTitle().toLowerCase(Locale.US).contains(lastQuery))
+            if (gall != null && LocalTagFilterHelper.matchesDownloader(gall, lastQuery))
                 hashMap.put(gall.getTruePathTitle(), gall);
         }
 
@@ -285,6 +287,7 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
     private void bindGallery(@NonNull final ViewHolder holder, LocalGallery ent) {
         if (holder.flag != null) holder.flag.setVisibility(View.GONE);
         ImageDownloadUtility.loadImage(context, ent.getPage(ent.getMin()), holder.imgView);
+        SafeMode.apply(holder.imgView);
         holder.title.setText(ent.getTitle());
         if (colCount == 1)
             holder.pages.setText(context.getString(R.string.page_count_format, ent.getPageCount()));
@@ -334,6 +337,7 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
         int percentage = downloader.getPercentage();
         //if (!downloader.hasData())return;
         ImageDownloadUtility.loadImage(context, downloader.getThumbnail(), holder.imgView);
+        SafeMode.apply(holder.imgView);
         holder.title.setText(downloader.getPathTitle());
         holder.cancelButton.setOnClickListener(v -> removeDownloader(downloader));
         switch (downloader.getStatus()) {

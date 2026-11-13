@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.settings.Database;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.ReadingStatsHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,6 +89,7 @@ class Importer {
         while (reader.hasNext()) {
             String tableName = reader.nextName();
             LogUtility.d("importDB: processing table \"" + tableName + "\"");
+            ReadingStatsHelper.onImportTable(db, tableName);
 
             db.delete(tableName, null, null);
             int rowCount = 0;

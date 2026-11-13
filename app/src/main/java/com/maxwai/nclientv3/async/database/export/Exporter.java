@@ -12,6 +12,7 @@ import com.maxwai.nclientv3.SettingsActivity;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.settings.Database;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.ReadingStatsHelper;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -83,6 +84,7 @@ public class Exporter {
                 writer.endArray();
             }
         }
+        ReadingStatsHelper.exportTable(db, writer);
         writer.endObject();
         writer.flush();
     }

@@ -14,6 +14,7 @@ import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.api.users.UserProfile;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
+import com.maxwai.nclientv3.utility.SafeMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,7 @@ public class RecentFavoriteAdapter extends RecyclerView.Adapter<RecentFavoriteAd
             ImageDownloadUtility.loadImage(R.mipmap.ic_launcher, holder.thumbnail);
         else
             ImageDownloadUtility.loadImage(context, favorite.getThumbnail(), holder.thumbnail);
+        SafeMode.apply(holder.thumbnail);
     }
 
     @Override

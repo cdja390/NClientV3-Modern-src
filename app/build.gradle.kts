@@ -9,28 +9,33 @@ plugins {
 }
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
+val hasReleaseKeystore = keystorePropertiesFile.exists()
 val keystoreProperties = Properties().apply {
-    load(FileInputStream(keystorePropertiesFile))
+    if (hasReleaseKeystore) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
 }
 
 val majorVersion = 4
 val minorVersion = 5
 val patchVersion = 0
 val buildVersion = 0
-val version = "${majorVersion}.${minorVersion}.${patchVersion}"
+val version = "${majorVersion}.${minorVersion}.${patchVersion}-Modern"
 
 android {
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = File(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+        if (hasReleaseKeystore) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = File(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
         }
     }
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.IlFforever.nclientv3"
+        applicationId = "com.IlFforever.nclientv3.clone"
         // Format: MmPPbb
         // M: Major, m: minor, P: Patch, b: build
         versionCode =
@@ -55,12 +60,13 @@ android {
     }
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            versionNameSuffix = "-release"
-            resValue("string", "app_name", "NClientV3")
-            signingConfig = signingConfigs.getByName("release")
+            resValue("string", "app_name", "NClientV3 2")
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         getByName("debug") {
             applicationIdSuffix = ".debug"

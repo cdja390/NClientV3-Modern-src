@@ -27,6 +27,7 @@ import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.SafeMode;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -145,6 +146,7 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
             ImageDownloadUtility.loadImage(activity, ((Gallery) ent).getThumbnail(), holder.imgView);
         else
             ImageDownloadUtility.loadImage(activity, ((SimpleGallery) ent).getThumbnail(), holder.imgView);
+        SafeMode.apply(holder.imgView);
         holder.pages.setText(String.format(Locale.US, "%d", ent.getPageCount()));
         holder.title.setText(ent.getTitle());
         holder.flag.setText(Global.getLanguageFlag(ent instanceof Gallery
@@ -295,12 +297,21 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
 
             @Override
             protected void publishResults(CharSequence constraint, FilterResults results) {
-                if (results == null) return;
-                setRefresh(true);
+                if (results == null || !(results.values instanceof PendingRefresh)) return;
                 PendingRefresh refresh = (PendingRefresh) results.values;
+                String q = (constraint == null ? "" : constraint).toString().toLowerCase(Locale.US);
+                String lq = (lastQuery == null ? "" : lastQuery).toString();
+                if (!q.equals(lq)) {
+                    if (refresh.cursor != null) refresh.cursor.close();
+                    return;
+                }
+                setRefresh(true);
+                boolean reset = getItemCount() != 0 || refresh.cursor != null;
                 updateCursor(refresh.cursor);
                 rowSnapshots = refresh.rows;
-                refresh.diff.dispatchUpdatesTo(FavoriteAdapter.this);
+                if (reset) notifyDataSetChanged();
+                else if (refresh.diff != null) refresh.diff.dispatchUpdatesTo(FavoriteAdapter.this);
+                else notifyDataSetChanged();
 
                 setRefresh(false);
             }

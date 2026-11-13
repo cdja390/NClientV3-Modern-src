@@ -31,6 +31,7 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
@@ -58,8 +59,13 @@ import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.Login;
 import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.settings.TagV2;
+import com.maxwai.nclientv3.utility.AvatarHelper;
+import com.maxwai.nclientv3.utility.BottomNavRouter;
+import com.maxwai.nclientv3.utility.BrowseEmptyHelper;
+import com.maxwai.nclientv3.utility.GlassBar;
+import com.maxwai.nclientv3.utility.LanguageFilterHelper;
 import com.maxwai.nclientv3.utility.LogUtility;
-import com.maxwai.nclientv3.utility.ImageDownloadUtility;
+import com.maxwai.nclientv3.utility.SafeMode;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.util.ArrayList;
@@ -107,6 +113,7 @@ public class MainActivity extends BaseActivity
     private SortType temporaryType;
     private Snackbar snackbar = null;
     private PageSwitcher pageSwitcher;
+    BottomNavigationView bottomNavigationView;
     private final InspectorV3.InspectorResponse
         resetDataset = new MainInspectorResponse() {
         @Override
@@ -118,6 +125,10 @@ public class MainActivity extends BaseActivity
         }
     };
     final Runnable changeLanguageRunnable = () -> {
+        if (modeType == ModeType.SEARCH) {
+            LanguageFilterHelper.reloadSearch(this);
+            return;
+        }
         if (modeType == ModeType.TAG && inspector != null && inspector.getTag() != null) {
             Tag tag = inspector.getTag();
             inspector = InspectorV3.tagInspector(this, tag, 1, Global.getSortType(), resetDataset);
@@ -187,10 +198,12 @@ public class MainActivity extends BaseActivity
     private void manageDrawer() {
         if (modeType != ModeType.NORMAL) {
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+            bottomNavigationView.setVisibility(View.GONE);
         } else {
             ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
             drawerLayout.addDrawerListener(toggle);
             toggle.syncState();
+            bottomNavigationView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -270,6 +283,12 @@ public class MainActivity extends BaseActivity
         toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
         toolbar.setNavigationOnClickListener(v -> finish());
         navigationView.setNavigationItemSelectedListener(this);
+        setupBottomNav();
+    }
+
+    private void setupBottomNav() {
+        BottomNavRouter.install(this, R.id.nav_browse);
+        GlassBar.attach(pageSwitcher);
     }
 
     public void setIdOpenedGallery(int idOpenedGallery) {
@@ -286,6 +305,7 @@ public class MainActivity extends BaseActivity
         drawerLayout = findViewById(R.id.drawer_layout);
         loginItem = navigationView.getMenu().findItem(R.id.action_login);
         logoutItem = navigationView.getMenu().findItem(R.id.action_logout);
+        bottomNavigationView = findViewById(R.id.bottom_nav);
     }
 
     public void loadStringLogin() {
@@ -298,8 +318,7 @@ public class MainActivity extends BaseActivity
             loginItem.setVisible(false);
             logoutItem.setVisible(true);
             navUsername.setText(user.getUsername());
-            if (user.getAvatarUrl() != null)
-                ImageDownloadUtility.loadImage(this, android.net.Uri.parse(user.getAvatarUrl()), navAvatar);
+            AvatarHelper.loadUserAvatar(this, user, navAvatar);
         } else {
             loginItem.setVisible(true);
             loginItem.setTitle(R.string.login);
@@ -316,6 +335,7 @@ public class MainActivity extends BaseActivity
                 snackbar.dismiss();
                 snackbar = null;
             }
+            BrowseEmptyHelper.hide(this);
         });
     }
 
@@ -331,6 +351,7 @@ public class MainActivity extends BaseActivity
             snackbar.setAction(R.string.retry, listener);
         }
         snackbar.show();
+        BrowseEmptyHelper.show(this, text, adapter != null && adapter.getItemCount() > 0);
     }
 
     private void showError(@StringRes int text, View.OnClickListener listener) {
@@ -512,7 +533,12 @@ public class MainActivity extends BaseActivity
     @Override
     protected void onResume() {
         super.onResume();
+        BottomNavRouter.sync(this, R.id.nav_browse);
+        GlassBar.refresh(this);
         Login.initLogin(this);
+        if (SafeMode.consumeChange(this) && adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
         if (idOpenedGallery != -1) {
             adapter.updateColor(idOpenedGallery);
             idOpenedGallery = -1;
@@ -565,7 +591,10 @@ public class MainActivity extends BaseActivity
         menu.findItem(R.id.random_favorite).setVisible(modeType == ModeType.FAVORITE);
 
         initializeSearchItem(menu.findItem(R.id.search));
-
+        MenuItem safeModeItem = menu.findItem(R.id.safe_mode);
+        if (safeModeItem != null) {
+            safeModeItem.setChecked(SafeMode.isOn(this));
+        }
 
         if (modeType == ModeType.TAG) {
             MenuItem item = menu.findItem(R.id.tag_manager);
@@ -573,6 +602,7 @@ public class MainActivity extends BaseActivity
             TagStatus ts = inspector.getTag().getStatus();
             updateTagStatus(item, ts);
         }
+        LanguageFilterHelper.ensureSearchLanguage(this, menu);
         Utility.tintMenu(this, menu);
         return true;
     }
@@ -639,6 +669,11 @@ public class MainActivity extends BaseActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         Intent i;
         LogUtility.d("Pressed item: " + item.getItemId());
+        if (item.getItemId() == R.id.safe_mode) {
+            item.setChecked(SafeMode.toggle(this));
+            if (adapter != null) adapter.notifyDataSetChanged();
+            return true;
+        }
         if (item.getItemId() == R.id.by_popular) {
             updateSortType(item);
         } else if (item.getItemId() == R.id.only_language) {
@@ -756,6 +791,7 @@ public class MainActivity extends BaseActivity
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Intent intent;
+        BottomNavRouter.closeDrawer(this);
         if (item.getItemId() == R.id.downloaded) {
             if (Global.hasStoragePermission(this)) startLocalActivity();
             else requestStorage();
@@ -763,12 +799,10 @@ public class MainActivity extends BaseActivity
             intent = new Intent(this, BookmarkActivity.class);
             startActivity(intent);
         } else if (item.getItemId() == R.id.history) {
-            intent = new Intent(this, HistoryActivity.class);
-            startActivity(intent);
+            BottomNavRouter.switchTo(this, HistoryActivity.class);
 
         } else if (item.getItemId() == R.id.favorite_manager) {
-            intent = new Intent(this, FavoriteActivity.class);
-            startActivity(intent);
+            BottomNavRouter.switchTo(this, FavoriteActivity.class);
         } else if (item.getItemId() == R.id.action_settings) {
             setting = true;
             intent = new Intent(this, SettingsActivity.class);
@@ -793,6 +827,15 @@ public class MainActivity extends BaseActivity
         return true;
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (intent.getBooleanExtra("nclient_open_drawer", false)) {
+            drawerLayout.openDrawer(GravityCompat.START);
+        }
+    }
+
     private void requestStorage() {
         requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
     }
@@ -808,8 +851,7 @@ public class MainActivity extends BaseActivity
     }
 
     private void startLocalActivity() {
-        Intent i = new Intent(this, LocalActivity.class);
-        startActivity(i);
+        BottomNavRouter.switchTo(this, LocalActivity.class);
     }
 
     /**

@@ -30,6 +30,7 @@ import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.TagI18n;
 import com.maxwai.nclientv3.settings.TagV2;
+import com.maxwai.nclientv3.utility.LocalTagFilterHelper;
 import com.maxwai.nclientv3.utility.LogUtility;
 
 import org.json.JSONException;
@@ -50,7 +51,7 @@ import java.util.Set;
 @SuppressLint("Range")
 public class Queries {
 
-    static SQLiteDatabase db;
+    public static SQLiteDatabase db;
 
     public static void setDb(SQLiteDatabase database) {
         db = database;
@@ -977,9 +978,11 @@ public class Queries {
          */
         public static Cursor getAllFavoriteGalleriesCursor(CharSequence query, boolean orderByTitle, int limit, int offset) {
             String order = orderByTitle ? titleTypeToColumn(Global.getTitleType()) : FavoriteTable.TIME + " DESC";
-            String param = "%" + query + "%";
             String limitString = String.format(Locale.US, " %d, %d ", offset, limit);
-            return db.query(FAVORITE_JOIN_GALLERY, null, TITLE_CLAUSE, new String[]{param, param, param}, null, null, order, limitString);
+            return db.query(FAVORITE_JOIN_GALLERY, null,
+                LocalTagFilterHelper.favoriteWhere(query),
+                LocalTagFilterHelper.favoriteArgs(query),
+                null, null, order, limitString);
         }
 
         /**
@@ -1020,8 +1023,10 @@ public class Queries {
         public static int countFavorite(@Nullable String text) {
             if (text == null || text.trim().isEmpty()) return countFavorite();
             int totalFavorite = 0;
-            String param = "%" + text + "%";
-            try (Cursor c = db.query(FAVORITE_JOIN_GALLERY, new String[]{"COUNT(*)"}, TITLE_CLAUSE, new String[]{param, param, param}, null, null, null)) {
+            try (Cursor c = db.query(FAVORITE_JOIN_GALLERY, new String[]{"COUNT(*)"},
+                LocalTagFilterHelper.favoriteWhere(text),
+                LocalTagFilterHelper.favoriteArgs(text),
+                null, null, null)) {
                 if (c.moveToFirst()) {
                     totalFavorite = c.getInt(0);
                 }

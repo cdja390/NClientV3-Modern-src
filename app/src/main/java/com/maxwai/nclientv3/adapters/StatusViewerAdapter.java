@@ -19,6 +19,7 @@ import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.SafeMode;
 
 import org.json.JSONException;
 
@@ -52,6 +53,7 @@ public class StatusViewerAdapter extends RecyclerView.Adapter<GenericAdapter.Vie
         Gallery ent = positionToGallery(holder.getBindingAdapterPosition());
         if (ent == null) return;
         ImageDownloadUtility.loadImage(context, ent.getThumbnail(), holder.imgView);
+        SafeMode.apply(holder.imgView);
         holder.pages.setText(String.format(Locale.US, "%d", ent.getPageCount()));
         holder.title.setText(ent.getTitle());
         holder.flag.setText(Global.getLanguageFlag(ent.getLanguage()));

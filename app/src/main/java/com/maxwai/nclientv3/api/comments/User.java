@@ -6,6 +6,7 @@ import android.os.Parcelable;
 import android.util.JsonReader;
 import android.util.JsonToken;
 
+import com.maxwai.nclientv3.utility.AvatarHelper;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.io.IOException;
@@ -86,7 +87,7 @@ public class User implements Parcelable {
     }
 
     public Uri getAvatarUrl() {
-        return Uri.parse(String.format(Locale.US, "https://%s/%s", Utility.getImageHost(), avatarUrl));
+        return AvatarHelper.normalizeAvatarUri(avatarUrl, id);
     }
 
     public String getUsername() {

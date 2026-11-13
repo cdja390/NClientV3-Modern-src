@@ -31,6 +31,11 @@ import com.maxwai.nclientv3.components.views.PageSwitcher;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.Login;
 import com.maxwai.nclientv3.settings.FavoriteSyncManager;
+import com.maxwai.nclientv3.utility.BottomNavRouter;
+import com.maxwai.nclientv3.utility.FavoriteSyncHelper;
+import com.maxwai.nclientv3.utility.GlassBar;
+import com.maxwai.nclientv3.utility.SafeMode;
+import com.maxwai.nclientv3.utility.SearchImeHelper;
 import com.maxwai.nclientv3.utility.Utility;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -92,6 +97,7 @@ public class FavoriteActivity extends BaseActivity {
         //Global.initActivity(this);
 
         setContentView(R.layout.app_bar_main);
+        BottomNavRouter.install(this, R.id.favorite_manager);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar actionBar = Objects.requireNonNull(getSupportActionBar());
@@ -156,11 +162,17 @@ public class FavoriteActivity extends BaseActivity {
 
     @Override
     protected void onResume() {
+        BottomNavRouter.sync(this, R.id.favorite_manager);
+        GlassBar.refresh(this);
         refresher.setEnabled(true);
-        refresher.setRefreshing(true);
-        String query = searchView == null ? null : searchView.getQuery().toString();
-        pageSwitcher.setTotalPage(calculatePages(query));
-        adapter.forceReload();
+        if (BottomNavRouter.shouldReloadFavorites(this)) {
+            refresher.setRefreshing(true);
+            String query = searchView == null ? null : searchView.getQuery().toString();
+            pageSwitcher.setTotalPage(calculatePages(query));
+            adapter.forceReload();
+        }
+        invalidateOptionsMenu();
+        if (adapter != null) adapter.notifyDataSetChanged();
         super.onResume();
     }
 
@@ -187,6 +199,7 @@ public class FavoriteActivity extends BaseActivity {
         Objects.requireNonNull(searchView).setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                SearchImeHelper.onSubmitActivity(FavoriteActivity.this);
                 return true;
             }
 
@@ -198,14 +211,21 @@ public class FavoriteActivity extends BaseActivity {
                 return true;
             }
         });
+        SearchImeHelper.install(this, searchItem);
         Utility.tintMenu(this, menu);
+        MenuItem safeModeItem = menu.findItem(R.id.safe_mode);
+        if (safeModeItem != null) safeModeItem.setChecked(SafeMode.isOn(this));
 
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.sync_favorites) {
+        if (item.getItemId() == R.id.safe_mode) {
+            item.setChecked(SafeMode.toggle(this));
+            if (adapter != null) adapter.notifyDataSetChanged();
+            return true;
+        } else if (item.getItemId() == R.id.sync_favorites) {
             confirmFavoriteSync();
         } else if (item.getItemId() == R.id.download_page) {
             if (adapter != null) showDialogDownloadAll();
@@ -215,21 +235,22 @@ public class FavoriteActivity extends BaseActivity {
             item.setTitle(sortByTitle ? R.string.sort_by_latest : R.string.sort_by_title);
         } else if (item.getItemId() == R.id.random_favorite) {
             startActivity(new Intent(this, RandomFavoriteActivity.class));
+        } else if (item.getItemId() == android.R.id.home) {
+            BottomNavRouter.backHome(this);
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
     private void confirmFavoriteSync() {
-        new MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.favorite_sync_web)
-            .setMessage(R.string.favorite_sync_web_message)
-            .setPositiveButton(R.string.favorite_sync_confirm,
-                (dialog, which) -> syncFavorites())
-            .setNegativeButton(R.string.cancel, null)
-            .show();
+        FavoriteSyncHelper.showSyncDialog(this);
     }
 
     private void syncFavorites() {
+        syncFavorites(0);
+    }
+
+    public void syncFavorites(int maxPages) {
         if (!Login.canAccessAuthenticatedApi(this)) {
             Toast.makeText(this, R.string.favorite_sync_login_required, Toast.LENGTH_LONG).show();
             return;
@@ -248,7 +269,7 @@ public class FavoriteActivity extends BaseActivity {
         refresher.setRefreshing(true);
         // Losing the race with a sync started elsewhere is not a failure: this screen is already
         // subscribed to that run, so keep the syncing UI and let its callbacks drive it.
-        if (!FavoriteSyncManager.sync(this)) showSyncProgressDialog();
+        if (!FavoriteSyncManager.sync(this, maxPages)) showSyncProgressDialog();
     }
 
     private void finishSync(FavoriteSyncManager.Result result) {
@@ -264,7 +285,7 @@ public class FavoriteActivity extends BaseActivity {
      * subscribing, so there is no listener to unregister if the dialog or Activity goes away
      * mid-sync, and a dialog opened at any point still shows the current phase.
      */
-    private void showSyncProgressDialog() {
+    public void showSyncProgressDialog() {
         View content = getLayoutInflater().inflate(R.layout.dialog_sync_progress, null);
         TextView phase = content.findViewById(R.id.phase);
         ProgressBar bar = content.findViewById(R.id.progress);

@@ -22,6 +22,9 @@ import com.maxwai.nclientv3.async.downloader.GalleryDownloaderV2;
 import com.maxwai.nclientv3.components.activities.BaseActivity;
 import com.maxwai.nclientv3.components.classes.MultichoiceAdapter;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.utility.BottomNavRouter;
+import com.maxwai.nclientv3.utility.GlassBar;
+import com.maxwai.nclientv3.utility.SearchImeHelper;
 import com.maxwai.nclientv3.utility.Utility;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -52,6 +55,7 @@ public class LocalActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         //Global.initActivity(this);
         setContentView(R.layout.app_bar_main);
+        BottomNavRouter.install(this, R.id.downloaded);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar actionBar = Objects.requireNonNull(getSupportActionBar());
@@ -99,6 +103,7 @@ public class LocalActivity extends BaseActivity {
         Objects.requireNonNull(searchView).setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                SearchImeHelper.onSubmitActivity(LocalActivity.this);
                 return true;
             }
 
@@ -111,6 +116,7 @@ public class LocalActivity extends BaseActivity {
         });
 
         Utility.tintMenu(this, menu);
+        SearchImeHelper.install(this, menu.findItem(R.id.search));
 
         return true;
     }
@@ -158,6 +164,8 @@ public class LocalActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        BottomNavRouter.sync(this, R.id.downloaded);
+        GlassBar.refresh(this);
         if (idGalleryPosition != -1) {
             adapter.updateColor(idGalleryPosition);
             idGalleryPosition = -1;

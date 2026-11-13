@@ -46,8 +46,12 @@ import com.maxwai.nclientv3.components.launcher.LauncherReal;
 import com.maxwai.nclientv3.settings.AuthStore;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.Login;
+import com.maxwai.nclientv3.utility.DownloadWhileReadingHelper;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.ReadingStatsHelper;
+import com.maxwai.nclientv3.utility.ResumeHelper;
 import com.maxwai.nclientv3.utility.Utility;
+import com.maxwai.nclientv3.utility.VolumeDirectionHelper;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -380,7 +384,7 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
         {
             Preference bug = Objects.requireNonNull(findPreference(getString(R.string.preference_key_bug)));
             bug.setOnPreferenceClickListener(preference -> {
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/maxwai/NClientV3/issues/new"));
+                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/cdja390/NClientV3-Modern/issues/new"));
                 startActivity(i);
                 return true;
             });
@@ -430,11 +434,19 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
                 return true;
             });
         }
+        ResumeHelper.bindPreference(this);
+        ReadingStatsHelper.bindPreference(this);
+        DownloadWhileReadingHelper.bindPreference(this);
+        VolumeDirectionHelper.bindPreference(this);
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        ResumeHelper.bindPreference(this);
+        ReadingStatsHelper.bindPreference(this);
+        DownloadWhileReadingHelper.bindPreference(this);
+        VolumeDirectionHelper.bindPreference(this);
         if (act == null) return;
         Preference apiKey = findPreference(getString(R.string.preference_key_api_key));
         if (apiKey != null) updateApiKeySummary(apiKey);

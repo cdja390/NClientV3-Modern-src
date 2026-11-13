@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 import com.maxwai.nclientv3.BuildConfig;
 import com.maxwai.nclientv3.components.CookieInterceptor;
 import com.maxwai.nclientv3.utility.LogUtility;
+import com.maxwai.nclientv3.utility.NetworkRecoveryHelper;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.io.IOException;
@@ -61,15 +62,33 @@ public class CustomInterceptor implements Interceptor {
         Request.Builder r = request.newBuilder();
         r.removeHeader("rec");
         r.addHeader("User-Agent", "NClient/" + BuildConfig.VERSION_NAME + " (https://github.com/ILFforever/NClientV3)");
-        Response response = chain.proceed(r.build());
+        Response response;
+        try {
+            response = chain.proceed(r.build());
+        } catch (IOException e) {
+            if (rec) throw e;
+            if (!NetworkRecoveryHelper.tryBeginReload()) throw e;
+            try {
+                if (context != null) Global.reloadHttpClient(context);
+            } finally {
+                NetworkRecoveryHelper.endReload();
+            }
+            return Global.client.newCall(request.newBuilder().addHeader("rec", "1").build()).execute();
+        }
         boolean apiV2Request = request.url().encodedPath().startsWith("/api/v2/");
-        if ((response.code() == HttpURLConnection.HTTP_UNAVAILABLE ||
-            (response.code() == HttpURLConnection.HTTP_FORBIDDEN && !apiV2Request)) &&
-            (!rec || !MANAGER.endInterceptor())) {
-            CookieManager.getInstance().removeAllCookies(null);
-            CookieInterceptor interceptor = new CookieInterceptor(MANAGER);
-            interceptor.intercept();
-            if (context != null) Global.reloadHttpClient(context);
+        if (response.code() == HttpURLConnection.HTTP_UNAVAILABLE ||
+            (response.code() == HttpURLConnection.HTTP_FORBIDDEN && !apiV2Request)) {
+            if (rec) return response;
+            if (!NetworkRecoveryHelper.tryBeginReload()) return response;
+            try {
+                CookieManager.getInstance().removeAllCookies(null);
+                CookieInterceptor interceptor = new CookieInterceptor(MANAGER);
+                interceptor.intercept();
+                if (context != null) Global.reloadHttpClient(context);
+            } finally {
+                NetworkRecoveryHelper.endReload();
+            }
+            response.close();
             response = Global.client.newCall(request.newBuilder().addHeader("rec", "1").build()).execute();
         }
         return response;

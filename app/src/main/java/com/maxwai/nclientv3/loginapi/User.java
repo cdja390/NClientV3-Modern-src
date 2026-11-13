@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.Login;
+import com.maxwai.nclientv3.utility.AvatarHelper;
 import com.maxwai.nclientv3.utility.Utility;
 
 import org.jsoup.Jsoup;
@@ -79,7 +80,7 @@ public class User {
 
     public String getAvatarUrl() {
         // Scraped straight from the page HTML, so it can carry an absolute numbered-host URL.
-        return Utility.normalizeImageHost(avatarUrl);
+        return AvatarHelper.normalizeAvatarString(avatarUrl, id);
     }
 
     public interface CreateUser {
