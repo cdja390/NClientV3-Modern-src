@@ -4,7 +4,7 @@
 
 ## Unreleased
 
-- 中文 README 增加混排上手步骤与 AI 开发说明。英文 README 同步全部章节。
+- 中文 README 增加混排上手步骤，并说明项目几乎全程使用 AI 和 Vibe Coding 开发。英文 README 同步全部章节。
 - 补齐贡献指南、问题表单和 PR 模板，统一构建文档与 Android CI 的 JDK 和校验任务。
 
 ## [4.7.2] - 2026-11-14

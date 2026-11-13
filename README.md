@@ -1,7 +1,7 @@
 # NClientV3 Modern
 
 > [!IMPORTANT]
-> **此项目几乎全程由ai开发**
+> **此项目几乎全程由ai开发，主要采用 Vibe Coding。**
 
 [English](README.en.md) · [下载 4.7.2 APK](https://github.com/cdja390/NClientV3-Modern-src/releases/download/v4.7.2-modern/NClientV3-Modern-v4.7.2.apk) · [所有版本](https://github.com/cdja390/NClientV3-Modern-src/releases)
 
