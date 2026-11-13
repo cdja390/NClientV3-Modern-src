@@ -718,7 +718,7 @@ public class ZoomActivity extends GeneralActivity {
 
     public boolean autoTurnNextPage() {
         if (gallery != null && actualPage < gallery.getPageCount() - 1) {
-            changeClosePage(true);
+            changeClosePage(!Global.useRtl()); // changeClosePage flips direction under RTL; auto-turn must always go to the next page
             return true;
         }
         return false;
