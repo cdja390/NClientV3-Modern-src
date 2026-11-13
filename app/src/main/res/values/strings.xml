@@ -530,4 +530,16 @@
     <!-- Hide bottom navigation (4.6.0) -->
     <string name="hide_bottom_nav_title">Hide bottom navigation bar</string>
     <string name="hide_bottom_nav_summary">Hide the floating tab bar on Browse, Downloads, Favorites and History. Use the side drawer to switch pages. The reader\'s page bar is not affected.</string>
+    <!-- Settings entries moved out of xml/settings.xml (4.6.0) -->
+    <string name="dwr_title">Download while reading</string>
+    <string name="dwr_summary">Cache/download galleries in the background (pages already saved are skipped)</string>
+    <string name="dwr_prefs_title">Download-while-reading preferences</string>
+    <string name="dwr_prefs_summary">Set when it starts and how many pages to download</string>
+    <string name="resume_prefs_title">Resume reading preference</string>
+    <string name="resume_prefs_summary">Ask every time a read gallery is opened</string>
+    <string name="volume_direction_title">Volume key page direction</string>
+    <string name="volume_direction_summary_default">Current: Volume+ next page, Volume- previous page (default)</string>
+    <!-- Gallery details expand/collapse (4.6.0) -->
+    <string name="gallery_expand">Expand</string>
+    <string name="gallery_collapse">Collapse</string>
 </resources>

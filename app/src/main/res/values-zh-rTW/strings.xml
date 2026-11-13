@@ -345,4 +345,16 @@
     <!-- Hide bottom navigation (4.6.0) -->
     <string name="hide_bottom_nav_title">隐藏底部导航栏</string>
     <string name="hide_bottom_nav_summary">隐藏浏览、已下载、收藏、历史页底部的悬浮导航栏，改用侧边抽屉切换页面。阅读器的翻页栏不受影响。</string>
+    <!-- Settings entries moved out of xml/settings.xml (4.6.0) -->
+    <string name="dwr_title">边看边下</string>
+    <string name="dwr_summary">自动在后台缓存/下载漫画（已保存的页会自动跳过）</string>
+    <string name="dwr_prefs_title">边看边下偏好设置</string>
+    <string name="dwr_prefs_summary">配置触发时机与下载数量范围</string>
+    <string name="resume_prefs_title">阅读断点续读偏好</string>
+    <string name="resume_prefs_summary">每次进入已读漫画时询问提示</string>
+    <string name="volume_direction_title">音量键翻页方向</string>
+    <string name="volume_direction_summary_default">当前：音量+下一页，音量-上一页 (默认)</string>
+    <!-- Gallery details expand/collapse (4.6.0) -->
+    <string name="gallery_expand">展开</string>
+    <string name="gallery_collapse">收起</string>
 </resources>

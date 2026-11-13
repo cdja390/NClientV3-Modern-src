@@ -35,9 +35,9 @@
         <SwitchPreferenceCompat android:title="@string/enable_right_to_left" android:key="@string/preference_key_use_rtl" android:defaultValue="false" android:summaryOn="@string/setting_on_use_rtl" android:summaryOff="@string/setting_off_use_rtl" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/show_gallery_titles" android:key="@string/preference_key_show_titles" android:defaultValue="true" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/zoom_one_column" android:key="@string/preference_key_zoom_one_column" android:summary="@string/setting_zoom_one_column" android:defaultValue="false" app:iconSpaceReserved="false" />
-        <SwitchPreferenceCompat android:title="边看边下" android:key="download_while_reading" android:summary="自动在后台缓存/下载漫画（已保存的页会自动跳过）" android:defaultValue="true" app:iconSpaceReserved="false" />
-        <Preference android:title="边看边下偏好设置" android:key="download_while_reading_options" android:summary="配置触发时机与下载数量范围" android:dependency="download_while_reading" app:iconSpaceReserved="false" />
-        <Preference android:title="阅读断点续读偏好" android:key="pref_resume_behavior" android:summary="每次进入已读漫画时询问提示" app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat android:title="@string/dwr_title" android:key="download_while_reading" android:summary="@string/dwr_summary" android:defaultValue="true" app:iconSpaceReserved="false" />
+        <Preference android:title="@string/dwr_prefs_title" android:key="download_while_reading_options" android:summary="@string/dwr_prefs_summary" android:dependency="download_while_reading" app:iconSpaceReserved="false" />
+        <Preference android:title="@string/resume_prefs_title" android:key="pref_resume_behavior" android:summary="@string/resume_prefs_summary" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/auto_mark_reading_status" android:key="auto_mark_reading_status" android:summary="@string/auto_mark_reading_status_summary" android:defaultValue="false" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/auto_mark_overwrite_manual" android:key="auto_mark_overwrite_manual" android:summary="@string/auto_mark_overwrite_manual_summary" android:defaultValue="false" android:dependency="auto_mark_reading_status" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/record_reading_stats" android:key="record_reading_stats" android:summary="@string/record_reading_stats_summary" android:defaultValue="false" app:iconSpaceReserved="false" />
@@ -57,7 +57,7 @@
         <Preference android:title="@string/title_fetch_metadata" android:key="@string/preference_key_fetch_metadata" android:summary="@string/summary_fetch_metadata" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/disable_lock_title" android:key="@string/preference_key_disable_lock" android:defaultValue="false" app:iconSpaceReserved="false" />
         <SwitchPreferenceCompat android:title="@string/volume_change_setting" android:key="@string/preference_key_override_volume" android:defaultValue="true" app:iconSpaceReserved="false" />
-        <Preference android:title="音量键翻页方向" android:key="pref_volume_side" android:summary="当前：音量+下一页，音量-上一页 (默认)" android:dependency="@string/preference_key_override_volume" app:iconSpaceReserved="false" />
+        <Preference android:title="@string/volume_direction_title" android:key="pref_volume_side" android:summary="@string/volume_direction_summary_default" android:dependency="@string/preference_key_override_volume" app:iconSpaceReserved="false" />
         <Preference android:title="@string/copy_settings_to_clipboard" android:key="@string/preference_key_copy_settings" app:iconSpaceReserved="false" />
         <Preference android:title="@string/export_data" android:key="@string/preference_key_export" app:iconSpaceReserved="false" />
         <Preference android:title="@string/import_data" android:key="@string/preference_key_import" app:iconSpaceReserved="false" />
