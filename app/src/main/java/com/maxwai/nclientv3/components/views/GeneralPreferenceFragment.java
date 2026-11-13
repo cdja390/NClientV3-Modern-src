@@ -341,6 +341,7 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
         {
             Preference keyVersion = Objects.requireNonNull(findPreference(getString(R.string.preference_key_version)));
             keyVersion.setTitle(getString(R.string.app_version_format, BuildConfig.VERSION_NAME));
+            keyVersion.setSummary(R.string.version_source_credit);
         }
         {
             ListPreference savePath = Objects.requireNonNull(findPreference(getString(R.string.preference_key_save_path)));

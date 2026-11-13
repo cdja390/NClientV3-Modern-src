@@ -7,7 +7,12 @@ or modified for this fork.
 
 ## Code adapted from yosefario-dev/NClientV3 (Apache-2.0)
 
-Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
+Source: [yosefario-dev/NClientV3, b2ee7ed006e6b06790f1b23d1528c339f298f7b5](https://github.com/yosefario-dev/NClientV3/tree/b2ee7ed006e6b06790f1b23d1528c339f298f7b5).
+
+The studied tree contains an Apache 2.0 `LICENSE` with the attribution “Copyright 2024 Maxwai”.
+This fork retains that attribution here alongside its existing `LICENSE` and the adapted source
+files' notices. The studied tree contains no separate `NOTICE` file. The app's version row credits
+yosefario-dev/NClientV3 in English, Simplified Chinese and Traditional Chinese.
 
 | File | Origin | Changes in this fork |
 |---|---|---|
@@ -104,3 +109,8 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 - `EhReaderActivity.java`, `EhPageNavigation.java`, `EhReadingSession.java`, the EH reader layouts and menu, and `AutoPageTurner.java` implement the agreed reading controls in the independent EH reader. ZoomActivity implements the shared auto-turn host through its existing methods.
 - `EhDatabase.java` v3 separates EH reading statistics from visibility in history. `ReadingSessionHelper.java` shares status rules, and `ReadingStatsHelper.java` includes EH and EX totals, details and clearing.
 - Tests: `GalleryDownloadsTest`, `FavoriteSourcesTest`, and `EhReadingSessionTest`. Device verification is tracked in `MERGE_ACCEPTANCE_472.md`.
+
+## P7 release verification
+
+- `app/build.gradle.kts` uses patch version 2. The version row in settings credits upstream source
+  merging. `MERGE_ACCEPTANCE_472.md` records the compiled APK and upgrade acceptance steps.

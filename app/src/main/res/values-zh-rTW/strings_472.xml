@@ -17,4 +17,5 @@
     <string name="favorites_local_tab">本機</string>
     <string name="favorites_online_tab">線上</string>
     <string name="eh_history_progress">第 %1$d / %2$d 頁 · %3$s</string>
+    <string name="version_source_credit">來源合併改編自 yosefario-dev/NClientV3（Apache 2.0）</string>
 </resources>

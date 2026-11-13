@@ -74,6 +74,14 @@
 - 指定三任务成功。XML 140 tests / 0 failures / 0 errors / 0 skipped，本地化 3/3。APK 18117501 字节，SHA-256 3F7AFDD55834950DBF5D350DDA5BFE0E61A811C28D17294F75E94809D16E82C1。T01-T26、T30、T32 共 28 个 JVM 条目通过。
 - 从 Java 源码提取 SQL，在内存 SQLite 验证全新 v3、v1 到 v3、v2 到 v3，64 位阅读时间换算、同 gid 并存及清历史保留续读与统计。Android 文件升级和真实使用待验。
 
+## 本次 P7 构建（2026-11-13，Asia/Shanghai）
+
+- 使用 Zulu JDK 21 执行 `gradlew.bat --offline assemblePost28Debug testPost28DebugUnitTest assemblePost28Release`，三项成功。XML 140 tests / 0 failures / 0 errors / 0 skipped，LocalizationCompletenessTest 3/3。Debug 与 Release 的 Java 编译均通过 -Werror。
+- 最终产物 `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\release\NClientV3_4.7.2.apk`，18118233 字节，SHA-256 `FA85D897B2221BFAFFE93F5D0F47F0E20068ED5816215122E81082D6C76CB37A`。与 Gradle 原始 Release APK 字节相同。
+- `aapt2 dump badging`：`com.IlFforever.nclientv3.clone`、`470200`、`4.7.2-Modern`、`NClientV3 2`。`apksigner verify` 报缺失签名清单，确认未签名。
+- DatabaseHelper、主库 Database、依赖、minify 和既有 NH User-Agent 均与接手时一致。资源编译仍报告原有的 update_version_format 和 upload_date_format 位置参数提示。
+- 28 个 JVM 矩阵条目通过。T27–T29、T31 有部分证据，N01–N07 及真机功能验收待完成。华为当前版本仅通过只读 ADB 核对，见第 10 节。
+
 ## 逐项状态
 
 | ID | 本次状态 | 证据/限制 |
@@ -92,18 +100,18 @@
 | T12 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T13 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T14 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
-| T15 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T16 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T17 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T18 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T19 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T20 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T21 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T22 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T23 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T24 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T25 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
-| T26 | 通过（JVM） | P3 EhSearchPagerTest/EhFeedTest；评分 UI 待 P4 |
+| T15 | 通过（JVM） | P3 EhSearchPagerTest / EhFeedTest |
+| T16 | 通过（JVM） | P3 EhSearchPagerTest / EhFeedTest |
+| T17 | 通过（JVM） | P3 EhSearchPagerTest / EhFeedTest |
+| T18 | 通过（JVM） | P3 EhSearchPagerTest / EhFeedTest |
+| T19 | 通过（JVM） | P3 EhSearchPagerTest；P4 评分 UI 已接入、待实测 |
+| T20 | 通过（JVM） | P3 EhSearchPagerTest / EhFeedTest |
+| T21 | 通过（JVM） | P3 EhSearchPagerTest |
+| T22 | 通过（JVM） | P3 EhSearchPagerTest |
+| T23 | 通过（JVM） | P3 EhSearchPagerTest |
+| T24 | 通过（JVM） | P3 EhSearchPagerTest |
+| T25 | 通过（JVM） | P3 EhSearchPagerTest |
+| T26 | 通过（JVM） | P3 EhSearchPagerTest / EhFeedTest |
 | T27 | 部分验证 | SourceKeyTest 字段流；Android Parcel 待验 |
 | T28 | 部分验证 | SourceKeyTest 混合字段流；Android Parcel 待验 |
 | T29 | 部分验证 | 保留旧 kind 读取分支；真实解包待验 |
@@ -177,30 +185,46 @@
 
 ### 9.3 真机手工验收（第 10 节）
 
-## 10. 真机验收说明（供用户执行，不可破坏数据）（验收要求）
+## 10. 华为真机验收
 
-**前置条件：**
-- 只允许覆盖安装（`adb install -r`）；
-- **禁止**卸载、禁止清数据；
-- 先在 App 内导出一份备份；
-- 安装前在“关于”页确认当前版本。
+本次通过 ADB 只读确认华为 GLA-AL00（API 31）安装的是 `4.5.0-Modern` / `450000`。
+签名、覆盖安装和功能检查仍待执行。下列各项均待验，实测后逐项写入结果。
 
-**检查点：**
+### 10.1 升级准备
 
-1. 升级后，来源设置是否按迁移规则得到正确结果（原本是 nh、eh、both 时各自对应什么）。截图。
-2. 打开来源选择：
-   - 只选 NH：与旧版相同；
-   - 只选 EH：只显示 EH；
-   - 两者都选：轮流显示，所有条目都有 NH/EH 徽标；
-   - 迁移后的缺省：老用户未设来源且 mirror 为空时，应为默认 nh（已决定）。
-   - 全部取消：本次用户确认禁止保存空选择，至少保留一个来源（经用户同意的偏差）。
-3. 排序：两者都选时，菜单只有“最新”。
-4. 翻页 1→2→3→2：内容连续；回翻较快（命中缓存）。
-5. 搜索关键词、点击作者标签：两站都有结果；在 EH 详情页点标签会回到主列表。
-6. 单站失败：在真机上很难只让一个站点失败，所以以单元测试 T08–T11 和 N04 为准。用户可以自愿短暂关闭网络，确认两站都失败时会显示错误和重试，测完立即恢复。不能测的项目记为“未测”，不要伪造结果。
-7. 点击 EH 条目进入详情 → 阅读 → 返回，历史中出现该条目（来源正确）。
-8. 收藏 EH 条目（本地和在线）；“下载本页全部”时两站条目分别进入各自的下载。
-9. 开发者选项“不保留活动”（用户自愿，测试后恢复）：返回列表时不崩溃，列表可见。
-10. 登录（《01》5.1.5 节）：全部 8 项。
+1. 在华为上确认目标包为 `com.IlFforever.nclientv3.clone`、当前版本及已有本地数据。先从设置导出备份。
+2. 由用户使用与旧包相同的证书正式签名。以 `aapt2 dump badging` 和 `apksigner verify` 检查签名后 APK。
+3. 获得用户明确同意后，只对华为执行覆盖安装（`adb -s <华为序列号> install -r <签名后的 APK>`）。签名不符或安装失败时保留旧应用和全部数据。
+4. 确认设置显示 `4.7.2-Modern`，旧收藏、下载、历史、续读和统计仍可读取。
 
-**出问题时：** 记录时间（北京时间）和截图。agent 只做只读的 logcat（tag `NCLIENTLOG`）。
+### 10.2 功能检查
+
+| 项目 | 操作及预期 |
+|---|---|
+| D01 来源迁移 | 记录升级前配置。旧 nh、eh、both 各迁移到对应选择。无配置且 mirror 为空时为 NH。华为上不存在的升级起点留待另测。 |
+| D02 来源选择 | 分别从主页和设置打开。只选 NH、只选 EH、两者都选；双选轮流显示并给每行显示来源。全部取消时无法保存。EX 开关改变后第二项与结果同步并重载第一页。 |
+| D03 排序 | 双选菜单只显示最新，切回仅 NH 恢复原排序。 |
+| D04 游标 | 页码 1→2→3→2，结果连续，回翻命中缓存。 |
+| D05 搜索和路由 | 搜索关键词，带分类、页数和评分。分别点击 NH 与 EH 作者标签。从合并 EH 详情进入公共标签列表，独立 EH 详情进入 EH 搜索。 |
+| D06 单源错误 | 对照全部 N01–N07。断网检查错误和重试后恢复网络。无法取得单源失败条件的条目保留未测。 |
+| D07 历史和离线 | 打开同 gid 的不同来源条目，确认历史按访问时间排序，状态颜色不串。断网打开已下载 EH 条目，详情和阅读找到对应来源的文件。清历史与恢复备份用独立测试数据，核对续读和统计。 |
+| D08 收藏和批量下载 | 本地收藏显示两站。在线收藏切换来源、登录态和 EH 收藏夹后从第 1 页加载，搜索和随机入口遵循所选站点能力。检查主页及收藏的本页下载各进正确队列，使用已选测试条目。 |
+| D09 系统重建 | 用户可临时开启“不保留活动”，从混合列表进入详情再返回。列表恢复且打开原来源和 token，测试后恢复开发者选项。T27–T29 同时核对 Android Parcel 和旧 INSPECTOR 解包；JVM 结果仅作辅助。 |
+| D10 布局和导航 | 保留独立 EH 详情和阅读器（方案 B 的界面差异）。检查返回键、底栏、AMOLED 纯黑、横竖屏和系统手势导航。隐藏工具栏、自动翻页时页码与进度条都可见。 |
+| D11 阅读交互 | 水平、垂直、条漫互切保留页数，测试缩放和快速滑动。左右边缘或音量键按方向切页，关闭相应设置后恢复普通点击或系统音量。自动翻页始终向后，末页、触摸、退到后台时停止。 |
+| D12 阅读统计和状态 | 关闭统计时没有新增次数或时长。开启后新进一次计一次，后台及重建不重复计数。跳到最后一页与恢复到最后一页分别验证；保护手动状态。清统计保留历史、续读、收藏、下载和状态。 |
+
+### 10.3 登录
+
+保留《01》5.1.5 的八项。真实账号操作由用户完成。
+
+1. 原生登录成功后关闭登录页，侧栏显示用户名。
+2. Cloudflare 页面取得 `cf_clearance` 后自动关闭。
+3. 网页回退能进入登录页，登录后回到 App。
+4. 重启 App 后登录仍有效。
+5. access token 过期后自动续期。
+6. refresh token 返回 401 后正确登出。
+7. 遇到 403 时保留会话。
+8. 手动登出清理会话凭据。
+
+出现问题时记录北京时间、动作和结果。开发侧读取应用包版本和经过过滤的 `NCLIENTLOG`。
