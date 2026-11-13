@@ -21,6 +21,14 @@ public final class SourceDialogs {
         }
     }
 
+    public static int badge(GallerySource source) {
+        switch (source) {
+            case EXHENTAI: return R.string.source_badge_ex;
+            case EHENTAI: return R.string.source_badge_eh;
+            default: return R.string.source_badge_nh;
+        }
+    }
+
     public static String summary(Context context) {
         StringBuilder text = new StringBuilder();
         for (GallerySource source : SourcePreferences.enabled(context)) {

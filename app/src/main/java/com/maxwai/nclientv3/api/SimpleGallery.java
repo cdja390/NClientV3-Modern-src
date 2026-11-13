@@ -54,6 +54,7 @@ public class SimpleGallery extends GenericGallery {
         mediaId = in.readInt();
         thumbnail = Uri.parse(in.readString());
         language = Language.values()[in.readByte()];
+        tags = new TagList();
     }
 
     @SuppressLint("Range")
@@ -63,6 +64,8 @@ public class SimpleGallery extends GenericGallery {
         mediaId = c.getInt(c.getColumnIndex(Queries.HistoryTable.MEDIAID));
         thumbnail = Uri.parse(c.getString(c.getColumnIndex(Queries.HistoryTable.THUMB)));
         pageCount = 0;
+        language = Language.UNKNOWN;
+        tags = new TagList();
     }
 
     private SimpleGallery(String title, int id, int mediaId, int pageCount, Uri thumbnail,

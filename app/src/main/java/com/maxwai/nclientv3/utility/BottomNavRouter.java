@@ -29,6 +29,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.maxwai.nclientv3.ehentai.EhDatabase;
 import com.maxwai.nclientv3.FavoriteActivity;
 import com.maxwai.nclientv3.HistoryActivity;
 import com.maxwai.nclientv3.LocalActivity;
@@ -542,8 +543,7 @@ public class BottomNavRouter implements
 
     public static boolean hasHistoryChanged(Activity activity) {
         if (activity == null) return false;
-        long sig = queryTableSignature(
-                "SELECT COUNT(*), COALESCE(MAX(time),0), COALESCE(SUM(id),0) FROM History");
+        long sig = historySignature(activity);
         View v = activity.findViewById(R.id.bottom_nav);
         if (v instanceof BottomNavigationView) {
             Object tag = v.getTag(R.id.liquid_slot);
@@ -566,8 +566,7 @@ public class BottomNavRouter implements
 
     public static void noteHistory(Activity activity) {
         if (activity == null) return;
-        long sig = queryTableSignature(
-                "SELECT COUNT(*), COALESCE(MAX(time),0), COALESCE(SUM(id),0) FROM History");
+        long sig = historySignature(activity);
         View v = activity.findViewById(R.id.bottom_nav);
         if (v instanceof BottomNavigationView) {
             Object tag = v.getTag(R.id.liquid_slot);
@@ -576,6 +575,16 @@ public class BottomNavRouter implements
                 r.histInitialized = true;
                 r.lastHistSig = sig;
             }
+        }
+    }
+
+    private static long historySignature(Activity activity) {
+        long nh = queryTableSignature(
+                "SELECT COUNT(*), COALESCE(MAX(time),0), COALESCE(SUM(id),0) FROM History");
+        try {
+            return nh == Long.MIN_VALUE ? nh : 31 * nh + EhDatabase.get(activity).historySignature();
+        } catch (RuntimeException e) {
+            return nh;
         }
     }
 

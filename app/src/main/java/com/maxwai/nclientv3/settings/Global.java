@@ -454,6 +454,12 @@ public class Global {
         return useRtl;
     }
 
+    public static void updateReadingDirection(Context context, boolean rtl) {
+        context.getSharedPreferences("Settings", 0).edit()
+            .putBoolean(context.getString(R.string.preference_key_use_rtl), rtl).apply();
+        useRtl = rtl;
+    }
+
     public static boolean showTitles() {
         return showTitles;
     }

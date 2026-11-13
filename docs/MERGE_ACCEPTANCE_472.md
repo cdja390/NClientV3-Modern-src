@@ -65,6 +65,15 @@
 - 指定三任务成功。XML 132 tests / 0 failures / 0 errors / 0 skipped，本地化 3/3。release APK 18073945 字节，SHA-256 7B7D284D808EA4949476BB86EDEFB78007A113F2B02EC6DBFB95FAE61E55653F。
 - 从旧版与当前 Java 源码提取建表及升级 SQL，在内存 SQLite 以 64 位 gid 执行，确认历史进度、收藏和下载字段保留，同 gid 的 EH/EX 行及状态可共存，旧下载目录归属只匹配原来源。Android 升级、恢复、列表着色及线下回退仍待真机确认。
 
+## 本次 P6 验证（2026-11-13，Asia/Shanghai）
+
+- 公共历史按两站真实时间合并、搜索和清除。EH 详情和阅读的访问记录与计数分开，清除历史保留续读页、阅读统计、收藏和下载。
+- 收藏页的本地视图合并两站，保留 NH 同步。在线视图按已选来源、登录状态、来源顺序选定单站，切换后重置请求和页码。EH/EX 支持站点收藏夹和搜索。批量下载使用确认时的当前结果，原 EH/EX token 随条目进入 EH 队列。
+- EH 阅读器使用共享的水平、垂直和条漫偏好、默认缩放、边缘点击、音量键方向、自动翻页、续读和自动状态。隐藏工具栏时页码栏与进度条仍显示。新开阅读器在统计开启时计一次，后台时间不计，前台时间按单调时钟累计到毫秒。设置列出 NH、EH、EX 统计，清除统计不清除历史和阅读进度。
+- 主列表保存最近接受的页面及来源签名，混合列表仍经 kind 3 还原。无限滚动重建后保留最近一批结果。Android Parcelable 和实际重建尚待验收。
+- 指定三任务成功。XML 140 tests / 0 failures / 0 errors / 0 skipped，本地化 3/3。APK 18117501 字节，SHA-256 3F7AFDD55834950DBF5D350DDA5BFE0E61A811C28D17294F75E94809D16E82C1。T01-T26、T30、T32 共 28 个 JVM 条目通过。
+- 从 Java 源码提取 SQL，在内存 SQLite 验证全新 v3、v1 到 v3、v2 到 v3，64 位阅读时间换算、同 gid 并存及清历史保留续读与统计。Android 文件升级和真实使用待验。
+
 ## 逐项状态
 
 | ID | 本次状态 | 证据/限制 |
@@ -98,7 +107,7 @@
 | T27 | 部分验证 | SourceKeyTest 字段流；Android Parcel 待验 |
 | T28 | 部分验证 | SourceKeyTest 混合字段流；Android Parcel 待验 |
 | T29 | 部分验证 | 保留旧 kind 读取分支；真实解包待验 |
-| T30 | 待验证 | 后续阶段 |
+| T30 | 通过（JVM） | GalleryDownloadsTest 同 gid 的 NH、EH、EX 与原 token；文件下载待验 |
 | T31 | 部分验证 | 来源键单测、SQLite 同 gid 异来源状态、回调检查；Android 着色待验 |
 | T32 | 通过 | LocalizationCompletenessTest 3/3 |
 | N01 | 待验证 | 未做网络/设备验收 |

@@ -7,6 +7,10 @@
         android:title="@string/eh_reader_rtl"
         app:showAsAction="never" />
     <item
+        android:id="@+id/eh_action_scroll_type"
+        android:title="@string/change_scroll_type"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/eh_action_reload_page"
         android:title="@string/eh_reload_page"
         app:showAsAction="never" />

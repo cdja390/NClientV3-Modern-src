@@ -300,6 +300,13 @@ public class InspectorV3 extends Thread implements Parcelable {
         return inspectorV3;
     }
 
+    /** Save the accepted page without sharing mutable request state. */
+    public InspectorV3 snapshot(Context context) {
+        InspectorV3 saved = cloneInspector(context, null);
+        if (galleries != null) saved.galleries = new ArrayList<>(galleries);
+        return saved;
+    }
+
     private void tryByAllPopular() {
         if (sortType != SortType.RECENT_ALL_TIME) {
             requestType = ApiRequestType.BYSEARCH;
@@ -419,7 +426,7 @@ public class InspectorV3 extends Thread implements Parcelable {
             return;
         }
         if (mode != EhFeed.Mode.BOTH || ctx == null) {
-            createDocument();
+            if (!createDocument()) throw new IOException("nhentai request failed");
             parseDocument();
             return;
         }
@@ -516,7 +523,7 @@ public class InspectorV3 extends Thread implements Parcelable {
             galleries.add(SimpleGallery.fromV2ListItem(context.get(), results.getJSONObject(i)));
         }
         pageCount = json.optInt("num_pages", Math.max(1, page));
-        if (Global.isExactTagMatch())
+        if (requestType != ApiRequestType.FAVORITE && Global.isExactTagMatch())
             filterDocumentTags();
     }
 

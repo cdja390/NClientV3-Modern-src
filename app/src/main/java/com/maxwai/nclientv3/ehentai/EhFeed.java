@@ -174,6 +174,16 @@ public final class EhFeed {
         EhPager.reset();
     }
 
+    /** Online favorites share cursor walking with search and retain folder names from the response. */
+    public static Result favorites(Context context, boolean ex, int folder, String query, int page,
+                                   java.util.function.Consumer<String[]> folders) throws IOException {
+        return page(cursor -> EhUrls.favoritesUrl(ex, folder, query, cursor), page, url -> {
+            EhRepository.FavoritesPage parsed = EhRepository.loadFavorites(context, url);
+            folders.accept(parsed.folders);
+            return parsed.page;
+        });
+    }
+
     /** CATEGORY tags override global categories, including an unrecognized explicit category. */
     static int shownCategories(@Nullable Collection<Tag> tags, int globalShown) {
         int shown = 0;

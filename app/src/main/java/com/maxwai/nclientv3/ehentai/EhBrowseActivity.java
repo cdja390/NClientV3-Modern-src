@@ -216,8 +216,8 @@ public class EhBrowseActivity extends GeneralActivity {
         EhDatabase.Entry e = (EhDatabase.Entry) info;
         switch (section) {
             case HISTORY:
-                return getString(R.string.eh_history_line, e.lastPage, Math.max(e.pages, e.lastPage),
-                    Math.max(1, e.readSeconds / 60), dateFormat.format(new java.util.Date(e.time)));
+                return getString(R.string.eh_history_progress, e.lastPage, Math.max(e.pages, e.lastPage),
+                    dateFormat.format(new java.util.Date(e.time)));
             case DOWNLOADS:
                 return EhDownloads.describe(this, e);
             default:
@@ -586,7 +586,7 @@ public class EhBrowseActivity extends GeneralActivity {
             int downloads = EhDatabase.get(this).downloads().size();
             runOnUiThread(() -> new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.eh_stats)
-                .setMessage(getString(R.string.eh_stats_body, st[0], st[1], st[2] / 60, saved, downloads))
+                .setMessage(getString(R.string.eh_stats_body, st[0], st[1], st[2] / 60000, saved, downloads))
                 .setPositiveButton(android.R.string.ok, null)
                 .show());
         });

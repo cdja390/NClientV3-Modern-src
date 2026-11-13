@@ -28,11 +28,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.maxwai.nclientv3.ZoomActivity;
 
 import java.lang.ref.WeakReference;
 
 public class AutoPageTurner {
+    public interface ReaderHost {
+        boolean autoTurnNextPage();
+        void hideBars();
+        void showBars();
+        int getZoomCurrentPage();
+        int getZoomTotalPages();
+    }
+
     public static final int MENU_ID_AUTO_TURN = 0x70ffff08;
     private static final int PILL_TEXT_VIEW_ID = 0x70ffff09;
     private static final String PREF_NAME = "AutoPageTurner";
@@ -45,9 +52,10 @@ public class AutoPageTurner {
     private static long sStartTime = 0L;
     private static WeakReference<Activity> sCurrentActivity;
     private static View sPillView;
+    private static boolean sKeptScreenOn;
 
-    public static boolean isRunning() {
-        return sIsRunning;
+    private static boolean owns(Activity activity) {
+        return sCurrentActivity != null && sCurrentActivity.get() == activity;
     }
 
     public static int getIntervalSec() {
@@ -61,7 +69,7 @@ public class AutoPageTurner {
             item = menu.add(0, MENU_ID_AUTO_TURN, 999, R.string.auto_turn);
         }
         if (item != null) {
-            if (sIsRunning) {
+            if (sIsRunning && owns(activity)) {
                 item.setTitle(activity.getString(R.string.auto_turn_running, sIntervalSec));
             } else {
                 item.setTitle(R.string.auto_turn);
@@ -170,10 +178,12 @@ public class AutoPageTurner {
     }
 
     public static void start(final Activity activity, int intervalSec) {
-        if (activity == null || activity.isFinishing()) return;
+        if (!(activity instanceof ReaderHost) || activity.isFinishing()) return;
+        ReaderHost reader = (ReaderHost) activity;
+        if (reader.getZoomTotalPages() <= 0) return;
         if (intervalSec <= 0) intervalSec = 5;
 
-        stop(activity, null);
+        stop(null, null);
 
         sIntervalSec = intervalSec;
         sIsRunning = true;
@@ -186,22 +196,13 @@ public class AutoPageTurner {
         } catch (Throwable ignored) {}
 
         try {
+            sKeptScreenOn = (activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0;
             activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } catch (Throwable ignored) {}
 
         showPill(activity, intervalSec);
 
-        if (activity instanceof ZoomActivity) {
-            final ZoomActivity za = (ZoomActivity) activity;
-            za.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        za.hideBars();
-                    } catch (Throwable ignored) {}
-                }
-            });
-        }
+        reader.hideBars();
 
         Toast.makeText(activity, activity.getString(R.string.auto_turn_started, intervalSec), Toast.LENGTH_SHORT).show();
 
@@ -213,9 +214,9 @@ public class AutoPageTurner {
                     stop(act, null);
                     return;
                 }
-                if (act instanceof ZoomActivity) {
-                    ZoomActivity za = (ZoomActivity) act;
-                    boolean turned = za.autoTurnNextPage();
+                if (act instanceof ReaderHost) {
+                    ReaderHost host = (ReaderHost) act;
+                    boolean turned = host.autoTurnNextPage();
                     if (turned) {
                         try {
                             if (sPillView != null) {
@@ -223,7 +224,9 @@ public class AutoPageTurner {
                             }
                         } catch (Throwable ignored) {}
                         updatePillText(act);
-                        sHandler.postDelayed(this, sIntervalSec * 1000L);
+                        if (host.getZoomCurrentPage() >= host.getZoomTotalPages())
+                            stop(act, act.getString(R.string.auto_turn_last_page));
+                        else sHandler.postDelayed(this, sIntervalSec * 1000L);
                     } else {
                         stop(act, act.getString(R.string.auto_turn_last_page));
                     }
@@ -236,6 +239,7 @@ public class AutoPageTurner {
 
     public static void stop(Activity activity, String reason) {
         if (!sIsRunning && sPillView == null) return;
+        if (activity != null && !owns(activity)) return;
         sIsRunning = false;
 
         if (sFlipRunnable != null) {
@@ -253,21 +257,11 @@ public class AutoPageTurner {
 
         if (act != null) {
             try {
-                act.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                if (!sKeptScreenOn) act.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             } catch (Throwable ignored) {}
 
             if (!act.isFinishing()) {
-                if (act instanceof ZoomActivity) {
-                    final ZoomActivity za = (ZoomActivity) act;
-                    za.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                za.showBars();
-                            } catch (Throwable ignored) {}
-                        }
-                    });
-                }
+                if (act instanceof ReaderHost) ((ReaderHost) act).showBars();
 
                 if (reason != null && !reason.isEmpty()) {
                     Toast.makeText(act, reason, Toast.LENGTH_SHORT).show();
@@ -279,7 +273,7 @@ public class AutoPageTurner {
     }
 
     public static boolean onDispatchTouchEvent(Activity activity, MotionEvent ev) {
-        if (!sIsRunning) {
+        if (!sIsRunning || !owns(activity)) {
             return false;
         }
         if (ev != null && ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
@@ -293,7 +287,7 @@ public class AutoPageTurner {
     }
 
     public static void onPause(Activity activity) {
-        if (sIsRunning) {
+        if (sIsRunning && owns(activity)) {
             stop(activity, activity.getString(R.string.auto_turn_paused));
         }
     }
@@ -372,10 +366,10 @@ public class AutoPageTurner {
     }
 
     private static String getPillLabel(Activity activity, int intervalSec) {
-        if (activity instanceof ZoomActivity) {
-            ZoomActivity za = (ZoomActivity) activity;
-            int cur = za.getZoomCurrentPage();
-            int tot = za.getZoomTotalPages();
+        if (activity instanceof ReaderHost) {
+            ReaderHost host = (ReaderHost) activity;
+            int cur = host.getZoomCurrentPage();
+            int tot = host.getZoomTotalPages();
             if (tot > 0) {
                 return activity.getString(R.string.auto_turn_pill_progress, intervalSec, cur, tot);
             }

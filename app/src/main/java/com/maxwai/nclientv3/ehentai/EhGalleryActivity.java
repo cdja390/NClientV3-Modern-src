@@ -44,6 +44,8 @@ import com.maxwai.nclientv3.components.activities.GeneralActivity;
 import com.maxwai.nclientv3.components.status.Status;
 import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.utility.Utility;
+import com.maxwai.nclientv3.utility.ReadingStatsHelper;
+import com.maxwai.nclientv3.utility.ResumeHelper;
 
 import java.util.List;
 import java.util.Map;
@@ -71,6 +73,9 @@ public class EhGalleryActivity extends GeneralActivity {
     private EhDatabase.Entry downloadRow;
     private boolean favoriteBusy;
     private String readingStatus;
+    private boolean resumeChecked;
+    private boolean localStateLoaded;
+    private boolean detailReady;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -84,6 +89,7 @@ public class EhGalleryActivity extends GeneralActivity {
             finish();
             return;
         }
+        resumeChecked = savedInstanceState != null && savedInstanceState.getBoolean("eh_resume_checked");
         setTitle(getIntent().getStringExtra(EhIntents.EXTRA_TITLE) == null
             ? getString(R.string.eh_title) : getIntent().getStringExtra(EhIntents.EXTRA_TITLE));
         progress = findViewById(R.id.eh_progress);
@@ -123,19 +129,21 @@ public class EhGalleryActivity extends GeneralActivity {
     /** History, local favorite and download state from ehentai.db. */
     private void refreshLocalState() {
         if (key == null || io.isShutdown()) return;
-        io.execute(() -> {
+        EhDatabase.READING_IO.execute(() -> {
             EhDatabase db = EhDatabase.get(this);
             int last = db.lastPage(key);
             boolean fav = db.isFavorite(key);
             EhDatabase.Entry dl = db.download(key);
             String status = db.readingStatus(key);
             runOnUiThread(() -> {
-                if (isDestroyed()) return;
+                if (isDestroyed() || isFinishing()) return;
                 resumePage = last;
                 localFavorite = fav;
                 downloadRow = dl;
+                localStateLoaded = true;
                 applyReadingStatus(status);
                 updateButtons();
+                maybeResume();
             });
         });
     }
@@ -154,7 +162,7 @@ public class EhGalleryActivity extends GeneralActivity {
             .setSingleChoiceItems(names.toArray(new String[0]), Math.max(0, names.indexOf(readingStatus)), (dialog, which) -> {
                 dialog.dismiss();
                 String chosen = which == 0 ? null : names.get(which);
-                io.execute(() -> EhDatabase.get(this).setReadingStatus(key, chosen));
+                EhDatabase.READING_IO.execute(() -> EhDatabase.get(this).setReadingStatus(key, chosen));
                 applyReadingStatus(chosen);
             })
             .setNegativeButton(R.string.cancel, null)
@@ -184,10 +192,47 @@ public class EhGalleryActivity extends GeneralActivity {
         return Math.max(1, resumePage);
     }
 
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putBoolean("eh_resume_checked", resumeChecked);
+    }
+
+    private void maybeResume() {
+        if (resumeChecked || !localStateLoaded || !detailReady || !hasWindowFocus() || isFinishing()) return;
+        resumeChecked = true;
+        if (resumePage <= 1) return;
+        var settings = getSharedPreferences("Settings", 0);
+        if (settings.contains(ResumeHelper.PREF_AUTO_JUMP)) {
+            if (settings.getBoolean(ResumeHelper.PREF_AUTO_JUMP, false)) openReader(resumePage);
+            return;
+        }
+        android.widget.CheckBox remember = new android.widget.CheckBox(this);
+        remember.setText(R.string.resume_dont_ask);
+        new MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.resume_dialog_title)
+            .setMessage(getString(R.string.resume_dialog_message, resumePage))
+            .setView(remember)
+            .setPositiveButton(R.string.resume_yes, (d, which) -> {
+                if (remember.isChecked()) settings.edit().putBoolean(ResumeHelper.PREF_AUTO_JUMP, true).apply();
+                openReader(resumePage);
+            })
+            .setNegativeButton(R.string.resume_no, (d, which) -> {
+                if (remember.isChecked()) settings.edit().putBoolean(ResumeHelper.PREF_AUTO_JUMP, false).apply();
+            })
+            .show();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean focused) {
+        super.onWindowFocusChanged(focused);
+        if (focused) maybeResume();
+    }
+
     protected void openReader(int page) {
         EhGalleryInfo info = detail != null ? detail : downloadRow;
         if (info == null) return;
-        io.execute(() -> EhDatabase.get(this).recordOpen(info));
+        resumeChecked = true;
         startActivity(EhIntents.reader(this, info, page));
     }
 
@@ -198,9 +243,12 @@ public class EhGalleryActivity extends GeneralActivity {
             final EhGalleryInfo info = detail;
             io.execute(() -> {
                 EhDownloads.enqueue(this, info);
-                runOnUiThread(() -> Toast.makeText(this, R.string.eh_download_queued, Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    Toast.makeText(this, R.string.eh_download_queued, Toast.LENGTH_SHORT).show();
+                    refreshLocalState();
+                });
             });
-            refreshLocalState();
             return;
         }
         if (d.state == EhDatabase.STATE_DONE) {
@@ -215,22 +263,26 @@ public class EhGalleryActivity extends GeneralActivity {
                 .setTitle(d.title)
                 .setItems(new CharSequence[]{getString(R.string.eh_download_pause), getString(R.string.eh_download_delete)},
                     (dialog, which) -> {
-                        if (which == 0) io.execute(() -> EhDownloads.pauseAll(this));
+                        if (which == 0) io.execute(() -> {
+                            EhDownloads.pauseAll(this);
+                            refreshLocalState();
+                        });
                         else {
                             io.execute(() -> EhDownloads.pauseAll(this));
                             EhDownloads.confirmDelete(this, d, () -> downloadRow = null);
                         }
-                        refreshLocalState();
                     })
                 .show();
             return;
         }
-        io.execute(() -> EhDownloads.resume(this, d));
-        refreshLocalState();
+        io.execute(() -> {
+            EhDownloads.resume(this, d);
+            refreshLocalState();
+        });
     }
 
     private void onFavoriteClicked() {
-        if (!EhAuth.isLoggedIn(this)) {
+        if (!EhAuth.isLoggedIn(this) || (key.exhentai && !EhAuth.hasExhentaiAccess(this))) {
             toggleLocalFavorite();
             return;
         }
@@ -289,7 +341,7 @@ public class EhGalleryActivity extends GeneralActivity {
         final boolean now = !localFavorite;
         localFavorite = now;
         updateButtons();
-        io.execute(() -> EhDatabase.get(this).setFavorite(info, now));
+        EhDatabase.READING_IO.execute(() -> EhDatabase.get(this).setFavorite(info, now));
         Toast.makeText(this, now ? R.string.eh_local_favorite_added : R.string.eh_local_favorite_removed,
             Toast.LENGTH_SHORT).show();
     }
@@ -357,11 +409,10 @@ public class EhGalleryActivity extends GeneralActivity {
 
     protected void onDetailBound(@NonNull EhGalleryDetail d) {
         updateButtons();
-        // Keep stored copies of the gallery info fresh (title, cover, page count).
-        io.execute(() -> {
-            EhDatabase db = EhDatabase.get(this);
-            if (db.isFavorite(d.key)) db.setFavorite(d, true);
-        });
+        recordVisit(d);
+        io.execute(() -> EhDatabase.get(this).refreshFavorite(d));
+        detailReady = true;
+        maybeResume();
     }
 
     /** Offline view of a downloaded gallery when the site cannot be reached. */
@@ -380,6 +431,13 @@ public class EhGalleryActivity extends GeneralActivity {
         morePreviews.setVisibility(View.GONE);
         readButton.setEnabled(e.pages > 0);
         updateButtons();
+        recordVisit(e);
+        detailReady = true;
+        maybeResume();
+    }
+
+    private void recordVisit(EhGalleryInfo info) {
+        EhDatabase.READING_IO.execute(() -> EhDatabase.get(this).recordVisit(info));
     }
 
     private void line(StringBuilder b, int label, String value) {
@@ -498,6 +556,10 @@ public class EhGalleryActivity extends GeneralActivity {
         }
         if (id == R.id.eh_action_status) {
             chooseReadingStatus();
+            return true;
+        }
+        if (id == R.id.eh_action_reading_stats) {
+            ReadingStatsHelper.showEhStats(this, key);
             return true;
         }
         if (id == R.id.eh_action_refresh) {

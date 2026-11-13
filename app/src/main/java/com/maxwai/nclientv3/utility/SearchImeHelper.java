@@ -24,10 +24,8 @@ import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.widget.SearchView;
 import com.maxwai.nclientv3.R;
-import com.maxwai.nclientv3.async.database.Queries;
-import java.lang.reflect.Field;
+import com.maxwai.nclientv3.HistoryActivity;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,7 +33,6 @@ import java.util.List;
  * dismiss the keyboard first instead of collapsing the search view.
  */
 public class SearchImeHelper {
-    private static String historyQuery = "";
 
     public static void onSubmit(View view) {
         if (view == null) return;
@@ -379,72 +376,10 @@ public class SearchImeHelper {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                historyQuery = newText == null ? "" : newText;
-                applyHistoryFilter(activity, historyQuery);
+                if (activity instanceof HistoryActivity) ((HistoryActivity) activity).filterHistory(newText);
                 return true;
             }
         });
     }
 
-    public static void refreshHistory(Activity activity) {
-        if (activity == null) return;
-        if (historyQuery == null || historyQuery.trim().length() == 0) return;
-        applyHistoryFilter(activity, historyQuery);
-    }
-
-    private static Object findField(Object target, String name) {
-        Class<?> c = target.getClass();
-        while (c != null) {
-            try {
-                Field f = c.getDeclaredField(name);
-                f.setAccessible(true);
-                return f.get(target);
-            } catch (NoSuchFieldException e) {
-                c = c.getSuperclass();
-            } catch (Throwable t) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private static void applyHistoryFilter(Activity activity, String query) {
-        List<?> all;
-        try {
-            all = Queries.HistoryTable.getHistory();
-        } catch (Throwable t) {
-            return;
-        }
-        if (all == null) all = Collections.emptyList();
-        String needle = query == null ? "" : query.trim().toLowerCase();
-        List<Object> filtered = new ArrayList<Object>();
-        for (Object item : all) {
-            if (needle.length() == 0 || titleOf(item).toLowerCase().contains(needle)) {
-                filtered.add(item);
-            }
-        }
-        try {
-            Object adapter = findField(activity, "adapter");
-            if (adapter != null) {
-                adapter.getClass().getMethod("restartDataset", List.class).invoke(adapter, filtered);
-            }
-        } catch (Throwable ignored) {
-        }
-        View empty = activity.findViewById(R.id.history_empty);
-        if (empty != null) {
-            empty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
-        }
-    }
-
-    private static String titleOf(Object item) {
-        if (item == null) return "";
-        for (String m : new String[]{"getTitle", "getTitleString"}) {
-            try {
-                Object title = item.getClass().getMethod(m).invoke(item);
-                if (title != null) return String.valueOf(title);
-            } catch (Throwable ignored) {
-            }
-        }
-        return "";
-    }
 }

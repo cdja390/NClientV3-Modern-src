@@ -76,7 +76,7 @@ public final class EhSettings {
         return prefs(context).getBoolean(KEY_READER_RTL, false);
     }
 
-    public static void setReaderRtl(@NonNull Context context, boolean value) {
-        prefs(context).edit().putBoolean(KEY_READER_RTL, value).apply();
+    public static boolean hasReaderDirection(@NonNull Context context) {
+        return prefs(context).contains(KEY_READER_RTL);
     }
 }

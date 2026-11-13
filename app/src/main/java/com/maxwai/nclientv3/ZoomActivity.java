@@ -54,7 +54,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.io.File;
 import java.util.Objects;
 
-public class ZoomActivity extends GeneralActivity {
+public class ZoomActivity extends GeneralActivity implements AutoPageTurner.ReaderHost {
     private static final int HIDE_FLAGS = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN

@@ -33,10 +33,12 @@ public class DownloadGalleryV2 extends Worker {
     }
 
     public static void downloadGallery(Context context, GenericGallery gallery) {
-        // 4.7.2: a positive gid is not an nhentai id. P6 sends these to the e-hentai downloader.
+        // GalleryDownloads dispatches EH and EX to their own queue.
         if (!GalleryIdentity.persistsInNhentaiTables(gallery)) return;
-        if (gallery.isValid() && gallery instanceof Gallery)
+        if (gallery.isValid() && gallery instanceof Gallery) {
             downloadGallery(context, (Gallery) gallery);
+            return;
+        }
         if (gallery.getId() > 0) {
             if (gallery instanceof SimpleGallery) {
                 SimpleGallery simple = (SimpleGallery) gallery;

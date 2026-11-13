@@ -40,6 +40,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * e-hentai data in its own database file (ehentai.db), so the main Entries.db schema and its
@@ -47,15 +49,21 @@ import java.util.Set;
  * local favorites, and downloads.
  */
 public final class EhDatabase extends SQLiteOpenHelper {
+    static final ExecutorService READING_IO = Executors.newSingleThreadExecutor();
     public static final String NAME = "ehentai.db";
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
 
     public static final String HISTORY = "history";
     public static final String FAVORITES = "favorites";
     public static final String DOWNLOADS = "downloads";
     private static final String STATUS = "reading_status";
     private static final String LEGACY_DIRS = "legacy_download_dirs";
-    static final String[] TABLES = {HISTORY, FAVORITES, DOWNLOADS, STATUS, LEGACY_DIRS};
+    private static final String STATS = "reading_stats";
+    static final String[] TABLES = {HISTORY, FAVORITES, DOWNLOADS, STATUS, LEGACY_DIRS, STATS};
+    private static final String LEGACY_STATS_SQL = "INSERT OR IGNORE INTO " + STATS
+        + " (gid,token,ex,title,thumb,category,pages,read_count,total_ms,first_read,stats_last_read,max_page) "
+        + "SELECT gid,token,ex,title,thumb,category,pages,read_count,read_seconds*1000,last_read,last_read,last_page "
+        + "FROM " + HISTORY + " WHERE (read_count>0 OR read_seconds>0)";
 
     public static final int STATE_QUEUED = 0;
     public static final int STATE_RUNNING = 1;
@@ -79,6 +87,7 @@ public final class EhDatabase extends SQLiteOpenHelper {
         COLUMNS.put(DOWNLOADS, with("state", "done", "added"));
         COLUMNS.put(STATUS, new HashSet<>(Arrays.asList("gid", "ex", "token", "status")));
         COLUMNS.put(LEGACY_DIRS, new HashSet<>(Arrays.asList("gid", "ex", "token")));
+        COLUMNS.put(STATS, with("read_count", "total_ms", "first_read", "stats_last_read", "max_page"));
     }
 
     private static Set<String> with(String... extra) {
@@ -107,6 +116,11 @@ public final class EhDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        createLibrary(db);
+        createStats(db);
+    }
+
+    private static void createLibrary(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + HISTORY + " (" + GALLERY_COLUMNS + ", last_page INTEGER NOT NULL DEFAULT 1, "
             + "read_count INTEGER NOT NULL DEFAULT 0, read_seconds INTEGER NOT NULL DEFAULT 0, "
             + "last_read INTEGER NOT NULL DEFAULT 0" + IDENTITY);
@@ -119,25 +133,37 @@ public final class EhDatabase extends SQLiteOpenHelper {
             + "ex INTEGER NOT NULL, PRIMARY KEY (gid, token))");
     }
 
+    private static void createStats(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE " + STATS + " (" + GALLERY_COLUMNS + ", read_count INTEGER NOT NULL DEFAULT 0, "
+            + "total_ms INTEGER NOT NULL DEFAULT 0, first_read INTEGER NOT NULL DEFAULT 0, "
+            + "stats_last_read INTEGER NOT NULL DEFAULT 0, max_page INTEGER NOT NULL DEFAULT 0" + IDENTITY);
+    }
+
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion == 1) {
             String[] oldTables = {HISTORY, FAVORITES, DOWNLOADS};
             for (String table : oldTables) db.execSQL("ALTER TABLE " + table + " RENAME TO " + table + "_v1");
-            onCreate(db);
+            createLibrary(db);
             for (String table : oldTables) {
                 db.execSQL("INSERT INTO " + table + " SELECT * FROM " + table + "_v1");
                 db.execSQL("DROP TABLE " + table + "_v1");
             }
             db.execSQL("INSERT INTO " + LEGACY_DIRS + " (gid, token, ex) SELECT gid, token, ex FROM " + DOWNLOADS);
         }
+        if (oldVersion < 3) {
+            createStats(db);
+            db.execSQL(LEGACY_STATS_SQL);
+        }
     }
 
     /** Row of one of the tables, with the extra columns that table has. */
     public static final class Entry extends EhGalleryInfo {
         public int lastPage = 1;
-        public int readCount;
-        public long readSeconds;
+        public long readCount;
+        public long totalMs;
+        public long firstRead;
+        public int maxPage;
         public long time;
         public int state;
         public int done;
@@ -171,9 +197,12 @@ public final class EhDatabase extends SQLiteOpenHelper {
         e.pages = c.getInt(c.getColumnIndexOrThrow("pages"));
         int i;
         if ((i = c.getColumnIndex("last_page")) >= 0) e.lastPage = c.getInt(i);
-        if ((i = c.getColumnIndex("read_count")) >= 0) e.readCount = c.getInt(i);
-        if ((i = c.getColumnIndex("read_seconds")) >= 0) e.readSeconds = c.getLong(i);
+        if ((i = c.getColumnIndex("read_count")) >= 0) e.readCount = c.getLong(i);
+        if ((i = c.getColumnIndex("total_ms")) >= 0) e.totalMs = c.getLong(i);
+        if ((i = c.getColumnIndex("first_read")) >= 0) e.firstRead = c.getLong(i);
+        if ((i = c.getColumnIndex("max_page")) >= 0) e.maxPage = c.getInt(i);
         if ((i = c.getColumnIndex("last_read")) >= 0) e.time = c.getLong(i);
+        if ((i = c.getColumnIndex("stats_last_read")) >= 0) e.time = c.getLong(i);
         if ((i = c.getColumnIndex("added")) >= 0) e.time = c.getLong(i);
         if ((i = c.getColumnIndex("state")) >= 0) e.state = c.getInt(i);
         if ((i = c.getColumnIndex("done")) >= 0) e.done = c.getInt(i);
@@ -182,8 +211,13 @@ public final class EhDatabase extends SQLiteOpenHelper {
 
     @NonNull
     private List<Entry> list(@NonNull String table, @NonNull String order) {
+        return list(table, null, order, 0);
+    }
+
+    private List<Entry> list(String table, @Nullable String where, String order, int limit) {
         List<Entry> out = new ArrayList<>();
-        try (Cursor c = getReadableDatabase().query(table, null, null, null, null, null, order, "1000")) {
+        try (Cursor c = getReadableDatabase().query(table, null, where, null, null, null, order,
+            limit > 0 ? Integer.toString(limit) : null)) {
             while (c.moveToNext()) out.add(read(c));
         } catch (RuntimeException e) {
             LogUtility.e("ehentai.db read failed", e);
@@ -236,25 +270,21 @@ public final class EhDatabase extends SQLiteOpenHelper {
 
     // ---- history ----
 
-    /** Records that a gallery was opened in the reader. */
-    public void recordOpen(@NonNull EhGalleryInfo info) {
+    public void recordVisit(@NonNull EhGalleryInfo info) {
         try {
-            SQLiteDatabase db = getWritableDatabase();
             ContentValues extra = new ContentValues();
             extra.put("last_read", System.currentTimeMillis());
             upsert(HISTORY, info, extra);
-            db.execSQL("UPDATE " + HISTORY + " SET read_count = read_count + 1 WHERE " + BY_SOURCE,
-                sourceArgs(info.key));
         } catch (RuntimeException e) {
             LogUtility.e("ehentai.db write failed", e);
         }
     }
 
-    public void saveProgress(@NonNull EhGalleryKey key, int page, long addSeconds) {
+    public void saveProgress(@NonNull EhGalleryInfo info, int page) {
         try {
-            getWritableDatabase().execSQL("UPDATE " + HISTORY + " SET last_page = ?, last_read = ?, "
-                    + "read_seconds = read_seconds + ? WHERE " + BY_SOURCE,
-                new Object[]{Math.max(1, page), System.currentTimeMillis(), Math.max(0, addSeconds), key.exhentai ? 1 : 0, key.gid});
+            ContentValues extra = new ContentValues();
+            extra.put("last_page", Math.max(1, page));
+            upsert(HISTORY, info, extra);
         } catch (RuntimeException e) {
             LogUtility.e("ehentai.db write failed", e);
         }
@@ -268,22 +298,99 @@ public final class EhDatabase extends SQLiteOpenHelper {
 
     @NonNull
     public List<Entry> history() {
-        return list(HISTORY, "last_read DESC");
+        return history(0);
+    }
+
+    @NonNull
+    public List<Entry> history(int limit) {
+        return list(HISTORY, "last_read>0", "last_read DESC, ex, gid", limit);
+    }
+
+    public int historyCount() {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM " + HISTORY + " WHERE last_read>0", null)) {
+            return c.moveToFirst() ? c.getInt(0) : 0;
+        }
+    }
+
+    public long historySignature() {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*), MAX(last_read), SUM(gid), SUM(ex) FROM "
+            + HISTORY + " WHERE last_read>0", null)) {
+            return c.moveToFirst() ? ((c.getLong(0) * 31 + c.getLong(1)) * 31 + c.getLong(2)) * 31 + c.getLong(3) : 0;
+        }
     }
 
     public void removeHistory(@NonNull EhGalleryKey key) {
-        getWritableDatabase().delete(HISTORY, BY_SOURCE, sourceArgs(key));
+        hideHistory(BY_SOURCE, sourceArgs(key));
     }
 
     public void clearHistory() {
-        getWritableDatabase().delete(HISTORY, null, null);
+        hideHistory("last_read>0", null);
     }
 
-    /** {galleries read, total pages of those galleries, total reading seconds}. */
+    private void hideHistory(String where, @Nullable String[] args) {
+        ContentValues values = new ContentValues();
+        values.put("last_read", 0);
+        getWritableDatabase().update(HISTORY, values, where, args);
+    }
+
+    public void addReadingStats(EhGalleryInfo info, long count, long elapsedMs, long now, int maxPage) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            upsert(STATS, info, new ContentValues());
+            db.execSQL("UPDATE " + STATS + " SET read_count=read_count+?, total_ms=total_ms+?, "
+                    + "first_read=CASE WHEN first_read=0 THEN ? ELSE first_read END, "
+                    + "stats_last_read=MAX(stats_last_read, ?), max_page=MAX(max_page, ?) WHERE " + BY_SOURCE,
+                new Object[]{count, elapsedMs, now, now, maxPage, info.key.exhentai ? 1 : 0, info.key.gid});
+            db.execSQL("UPDATE " + HISTORY + " SET read_count=read_count+?, "
+                    + "read_seconds=(SELECT total_ms/1000 FROM " + STATS + " WHERE " + BY_SOURCE + ") WHERE " + BY_SOURCE,
+                new Object[]{count, info.key.exhentai ? 1 : 0, info.key.gid, info.key.exhentai ? 1 : 0, info.key.gid});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    @Nullable
+    public Entry readingStats(EhGalleryKey key) {
+        return one(STATS, key);
+    }
+
+    @NonNull
+    public List<Entry> readingStats() {
+        return list(STATS, "stats_last_read DESC");
+    }
+
+    public void clearReadingStats(@Nullable EhGalleryKey key) {
+        SQLiteDatabase db = getWritableDatabase();
+        String where = key == null ? null : BY_SOURCE;
+        String[] args = key == null ? null : sourceArgs(key);
+        db.beginTransaction();
+        try {
+            db.delete(STATS, where, args);
+            ContentValues legacy = new ContentValues();
+            legacy.put("read_count", 0);
+            legacy.put("read_seconds", 0);
+            db.update(HISTORY, legacy, where, args);
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    public long[] readingTotals() {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*), COALESCE(SUM(read_count),0), "
+            + "COALESCE(SUM(total_ms),0) FROM " + STATS, null)) {
+            if (c.moveToFirst()) return new long[]{c.getLong(0), c.getLong(1), c.getLong(2)};
+        }
+        return new long[3];
+    }
+
+    /** {galleries read, total pages of those galleries, total reading milliseconds}. */
     @NonNull
     public long[] stats() {
         try (Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*), COALESCE(SUM(pages),0), "
-            + "COALESCE(SUM(read_seconds),0) FROM " + HISTORY, null)) {
+            + "COALESCE(SUM(total_ms),0) FROM " + STATS, null)) {
             if (c.moveToFirst()) return new long[]{c.getLong(0), c.getLong(1), c.getLong(2)};
         } catch (RuntimeException e) {
             LogUtility.e("ehentai.db read failed", e);
@@ -305,6 +412,15 @@ public final class EhDatabase extends SQLiteOpenHelper {
         ContentValues extra = new ContentValues();
         extra.put("added", System.currentTimeMillis());
         upsert(FAVORITES, info, extra);
+    }
+
+    public void refreshFavorite(@NonNull EhGalleryInfo info) {
+        ContentValues values = galleryValues(info);
+        if (info.title.isEmpty()) values.remove("title");
+        if (info.thumb == null) values.remove("thumb");
+        if (info.pages <= 0) values.remove("pages");
+        if (info.category == EhCategory.UNKNOWN) values.remove("category");
+        getWritableDatabase().update(FAVORITES, values, BY_SOURCE, sourceArgs(info.key));
     }
 
     @NonNull
@@ -435,6 +551,7 @@ public final class EhDatabase extends SQLiteOpenHelper {
                         else v.put(c.getKey(), o.toString());
                     }
                     if (!v.containsKey("gid") || v.getAsString("token") == null) continue;
+                    if (v.getAsInteger("ex") == null) v.put("ex", 0);
                     int conflict = LEGACY_DIRS.equals(t.getKey()) ? SQLiteDatabase.CONFLICT_IGNORE
                         : SQLiteDatabase.CONFLICT_REPLACE;
                     if (db.insertWithOnConflict(t.getKey(), null, v, conflict) != -1) {
@@ -445,6 +562,10 @@ public final class EhDatabase extends SQLiteOpenHelper {
                             legacy.put("token", v.getAsString("token"));
                             legacy.put("ex", v.containsKey("ex") ? v.getAsInteger("ex") : 0);
                             db.insertWithOnConflict(LEGACY_DIRS, null, legacy, SQLiteDatabase.CONFLICT_IGNORE);
+                        }
+                        if (HISTORY.equals(t.getKey()) && !tables.containsKey(STATS)) {
+                            db.execSQL(LEGACY_STATS_SQL + " AND " + BY_SOURCE,
+                                new Object[]{v.getAsInteger("ex"), v.getAsLong("gid")});
                         }
                     }
                 }

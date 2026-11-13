@@ -33,6 +33,11 @@ import androidx.preference.PreferenceFragmentCompat;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.maxwai.nclientv3.GalleryActivity;
 import com.maxwai.nclientv3.api.components.GenericGallery;
+import com.maxwai.nclientv3.ehentai.EhDatabase;
+import com.maxwai.nclientv3.ehentai.EhGalleryKey;
+import com.maxwai.nclientv3.ehentai.EhIntents;
+import com.maxwai.nclientv3.source.GalleryIdentity;
+import com.maxwai.nclientv3.source.SourceDialogs;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
@@ -552,6 +557,30 @@ public class ReadingStatsHelper {
         b.create().show();
     }
 
+    public static void showEhStats(Activity activity, EhGalleryKey key) {
+        try {
+            EhDatabase.Entry row = EhDatabase.get(activity).readingStats(key);
+            String message;
+            if (row == null) {
+                message = activity.getString(R.string.stats_gallery_none);
+                if (!isEnabled(activity)) message += activity.getString(R.string.stats_recording_off_note);
+            } else {
+                message = activity.getString(R.string.stats_times_read, row.readCount) + "\n"
+                    + activity.getString(R.string.stats_total_time, formatDuration(activity, row.totalMs)) + "\n"
+                    + activity.getString(R.string.stats_first_read, formatDate(row.firstRead)) + "\n"
+                    + activity.getString(R.string.stats_last_read, formatDate(row.time)) + "\n"
+                    + activity.getString(R.string.stats_furthest, row.maxPage);
+            }
+            MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(activity)
+                .setTitle(R.string.stats_title).setMessage(message).setPositiveButton(R.string.stats_close, null);
+            if (row != null) dialog.setNegativeButton(R.string.stats_clear_gallery,
+                (d, which) -> confirmClear(activity, 0, key, null, null));
+            dialog.show();
+        } catch (RuntimeException e) {
+            log("showEhStats failed", e);
+        }
+    }
+
     // ------------------------------------------------------------------ Settings
 
     /** GeneralPreferenceFragment.mainMenu() end and onResume(), next to the other helpers. */
@@ -589,7 +618,7 @@ public class ReadingStatsHelper {
             Context ctx = pref.getContext();
             if (ctx == null) return;
             boolean zh = isZh(ctx);
-            int n = countRows();
+            long n = allTotals(ctx)[0];
             pref.setSummary(ctx.getString(R.string.stats_clear_summary_count, n));
         } catch (Throwable t) {
             log("updateClearSummary failed", t);
@@ -603,17 +632,22 @@ public class ReadingStatsHelper {
 
     /** As above; afterClear (may be null) runs on the UI thread after a successful clear. */
     static void confirmClear(final Context ctx, final int galleryId, final Preference pref, final Runnable afterClear) {
+        confirmClear(ctx, galleryId, null, pref, afterClear);
+    }
+
+    private static void confirmClear(final Context ctx, final int galleryId, final EhGalleryKey eh,
+                                     final Preference pref, final Runnable afterClear) {
         try {
             if (ctx == null) return;
             if (ctx instanceof Activity && ((Activity) ctx).isFinishing()) return;
             final boolean zh = isZh(ctx);
             String title;
             String message;
-            if (galleryId > 0) {
+            if (galleryId > 0 || eh != null) {
                 title = ctx.getString(R.string.stats_clear_gallery_title);
                 message = ctx.getString(R.string.stats_clear_gallery_message);
             } else {
-                int n = countRows();
+                long n = allTotals(ctx)[0];
                 title = ctx.getString(R.string.stats_clear_all_title);
                 message = ctx.getString(R.string.stats_clear_all_message, n);
             }
@@ -624,7 +658,15 @@ public class ReadingStatsHelper {
                 .setPositiveButton(R.string.stats_clear_confirm, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int which) {
-                        boolean ok = clear(galleryId);
+                        boolean ok = eh != null || clear(galleryId);
+                        if (eh != null || galleryId <= 0) {
+                            try {
+                                EhDatabase.get(ctx).clearReadingStats(eh);
+                            } catch (RuntimeException failure) {
+                                log("EH statistics clear failed", failure);
+                                ok = false;
+                            }
+                        }
                         try {
                             Toast.makeText(ctx.getApplicationContext(), ok
                                 ? R.string.stats_cleared
@@ -674,6 +716,7 @@ public class ReadingStatsHelper {
     /** One ReadingStats row plus a best-effort title (null when unknown). Pure Java. */
     static final class Entry {
         final int gallery;
+        final EhGalleryKey eh;
         final long count;
         final long totalMs;
         final long firstRead;
@@ -682,7 +725,16 @@ public class ReadingStatsHelper {
         final String title;
 
         Entry(int gallery, long count, long totalMs, long firstRead, long lastRead, long maxPage, String title) {
+            this(gallery, null, count, totalMs, firstRead, lastRead, maxPage, title);
+        }
+
+        Entry(EhDatabase.Entry row) {
+            this(0, row.key, row.readCount, row.totalMs, row.firstRead, row.time, row.maxPage, row.title);
+        }
+
+        private Entry(int gallery, EhGalleryKey eh, long count, long totalMs, long firstRead, long lastRead, long maxPage, String title) {
             this.gallery = gallery;
+            this.eh = eh;
             this.count = count;
             this.totalMs = totalMs;
             this.firstRead = firstRead;
@@ -692,7 +744,11 @@ public class ReadingStatsHelper {
         }
 
         String displayTitle() {
-            return title == null || title.trim().isEmpty() ? "#" + gallery : title;
+            return title == null || title.trim().isEmpty() ? "#" + id() : title;
+        }
+
+        long id() {
+            return eh == null ? gallery : eh.gid;
         }
     }
 
@@ -706,7 +762,7 @@ public class ReadingStatsHelper {
                 if (mode == SORT_TIME) r = Long.compare(b.totalMs, a.totalMs);
                 else if (mode == SORT_COUNT) r = Long.compare(b.count, a.count);
                 if (r == 0) r = Long.compare(b.lastRead, a.lastRead);
-                if (r == 0) r = Integer.compare(a.gallery, b.gallery);
+                if (r == 0) r = Long.compare(a.id(), b.id());
                 return r;
             }
         });
@@ -786,12 +842,19 @@ public class ReadingStatsHelper {
         }
     }
 
+    private static long[] allTotals(Context context) {
+        long[] total = totals();
+        long[] eh = EhDatabase.get(context).readingTotals();
+        for (int i = 0; i < total.length; i++) total[i] += eh[i];
+        return total;
+    }
+
     private static void updateViewSummary(Preference pref) {
         try {
             Context ctx = pref.getContext();
             if (ctx == null) return;
             boolean zh = isZh(ctx);
-            long[] t = totals();
+            long[] t = allTotals(ctx);
             String s;
             if (t[0] <= 0) {
                 s = ctx.getString(R.string.stats_view_none);
@@ -838,6 +901,7 @@ public class ReadingStatsHelper {
             final boolean zh = isZh(ctx);
             final boolean enabled = isEnabled(ctx);
             final List<Entry> entries = queryAll();
+            for (EhDatabase.Entry row : EhDatabase.get(ctx).readingStats()) entries.add(new Entry(row));
             if (pref != null) refreshSummaries(pref);
             if (entries.isEmpty()) {
                 String msg = ctx.getString(R.string.stats_all_empty);
@@ -903,7 +967,8 @@ public class ReadingStatsHelper {
             if (ctx instanceof Activity && ((Activity) ctx).isFinishing()) return;
             final boolean zh = isZh(ctx);
             StringBuilder sb = new StringBuilder();
-            sb.append(ctx.getString(R.string.stats_entry_id, e.gallery)).append('\n');
+            if (e.eh != null) sb.append(ctx.getString(SourceDialogs.label(GalleryIdentity.ehSource(e.eh.exhentai)))).append('\n');
+            sb.append(ctx.getString(R.string.stats_entry_id, e.id())).append('\n');
             sb.append(ctx.getString(R.string.stats_times_read, e.count)).append('\n');
             sb.append(ctx.getString(R.string.stats_total_time, formatDuration(ctx, e.totalMs))).append('\n');
             sb.append(ctx.getString(R.string.stats_first_read, formatDate(e.firstRead))).append('\n');
@@ -915,7 +980,8 @@ public class ReadingStatsHelper {
                 .setPositiveButton(R.string.stats_open_gallery, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int which) {
-                        openGallery(ctx, e.gallery);
+                        if (e.eh == null) openGallery(ctx, e.gallery);
+                        else ctx.startActivity(EhIntents.gallery(ctx, e.eh, e.title, null));
                     }
                 })
                 .setNeutralButton(R.string.stats_back_to_list, new DialogInterface.OnClickListener() {
@@ -927,7 +993,7 @@ public class ReadingStatsHelper {
                 .setNegativeButton(R.string.stats_clear_gallery, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int which) {
-                        confirmClear(ctx, e.gallery, pref, new Runnable() {
+                        confirmClear(ctx, e.gallery, e.eh, pref, new Runnable() {
                             @Override
                             public void run() {
                                 showAllStats(ctx, pref);
@@ -977,8 +1043,7 @@ public class ReadingStatsHelper {
 
         @Override
         public long getItemId(int position) {
-            Entry e = getItem(position);
-            return e == null ? position : e.gallery;
+            return position;
         }
 
         @Override
@@ -1010,7 +1075,8 @@ public class ReadingStatsHelper {
             if (e != null) {
                 title.setText(e.displayTitle());
                 StringBuilder sb = new StringBuilder();
-                if (e.title != null && !e.title.trim().isEmpty()) sb.append('#').append(e.gallery).append(" \u00b7 ");
+                if (e.eh != null) sb.append(ctx.getString(SourceDialogs.badge(GalleryIdentity.ehSource(e.eh.exhentai)))).append(" \u00b7 ");
+                if (e.title != null && !e.title.trim().isEmpty()) sb.append('#').append(e.id()).append(" \u00b7 ");
                 sb.append(formatCount(ctx, e.count)).append(" \u00b7 ").append(formatDuration(ctx, e.totalMs))
                     .append(" \u00b7 ").append(ctx.getString(R.string.stats_entry_last, formatDate(e.lastRead)));
                 sub.setText(sb.toString());

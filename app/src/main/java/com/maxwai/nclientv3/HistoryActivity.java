@@ -10,20 +10,20 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.widget.Toolbar;
 
 import com.maxwai.nclientv3.adapters.ListAdapter;
-import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.components.activities.BaseActivity;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.source.GalleryHistory;
 import com.maxwai.nclientv3.utility.BottomNavRouter;
 import com.maxwai.nclientv3.utility.GlassBar;
 import com.maxwai.nclientv3.utility.HistoryClearHelper;
 import com.maxwai.nclientv3.utility.SearchImeHelper;
 import com.maxwai.nclientv3.utility.Utility;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 public class HistoryActivity extends BaseActivity {
-    ListAdapter adapter;
+    private ListAdapter adapter;
+    private String query = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,10 +40,9 @@ public class HistoryActivity extends BaseActivity {
         recycler = findViewById(R.id.recycler);
         masterLayout = findViewById(R.id.master_layout);
         adapter = new ListAdapter(this);
-        adapter.addGalleries(new ArrayList<>(Queries.HistoryTable.getHistory()));
         changeLayout(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
         recycler.setAdapter(adapter);
-        syncEmpty();
+        filterHistory("");
     }
 
     private void syncEmpty() {
@@ -59,10 +58,22 @@ public class HistoryActivity extends BaseActivity {
         BottomNavRouter.sync(this, R.id.history);
         GlassBar.refresh(this);
         if (BottomNavRouter.hasHistoryChanged(this) && adapter != null) {
-            adapter.restartDataset(new ArrayList<>(Queries.HistoryTable.getHistory()));
+            filterHistory(query);
+        } else {
+            adapter.resetStatuses();
+            adapter.notifyDataSetChanged();
         }
+    }
+
+    public void filterHistory(String query) {
+        this.query = query == null ? "" : query;
+        adapter.restartDataset(GalleryHistory.rows(this, this.query));
         syncEmpty();
-        SearchImeHelper.refreshHistory(this);
+    }
+
+    public void onHistoryCleared() {
+        filterHistory(query);
+        BottomNavRouter.noteHistory(this);
     }
 
     @Override

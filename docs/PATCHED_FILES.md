@@ -95,3 +95,12 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 - `EhIntents.java`, `EhSimpleGallery.java`, `EhGalleryActivity.java`, and new `EhTags.java` route merged detail tags to MainActivity. The namespace mapping follows EHentaiSource at b2ee7ed. `InspectorV3.java` handles the synthetic tag IDs while retaining the NH server query.
 - `EhDatabase.java` migrates to a source-qualified primary key for history, favorites and downloads and adds reading status. `EhDownloads.java`, `EhDownloadWorker.java`, and `EhRepository.java` isolate EH and EX offline files, progress and caches.
 - `ListAdapter.java` and `MainActivity.java` refresh reading status using SourceKey. `EhMiscTest.java` covers tag mapping and distinct cache and download identities.
+
+## Files added or modified in 4.7.2 (P6, library and reading)
+
+- `GalleryHistory.java`, `HistoryActivity.java`, `Queries.java`, and the history navigation, search, and clear helpers combine the NH and EH history by time. The existing NH history schema is unchanged.
+- `FavoriteActivity.java`, `FavoriteAdapter.java`, new `FavoriteSources.java`, and the favorite controls provide merged local favorites and a single online source. Source selection follows SourceManager and OnlineFavoriteFragment at b2ee7ed. The existing NH sync remains available under local favorites.
+- `GalleryDownloads.java` dispatches browse and favorite batches by SourceKey, preserving EH/EX tokens. `InspectorV3.java` and `MainActivity.java` use the source-aware list format when saving an accepted page.
+- `EhReaderActivity.java`, `EhPageNavigation.java`, `EhReadingSession.java`, the EH reader layouts and menu, and `AutoPageTurner.java` implement the agreed reading controls in the independent EH reader. ZoomActivity implements the shared auto-turn host through its existing methods.
+- `EhDatabase.java` v3 separates EH reading statistics from visibility in history. `ReadingSessionHelper.java` shares status rules, and `ReadingStatsHelper.java` includes EH and EX totals, details and clearing.
+- Tests: `GalleryDownloadsTest`, `FavoriteSourcesTest`, and `EhReadingSessionTest`. Device verification is tracked in `MERGE_ACCEPTANCE_472.md`.

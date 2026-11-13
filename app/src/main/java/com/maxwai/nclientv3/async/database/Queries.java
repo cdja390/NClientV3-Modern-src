@@ -795,6 +795,16 @@ public class Queries {
             return galleries;
         }
 
+        public static Cursor recentRows(int limit) {
+            return db.query(TABLE_NAME, null, null, null, null, null, TIME + " DESC, " + ID, Integer.toString(limit));
+        }
+
+        public static int count() {
+            try (Cursor c = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_NAME, null)) {
+                return c.moveToFirst() ? c.getInt(0) : 0;
+            }
+        }
+
         public static void emptyHistory() {
             db.delete(TABLE_NAME, null, null);
         }
@@ -920,7 +930,7 @@ public class Queries {
             "FOREIGN KEY(`id_gallery`) REFERENCES `Gallery`(`idGallery`) ON UPDATE CASCADE ON DELETE CASCADE);";
 
         static final String ID_GALLERY = "id_gallery";
-        static final String TIME = "time";
+        public static final String TIME = "time";
 
         private static final String TITLE_CLAUSE = String.format(Locale.US, "%s LIKE ? OR %s LIKE ? OR %s LIKE ?",
             GalleryTable.TITLE_ENG,
@@ -971,6 +981,11 @@ public class Queries {
                     return GalleryTable.TITLE_JP;
             }
             return "";
+        }
+
+        @Nullable
+        public static String sortTitle(Cursor cursor) {
+            return cursor.getString(cursor.getColumnIndexOrThrow(titleTypeToColumn(Global.getTitleType())));
         }
 
         /**

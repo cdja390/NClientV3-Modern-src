@@ -22,6 +22,7 @@ import com.maxwai.nclientv3.components.activities.BaseActivity;
 import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
 import com.maxwai.nclientv3.ehentai.EhDatabase;
 import com.maxwai.nclientv3.ehentai.EhGalleryKey;
+import com.maxwai.nclientv3.source.SourceDialogs;
 import com.maxwai.nclientv3.components.status.Status;
 import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.ehentai.EhUi;
@@ -87,9 +88,7 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
 
     @Override
     public void onBindViewHolder(@NonNull final GenericAdapter.ViewHolder holder, int position) {
-        int holderPos = holder.getBindingAdapterPosition();
-        if (holderPos >= mDataset.size()) return;
-        final SimpleGallery ent = mDataset.get(holderPos);
+        final SimpleGallery ent = mDataset.get(position);
         if (ent == null) return;
         if (!Global.showTitles()) {
             holder.title.setAlpha(0f);
@@ -108,12 +107,12 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
         holder.overlay.setVisibility((queryString != null && ent.hasIgnoredTags(queryString)) ? View.VISIBLE : View.GONE);
         loadGallery(holder, ent);
         holder.pages.setVisibility(View.GONE);
-        if (com.maxwai.nclientv3.source.SourcePreferences.enabled(context).size() > 1) {
+        if (context instanceof com.maxwai.nclientv3.HistoryActivity
+            || com.maxwai.nclientv3.source.SourcePreferences.enabled(context).size() > 1) {
             GallerySource source = GalleryIdentity.of(ent).source;
-            int badge = source == GallerySource.NHENTAI ? R.string.source_badge_nh
-                : source == GallerySource.EXHENTAI ? R.string.source_badge_ex : R.string.source_badge_eh;
-            holder.pages.setText(context.getString(R.string.source_badge_pages,
-                context.getString(badge), ent.getPageCount()));
+            String label = context.getString(SourceDialogs.badge(source));
+            holder.pages.setText(ent.getPageCount() <= 0 ? label : context.getString(R.string.source_badge_pages,
+                label, ent.getPageCount()));
             holder.pages.setVisibility(View.VISIBLE);
         }
         holder.title.setText(ent.getTitle());
@@ -149,10 +148,10 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
             return true;
         });
         String statusKey = GalleryIdentity.of(ent).stableKey();
-        holder.title.setBackgroundColor(statuses.computeIfAbsent(statusKey, ignored -> statusColor(GalleryIdentity.of(ent))));
+        holder.title.setBackgroundColor(statuses.computeIfAbsent(statusKey, ignored -> statusColor(context, GalleryIdentity.of(ent))));
     }
 
-    private int statusColor(SourceKey key) {
+    static int statusColor(android.content.Context context, SourceKey key) {
         if (key.source == GallerySource.NHENTAI) return Queries.StatusMangaTable.getStatus((int) key.id).color;
         if (key.token == null) return 0;
         String name = EhDatabase.get(context).readingStatus(new EhGalleryKey(key.id, key.token,
@@ -246,4 +245,5 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
     public void resetStatuses() {
         statuses.clear();
     }
+
 }

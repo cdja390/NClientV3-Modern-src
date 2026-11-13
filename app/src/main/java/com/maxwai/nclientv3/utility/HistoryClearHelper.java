@@ -6,11 +6,8 @@ import android.view.View;
 import androidx.appcompat.app.AlertDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.maxwai.nclientv3.R;
-import com.maxwai.nclientv3.async.database.Queries;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import com.maxwai.nclientv3.HistoryActivity;
+import com.maxwai.nclientv3.source.GalleryHistory;
 
 /**
  * Confirms before wiping the History table. emptyHistory() only DELETE FROM History
@@ -24,8 +21,7 @@ public class HistoryClearHelper {
         }
         int count = 0;
         try {
-            List<?> hist = Queries.HistoryTable.getHistory();
-            count = hist == null ? 0 : hist.size();
+            count = GalleryHistory.count(activity);
         } catch (Throwable ignored) {
         }
         String title = activity.getString(R.string.history_clear_title);
@@ -66,60 +62,11 @@ public class HistoryClearHelper {
 
     private static void doClear(Activity activity) {
         try {
-            Queries.HistoryTable.emptyHistory();
+            GalleryHistory.clear(activity);
         } catch (Throwable t) {
+            LogUtility.e("Cannot clear reading history", t);
             return;
         }
-        try {
-            Object adapter = findField(activity, "adapter");
-            if (adapter != null) {
-                adapter.getClass().getMethod("restartDataset", List.class)
-                    .invoke(adapter, new ArrayList<Object>());
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            BottomNavRouter.noteHistory(activity);
-        } catch (Throwable ignored) {
-        }
-        try {
-            View empty = activity.findViewById(R.id.history_empty);
-            if (empty != null) {
-                empty.setVisibility(View.VISIBLE);
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static boolean isZh(Activity activity) {
-        try {
-            Locale locale;
-            if (android.os.Build.VERSION.SDK_INT >= 24) {
-                locale = activity.getResources().getConfiguration().getLocales().get(0);
-            } else {
-                locale = activity.getResources().getConfiguration().locale;
-            }
-            if (locale == null) return false;
-            String lang = locale.getLanguage();
-            return lang != null && lang.toLowerCase(Locale.US).startsWith("zh");
-        } catch (Throwable t) {
-            return false;
-        }
-    }
-
-    private static Object findField(Object target, String name) {
-        Class<?> c = target.getClass();
-        while (c != null) {
-            try {
-                Field f = c.getDeclaredField(name);
-                f.setAccessible(true);
-                return f.get(target);
-            } catch (NoSuchFieldException e) {
-                c = c.getSuperclass();
-            } catch (Throwable t) {
-                return null;
-            }
-        }
-        return null;
+        if (activity instanceof HistoryActivity) ((HistoryActivity) activity).onHistoryCleared();
     }
 }

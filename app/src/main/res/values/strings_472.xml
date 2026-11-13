@@ -14,4 +14,7 @@
     <string name="rating_inherit">EH rating: use global setting</string>
     <string name="rating_no_filter">EH rating: no minimum</string>
     <string name="rating_min_stars">EH rating: at least %1$d stars</string>
+    <string name="favorites_local_tab">Local</string>
+    <string name="favorites_online_tab">Online</string>
+    <string name="eh_history_progress">Page %1$d / %2$d · %3$s</string>
 </resources>

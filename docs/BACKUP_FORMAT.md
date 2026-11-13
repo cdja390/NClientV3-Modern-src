@@ -54,3 +54,11 @@ qualifies identity by `ex` and `gid`. For downloads, the token also identifies t
   missing directory ownership using their download rows. Existing ownership takes precedence.
 - When restoring a new backup on 4.7.0 or 4.7.1, those versions ignore the added tables and can
   represent at most one EH/EX row per gid in the legacy tables.
+- `reading_stats` stores per-source counts, elapsed milliseconds (`total_ms`), first and last
+  read timestamps (`first_read`, `stats_last_read`), and the furthest page (`max_page`). The
+  upgrade converts old history statistics from seconds. If an imported old backup lacks the
+  statistics table, its legacy counts and seconds fill missing rows. Existing measurements
+  take precedence. The legacy history fields remain available to older readers.
+- Clearing EH history sets `last_read` to zero. The row can still supply a resume page and its
+  statistics remain in `reading_stats`. Clearing statistics leaves the resume page and history
+  visibility in place.

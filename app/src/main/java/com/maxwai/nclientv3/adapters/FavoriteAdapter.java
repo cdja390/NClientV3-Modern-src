@@ -4,16 +4,12 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.database.Cursor;
 import android.text.Layout;
-import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
-import android.widget.Filter;
-import android.widget.Filterable;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.maxwai.nclientv3.FavoriteActivity;
@@ -24,8 +20,15 @@ import com.maxwai.nclientv3.api.SimpleGallery;
 import com.maxwai.nclientv3.api.components.Gallery;
 import com.maxwai.nclientv3.api.components.GenericGallery;
 import com.maxwai.nclientv3.async.database.Queries;
+import com.maxwai.nclientv3.ehentai.EhDatabase;
+import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
+import com.maxwai.nclientv3.ehentai.EhUi;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.source.GalleryIdentity;
+import com.maxwai.nclientv3.source.SourceDialogs;
+import com.maxwai.nclientv3.source.SourceKey;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
+import com.maxwai.nclientv3.utility.LocalTagFilterHelper;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.SafeMode;
 
@@ -33,69 +36,39 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder> implements Filterable {
-    private final int perPage = FavoriteActivity.getEntryPerPage();
-    private final SparseIntArray statuses = new SparseIntArray();
+public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder> {
     private final FavoriteActivity activity;
-    private GenericGallery[] galleries;
+    private final ExecutorService io = Executors.newSingleThreadExecutor();
+    private final Map<SourceKey, Integer> statuses = new HashMap<>();
     private final Set<Integer> loadingGalleryIds = Collections.synchronizedSet(new HashSet<>());
-    private CharSequence lastQuery;
+    private List<Row> rows = Collections.emptyList();
+    private GenericGallery[] galleries = new GenericGallery[0];
     private Cursor cursor;
-    private boolean force = false;
-    private boolean sortByTitle = false;
-    private Filter filter;
+    private volatile int generation;
 
-    /**
-     * Snapshot of the rows currently bound, kept so a refresh can diff against a plain list on a
-     * worker thread instead of walking the live cursor - which only the UI thread may touch, and
-     * which is the whole reason the diff used to run there. Written on the UI thread in
-     * {@link #publishResults}, read on the filter's worker thread.
-     */
-    private volatile List<RowSnapshot> rowSnapshots = Collections.emptyList();
+    private static final class Row {
+        final int nhPosition;
+        final EhDatabase.Entry eh;
 
-    private static final class RowSnapshot {
-        final long id;
-        final String content;
-
-        RowSnapshot(long id, String content) {
-            this.id = id;
-            this.content = content;
-        }
-    }
-
-    /**
-     * A refresh that has been fetched and diffed but not yet applied.
-     */
-    private static final class PendingRefresh {
-        final Cursor cursor;
-        final List<RowSnapshot> rows;
-        final DiffUtil.DiffResult diff;
-
-        PendingRefresh(Cursor cursor, List<RowSnapshot> rows, DiffUtil.DiffResult diff) {
-            this.cursor = cursor;
-            this.rows = rows;
-            this.diff = diff;
+        Row(int nhPosition, EhDatabase.Entry eh) {
+            this.nhPosition = nhPosition;
+            this.eh = eh;
         }
     }
 
     public FavoriteAdapter(FavoriteActivity activity) {
         this.activity = activity;
-        this.lastQuery = "";
-        setHasStableIds(true);
-    }
-
-    @SuppressLint("Range")
-    @Override
-    public long getItemId(int position) {
-        cursor.moveToPosition(position);
-        return cursor.getInt(cursor.getColumnIndex(Queries.GalleryTable.IDGALLERY));
     }
 
     @NonNull
@@ -106,8 +79,13 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
 
     @Nullable
     private GenericGallery galleryFromPosition(int position) {
+        if (position < 0 || position >= rows.size()) return null;
         if (galleries[position] != null) return galleries[position];
-        cursor.moveToPosition(position);
+        EhDatabase.Entry eh = rows.get(position).eh;
+        if (eh != null) {
+            return galleries[position] = new EhSimpleGallery(eh);
+        }
+        cursor.moveToPosition(rows.get(position).nhPosition);
         String pageData = cursor.getString(
             cursor.getColumnIndex(Queries.GalleryTable.PAGES));
         if (pageData != null && pageData.startsWith(Queries.GalleryTable.FAVORITE_SUMMARY_PREFIX)) {
@@ -143,12 +121,16 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
     public void onBindViewHolder(@NonNull final GenericAdapter.ViewHolder holder, int position) {
         final GenericGallery ent = galleryFromPosition(holder.getBindingAdapterPosition());
         if (ent == null) return;
-        if (ent instanceof Gallery)
+        if (ent instanceof EhSimpleGallery)
+            EhUi.loadThumb(holder.imgView, ((EhSimpleGallery) ent).info.thumb);
+        else if (ent instanceof Gallery)
             ImageDownloadUtility.loadImage(activity, ((Gallery) ent).getThumbnail(), holder.imgView);
         else
             ImageDownloadUtility.loadImage(activity, ((SimpleGallery) ent).getThumbnail(), holder.imgView);
         SafeMode.apply(holder.imgView);
-        holder.pages.setText(String.format(Locale.US, "%d", ent.getPageCount()));
+        SourceKey key = GalleryIdentity.of(ent);
+        holder.pages.setText(activity.getString(R.string.source_badge_pages,
+            activity.getString(SourceDialogs.badge(key.source)), ent.getPageCount()));
         holder.title.setText(ent.getTitle());
         holder.flag.setText(Global.getLanguageFlag(ent instanceof Gallery
             ? ((Gallery) ent).getLanguage() : ((SimpleGallery) ent).getLanguage()));
@@ -168,15 +150,14 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
             holder.pages.animate().alpha(holder.pages.getAlpha() == 0f ? 1f : 0f).setDuration(100).start();
             return true;
         });
-        int statusColor = statuses.get(ent.getId(), 0);
-        if (statusColor == 0) {
-            statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
-            statuses.put(ent.getId(), statusColor);
-        }
-        holder.title.setBackgroundColor(statusColor);
+        holder.title.setBackgroundColor(statuses.computeIfAbsent(key, ignored -> ListAdapter.statusColor(activity, key)));
     }
 
     private void openGallery(GenericGallery ent) {
+        if (ent instanceof EhSimpleGallery) {
+            activity.startActivity(((EhSimpleGallery) ent).open(activity));
+            return;
+        }
         if (ent instanceof Gallery) {
             startGallery((Gallery) ent);
             return;
@@ -191,7 +172,7 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
                     return;
                 }
                 Gallery gallery = (Gallery) results.get(0);
-                Queries.FavoriteTable.addFavorite(gallery);
+                if (Queries.FavoriteTable.isFavorite(gallery.getId())) Queries.FavoriteTable.addFavorite(gallery);
                 activity.runOnUiThread(() -> {
                     if (activity.isFinishing() || activity.isDestroyed()) return;
                     replaceGallery(gallery);
@@ -219,7 +200,7 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
     private void replaceGallery(Gallery gallery) {
         if (galleries == null) return;
         for (int i = 0; i < galleries.length; i++) {
-            if (galleries[i] != null && galleries[i].getId() == gallery.getId()) {
+            if (galleries[i] != null && rows.get(i).eh == null && galleries[i].getId() == gallery.getId()) {
                 galleries[i] = gallery;
                 notifyItemChanged(i);
                 return;
@@ -235,146 +216,113 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
         activity.startActivity(intent);
     }
 
-    public void changePage() {
-        forceReload();
+    public void load(String query, boolean byTitle, int requestedPage) {
+        int request = ++generation;
+        int perPage = FavoriteActivity.getEntryPerPage();
+        io.execute(() -> {
+            if (request != generation) return;
+            Cursor nh = null;
+            try {
+                List<EhDatabase.Entry> eh = EhDatabase.get(activity).favorites();
+                String[] words = LocalTagFilterHelper.words(query);
+                eh.removeIf(row -> !matches(row.title, words));
+                if (byTitle) eh.sort(Comparator.comparing(row -> row.title));
+                int total = Queries.FavoriteTable.countFavorite(query) + eh.size();
+                int last = Math.max(1, (int) ((total + (long) perPage - 1) / perPage));
+                int page = Math.max(1, Math.min(last, requestedPage));
+                int offset = (page - 1) * perPage;
+                List<Row> next;
+                if (eh.isEmpty()) {
+                    nh = Queries.FavoriteTable.getAllFavoriteGalleriesCursor(query, byTitle, perPage, offset);
+                    next = new ArrayList<>(nh.getCount());
+                    for (int i = 0; i < nh.getCount(); i++) next.add(new Row(i, null));
+                } else {
+                    nh = Queries.FavoriteTable.getAllFavoriteGalleriesCursor(query, byTitle, Integer.MAX_VALUE, 0);
+                    next = mergePage(nh, eh, byTitle, offset, perPage);
+                }
+                Cursor loaded = nh;
+                activity.runOnUiThread(() -> publish(request, loaded, next, page, last));
+            } catch (RuntimeException e) {
+                if (nh != null) nh.close();
+                LogUtility.e("Unable to read local favorites", e);
+                activity.runOnUiThread(() -> {
+                    if (request == generation && !activity.isDestroyed() && !activity.isFinishing()) {
+                        activity.onLocalFavoritesLoaded(1, 1);
+                        Toast.makeText(activity, R.string.failed, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+    }
+
+    private static boolean matches(String title, String[] words) {
+        String lower = title.toLowerCase(Locale.US);
+        for (String word : words) if (!lower.contains(word)) return false;
+        return true;
+    }
+
+    private static List<Row> mergePage(Cursor nh, List<EhDatabase.Entry> eh, boolean byTitle, int offset, int limit) {
+        List<Row> result = new ArrayList<>();
+        int time = nh.getColumnIndexOrThrow(Queries.FavoriteTable.TIME);
+        boolean hasNh = nh.moveToFirst();
+        int e = 0, position = 0;
+        while ((hasNh || e < eh.size()) && result.size() < limit) {
+            Row row;
+            if (hasNh && (e == eh.size() || nhFirst(nh, time, eh.get(e), byTitle))) {
+                row = new Row(nh.getPosition(), null);
+                hasNh = nh.moveToNext();
+            } else {
+                row = new Row(-1, eh.get(e++));
+            }
+            if (position++ >= offset) result.add(row);
+        }
+        return result;
+    }
+
+    private static boolean nhFirst(Cursor nh, int timeColumn, EhDatabase.Entry eh, boolean byTitle) {
+        if (!byTitle) return nh.getLong(timeColumn) >= eh.time;
+        String title = Queries.FavoriteTable.sortTitle(nh);
+        return title == null || title.compareTo(eh.title) <= 0;
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void publish(int request, Cursor loaded, List<Row> next, int page, int last) {
+        if (request != generation || activity.isFinishing() || activity.isDestroyed()) {
+            loaded.close();
+            return;
+        }
+        if (cursor != null) cursor.close();
+        cursor = loaded;
+        rows = next;
+        galleries = new GenericGallery[rows.size()];
+        statuses.clear();
+        notifyDataSetChanged();
+        activity.onLocalFavoritesLoaded(page, last);
+    }
+
+    public void cancelLoad() {
+        generation++;
+    }
+
+    public void close() {
+        cancelLoad();
+        io.shutdown();
+        if (cursor != null) cursor.close();
+        cursor = null;
+        rows = Collections.emptyList();
     }
 
     @Override
     public int getItemCount() {
-        return cursor == null ? 0 : cursor.getCount();
+        return rows.size();
     }
 
-    @Override
-    public Filter getFilter() {
-        if (filter != null) return filter;
-        filter = new Filter() {
-            @Override
-            protected FilterResults performFiltering(CharSequence constraint) {
-                constraint = constraint.toString().toLowerCase(Locale.US);
-                if ((!force && lastQuery.equals(constraint))) return null;
-                LogUtility.d("FILTERING");
-                setRefresh(true);
-                FilterResults results = new FilterResults();
-                lastQuery = constraint.toString();
-                LogUtility.d(lastQuery + "LASTQERY");
-                force = false;
-                Cursor c = Queries.FavoriteTable.getAllFavoriteGalleriesCursor(lastQuery, sortByTitle, perPage, (activity.getActualPage() - 1) * perPage);
-                // Snapshot and diff here, on the worker thread. Infinite scroll asks for every
-                // row at once, so on a large library this is thousands of rows' worth of column
-                // reads and string building - long enough to be a visible stall if it ran in
-                // publishResults. The new cursor is not published yet, so this thread owns it;
-                // the old side is compared through rowSnapshots rather than the live cursor,
-                // which the UI thread is still binding from.
-                List<RowSnapshot> oldRows = rowSnapshots;
-                List<RowSnapshot> newRows = snapshotRows(c);
-                DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-                    @Override
-                    public int getOldListSize() {
-                        return oldRows.size();
-                    }
-
-                    @Override
-                    public int getNewListSize() {
-                        return newRows.size();
-                    }
-
-                    @Override
-                    public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                        return oldRows.get(oldItemPosition).id == newRows.get(newItemPosition).id;
-                    }
-
-                    @Override
-                    public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                        return oldRows.get(oldItemPosition).content.equals(
-                            newRows.get(newItemPosition).content);
-                    }
-                });
-                results.count = c.getCount();
-                results.values = new PendingRefresh(c, newRows, diff);
-                LogUtility.d("FILTERING3");
-                LogUtility.d(results.count + ";" + results.values);
-                setRefresh(false);
-                return results;
-            }
-
-            @Override
-            protected void publishResults(CharSequence constraint, FilterResults results) {
-                if (results == null || !(results.values instanceof PendingRefresh)) return;
-                PendingRefresh refresh = (PendingRefresh) results.values;
-                String q = (constraint == null ? "" : constraint).toString().toLowerCase(Locale.US);
-                String lq = (lastQuery == null ? "" : lastQuery).toString();
-                if (!q.equals(lq)) {
-                    if (refresh.cursor != null) refresh.cursor.close();
-                    return;
-                }
-                setRefresh(true);
-                boolean reset = getItemCount() != 0 || refresh.cursor != null;
-                updateCursor(refresh.cursor);
-                rowSnapshots = refresh.rows;
-                if (reset) notifyDataSetChanged();
-                else if (refresh.diff != null) refresh.diff.dispatchUpdatesTo(FavoriteAdapter.this);
-                else notifyDataSetChanged();
-
-                setRefresh(false);
-            }
-        };
-        return filter;
-    }
-
-    public void setSortByTitle(boolean sortByTitle) {
-        this.sortByTitle = sortByTitle;
-        forceReload();
-    }
-
-    public void forceReload() {
-        force = true;
-        activity.runOnUiThread(() -> getFilter().filter(lastQuery));
-    }
-
-    public void setRefresh(boolean refresh) {
-        activity.runOnUiThread(() -> activity.getRefresher().setRefreshing(refresh));
-    }
-
-    private void updateCursor(@Nullable Cursor c) {
-        if (cursor != null) cursor.close();
-        galleries = new GenericGallery[c == null ? 0 : c.getCount()];
-        cursor = c;
-        statuses.clear();
-    }
-
-    private static List<RowSnapshot> snapshotRows(@Nullable Cursor source) {
-        if (source == null) return Collections.emptyList();
-        int originalPosition = source.getPosition();
-        int idColumn = source.getColumnIndex(Queries.GalleryTable.IDGALLERY);
-        int columnCount = source.getColumnCount();
-        List<RowSnapshot> rows = new ArrayList<>(source.getCount());
-        source.moveToPosition(-1);
-        while (source.moveToNext()) {
-            StringBuilder content = new StringBuilder();
-            for (int column = 0; column < columnCount; column++) {
-                int type = source.getType(column);
-                content.append(type).append(':');
-                if (type == Cursor.FIELD_TYPE_INTEGER) content.append(source.getLong(column));
-                else if (type == Cursor.FIELD_TYPE_FLOAT) content.append(source.getDouble(column));
-                else if (type == Cursor.FIELD_TYPE_STRING) content.append(source.getString(column));
-                content.append('\u0000');
-            }
-            rows.add(new RowSnapshot(source.getLong(idColumn), content.toString()));
-        }
-        source.moveToPosition(originalPosition);
-        return rows;
-    }
-
-    public Collection<Gallery> getAllGalleries() {
-        if (cursor == null) return Collections.emptyList();
-        int count = cursor.getCount();
-        ArrayList<Gallery> galleries = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
+    public List<GenericGallery> displayedRows() {
+        List<GenericGallery> result = new ArrayList<>(rows.size());
+        for (int i = 0; i < rows.size(); i++) {
             GenericGallery gallery = galleryFromPosition(i);
-            if (gallery instanceof Gallery) galleries.add((Gallery) gallery);
+            if (gallery != null) result.add(gallery);
         }
-        return galleries;
+        return result;
     }
-
-
 }

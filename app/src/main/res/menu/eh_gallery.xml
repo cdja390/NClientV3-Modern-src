@@ -16,6 +16,10 @@
         android:title="@string/change_status"
         app:showAsAction="never" />
     <item
+        android:id="@+id/eh_action_reading_stats"
+        android:title="@string/stats_title"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/eh_action_browser"
         android:title="@string/eh_open_in_browser"
         app:showAsAction="never" />

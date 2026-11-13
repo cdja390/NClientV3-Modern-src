@@ -11,6 +11,7 @@ import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.components.status.Status;
 import com.maxwai.nclientv3.components.status.StatusManager;
 import java.util.Locale;
+import java.util.function.Predicate;
 import java.util.WeakHashMap;
 
 /**
@@ -143,20 +144,9 @@ public class ReadingSessionHelper {
 
             Status current = Queries.StatusMangaTable.getStatus(id);
             String currentName = current == null ? null : current.name;
-            int cat = classify(currentName);
-
-            if (cat == CAT_COMPLETED) return;
-
-            String[] targetNames;
-            if (finished) {
-                if (cat == CAT_MANUAL && !sp.getBoolean(PREF_OVERWRITE, false)) return;
-                targetNames = COMPLETED_NAMES;
-            } else {
-                if (cat != CAT_NONE && cat != CAT_PLAN) return;
-                targetNames = READING_NAMES;
-            }
-
-            Status target = find(targetNames);
+            String next = nextStatus(currentName, s.maxTurnPage, total, sp.getBoolean(PREF_OVERWRITE, false),
+                name -> StatusManager.getByName(name) != null);
+            Status target = next == null ? null : StatusManager.getByName(next);
             if (target == null || target.name == null) {
                 Log.i(TAG, "skip: target status not found (renamed or deleted)");
                 return;
@@ -179,6 +169,24 @@ public class ReadingSessionHelper {
         }
     }
 
+    /** Chooses an existing status only after a real page change. */
+    public static String nextStatus(String current, int furthestTurn, int pages, boolean overwrite,
+                                    Predicate<String> exists) {
+        if (furthestTurn <= 0 || pages <= 1) return null;
+        int category = classify(current);
+        if (category == CAT_COMPLETED) return null;
+        String[] targetNames;
+        if (furthestTurn >= pages) {
+            if (category == CAT_MANUAL && !overwrite) return null;
+            targetNames = COMPLETED_NAMES;
+        } else {
+            if (category != CAT_NONE && category != CAT_PLAN) return null;
+            targetNames = READING_NAMES;
+        }
+        for (String name : targetNames) if (exists.test(name)) return name;
+        return null;
+    }
+
     private static int classify(String name) {
         if (name == null || name.length() == 0 || "None".equals(name)) return CAT_NONE;
         if (contains(COMPLETED_NAMES, name)) return CAT_COMPLETED;
@@ -192,14 +200,6 @@ public class ReadingSessionHelper {
             if (n.equals(name)) return true;
         }
         return false;
-    }
-
-    private static Status find(String[] names) {
-        for (String n : names) {
-            Status st = StatusManager.getByName(n);
-            if (st != null) return st;
-        }
-        return null;
     }
 
     private static boolean isZh(Activity activity) {

@@ -4,6 +4,26 @@
     <com.google.android.material.appbar.AppBarLayout android:background="@android:color/transparent" android:layout_width="match_parent" android:layout_height="wrap_content" android:elevation="0.0dp">
         <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:background="@android:color/transparent" android:layout_width="match_parent" android:layout_height="?actionBarSize" app:title="@string/app_name" app:titleTextColor="@color/md_theme_onSurface" />
     </com.google.android.material.appbar.AppBarLayout>
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/favorite_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+    <HorizontalScrollView
+        android:id="@+id/favorite_filters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="none"
+        android:visibility="gone">
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/favorite_sources"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            app:singleLine="true" />
+    </HorizontalScrollView>
     <com.maxwai.nclientv3.utility.LiquidHostLayout android:clipChildren="false" android:clipToPadding="false" android:layout_width="match_parent" android:layout_height="0.0dp" android:layout_weight="1.0">
         <include android:layout_width="match_parent" android:layout_height="match_parent" layout="@layout/content_main" />
         <com.google.android.material.bottomnavigation.BottomNavigationView android:layout_gravity="bottom" android:id="@+id/bottom_nav" android:background="@null" android:paddingTop="0.0dp" android:paddingBottom="0.0dp" android:layout_width="match_parent" android:layout_height="64.0dp" android:layout_marginBottom="10.0dp" android:minHeight="64.0dp" android:paddingStart="4.0dp" android:paddingEnd="4.0dp" android:layout_marginStart="24.0dp" android:layout_marginEnd="24.0dp" android:elevation="0.0dp" app:itemActiveIndicatorStyle="@null" app:itemIconSize="22.0dp" app:itemPaddingBottom="2.0dp" app:itemPaddingTop="2.0dp" app:itemRippleColor="@android:color/transparent" app:itemTextAppearanceActive="@style/TextAppearance.NClient.BarLabel" app:itemTextAppearanceInactive="@style/TextAppearance.NClient.BarLabel" app:labelVisibilityMode="labeled" app:menu="@menu/bottom_nav" />

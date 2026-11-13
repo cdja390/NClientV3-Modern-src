@@ -14,4 +14,7 @@
     <string name="rating_inherit">EH 評分：使用全域設定</string>
     <string name="rating_no_filter">EH 評分：不限</string>
     <string name="rating_min_stars">EH 評分：至少 %1$d 星</string>
+    <string name="favorites_local_tab">本機</string>
+    <string name="favorites_online_tab">線上</string>
+    <string name="eh_history_progress">第 %1$d / %2$d 頁 · %3$s</string>
 </resources>

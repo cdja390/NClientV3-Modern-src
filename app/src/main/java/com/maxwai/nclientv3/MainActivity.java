@@ -51,10 +51,11 @@ import com.maxwai.nclientv3.async.ScrapeTags;
 import com.maxwai.nclientv3.async.TranslateTags;
 import com.maxwai.nclientv3.async.VersionChecker;
 import com.maxwai.nclientv3.async.database.Queries;
-import com.maxwai.nclientv3.async.downloader.DownloadGalleryV2;
+import com.maxwai.nclientv3.source.GalleryDownloads;
 import com.maxwai.nclientv3.components.activities.BaseActivity;
 import com.maxwai.nclientv3.components.views.PageSwitcher;
 import com.maxwai.nclientv3.components.widgets.CustomGridLayoutManager;
+import com.maxwai.nclientv3.ehentai.EhFeed;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.source.SourceCapabilities;
 import com.maxwai.nclientv3.source.SourcePreferences;
@@ -104,6 +105,7 @@ public class MainActivity extends BaseActivity
     private final InspectorV3.InspectorResponse addDataset = new MainInspectorResponse() {
         @Override
         public void onSuccess(List<GenericGallery> galleries) {
+            displayedPage = inspector;
             adapter.addGalleries(galleries);
             showPageSwitcher(inspector.getPage(), inspector.getPageCount());
         }
@@ -111,6 +113,7 @@ public class MainActivity extends BaseActivity
     //views
     public MenuItem loginItem, logoutItem;
     private InspectorV3 inspector = null;
+    private InspectorV3 displayedPage;
     private NavigationView navigationView;
     private ModeType modeType = ModeType.UNKNOWN;
     private SourceKey openedGallery;
@@ -124,6 +127,7 @@ public class MainActivity extends BaseActivity
         @Override
         public void onSuccess(List<GenericGallery> galleries) {
             super.onSuccess(galleries);
+            displayedPage = inspector;
             adapter.restartDataset(galleries);
             showPageSwitcher(inspector.getPage(), inspector.getPageCount());
             if (!galleries.isEmpty()) recycler.smoothScrollToPosition(0);
@@ -157,7 +161,11 @@ public class MainActivity extends BaseActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (opensUnifiedFavorites(getIntent())) {
-            startActivity(new Intent(this, FavoriteActivity.class));
+            Intent favorites = new Intent(this, FavoriteActivity.class).putExtra(FavoriteActivity.EXTRA_ONLINE, true);
+            Uri entry = getIntent().getData();
+            if (entry != null && entry.isHierarchical())
+                favorites.putExtra(FavoriteActivity.EXTRA_ONLINE_QUERY, entry.getQueryParameter("q"));
+            startActivity(favorites);
             finish();
             return;
         }
@@ -165,6 +173,7 @@ public class MainActivity extends BaseActivity
         sourceSignature = SourcePolicy.serialize(SourcePreferences.enabled(this));
         //load inspector
         selectStartMode(getIntent(), getPackageName());
+        boolean restored = restoreDisplayedPage(savedInstanceState);
         LogUtility.d("Main started with mode " + modeType);
         //init views and actions
         findUsefulViews();
@@ -183,7 +192,8 @@ public class MainActivity extends BaseActivity
         setActivityTitle();
         if (firstTime) checkUpdate();
         if (inspector != null) {
-            inspector.start();
+            if (restored) resetDataset.onSuccess(inspector.getGalleries());
+            else inspector.start();
         } else {
             LogUtility.e(getIntent().getExtras());
         }
@@ -213,6 +223,27 @@ public class MainActivity extends BaseActivity
             drawerLayout.addDrawerListener(toggle);
             toggle.syncState();
             BottomNavRouter.applyUserVisibility(bottomNavigationView, true);
+        }
+    }
+
+    private boolean restoreDisplayedPage(@Nullable Bundle state) {
+        if (state == null || !sourceSignature.equals(state.getString("list_sources"))) return false;
+        InspectorV3 saved;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            saved = state.getParcelable("list_page", InspectorV3.class);
+        else saved = state.getParcelable("list_page");
+        if (saved == null || saved.getGalleries() == null) return false;
+        saved.initialize(this, resetDataset);
+        inspector = saved;
+        return true;
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle state) {
+        super.onSaveInstanceState(state);
+        if (displayedPage != null && EhFeed.isMergeable(displayedPage.getRequestType())) {
+            state.putString("list_sources", sourceSignature);
+            state.putParcelable("list_page", displayedPage.snapshot(this));
         }
     }
 
@@ -715,7 +746,7 @@ public class MainActivity extends BaseActivity
             inspector = InspectorV3.randomInspector(this, startGallery, true);
             inspector.start();
         } else if (item.getItemId() == R.id.download_page) {
-            if (inspector.getGalleries() != null)
+            if (displayedPage != null && !refresher.isRefreshing())
                 showDialogDownloadAll();
         } else if (item.getItemId() == R.id.add_bookmark) {
             Queries.BookmarkTable.addBookmark(inspector);
@@ -734,6 +765,7 @@ public class MainActivity extends BaseActivity
         inspector = inspector.cloneInspector(this, resetDataset);
         inspector.setPage(1);
         inspector.setSortType(Global.getSortType());
+        displayedPage = null;
         adapter.restartDataset(new ArrayList<>());
         showPageSwitcher(1, 1);
         inspector.start();
@@ -798,15 +830,14 @@ public class MainActivity extends BaseActivity
     }
 
     private void showDialogDownloadAll() {
+        List<GenericGallery> page = new ArrayList<>(displayedPage.getGalleries());
+        if (page.isEmpty()) return;
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         builder
             .setTitle(R.string.download_all_galleries_in_this_page)
             .setIcon(R.drawable.ic_file)
             .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.ok, (dialog, which) -> {
-                for (GenericGallery g : inspector.getGalleries())
-                    DownloadGalleryV2.downloadGallery(MainActivity.this, g);
-            });
+            .setPositiveButton(R.string.ok, (dialog, which) -> GalleryDownloads.enqueue(this, page));
         builder.show();
     }
 
