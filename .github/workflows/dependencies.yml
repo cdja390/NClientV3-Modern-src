@@ -6,7 +6,7 @@ on:
 jobs:
   dependency-submission:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: write
@@ -21,9 +21,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-
-      - name: Install Android SDK Platform 36 and Build Tools
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Submit the dependency graph
         uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
