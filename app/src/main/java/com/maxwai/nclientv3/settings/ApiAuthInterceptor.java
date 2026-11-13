@@ -40,7 +40,7 @@ public class ApiAuthInterceptor implements Interceptor {
         }
 
         Request.Builder r = request.newBuilder()
-            .header("User-Agent", "NClient/" + BuildConfig.VERSION_NAME + " (https://github.com/ILFforever/NClientV3)");
+            .header("User-Agent", "NClient/4.5.0 (https://github.com/ILFforever/NClientV3)");
 
         String authorization = Login.getUserTokenAuthorizationHeader();
         boolean usingApiKey = false;

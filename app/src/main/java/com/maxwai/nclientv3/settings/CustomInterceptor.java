@@ -61,7 +61,7 @@ public class CustomInterceptor implements Interceptor {
         if (logRequests) LogUtility.d("Requested url: " + request.url());
         Request.Builder r = request.newBuilder();
         r.removeHeader("rec");
-        r.addHeader("User-Agent", "NClient/" + BuildConfig.VERSION_NAME + " (https://github.com/ILFforever/NClientV3)");
+        r.addHeader("User-Agent", "NClient/4.5.0 (https://github.com/ILFforever/NClientV3)");
         Response response;
         try {
             response = chain.proceed(r.build());
