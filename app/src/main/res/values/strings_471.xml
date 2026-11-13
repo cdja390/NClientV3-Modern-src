@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NClientV3 Modern 4.7.1 strings (English defaults); zh-rCN / zh-rTW copies carry the same keys. -->
+<resources>
+    <string name="source_mode_title">Gallery sources</string>
+    <string name="source_mode_nh">nhentai only</string>
+    <string name="source_mode_eh">e-hentai only</string>
+    <string name="source_mode_both">nhentai + e-hentai (mixed list)</string>
+    <string name="source_badge_eh_pages">EH · %1$d p</string>
+</resources>

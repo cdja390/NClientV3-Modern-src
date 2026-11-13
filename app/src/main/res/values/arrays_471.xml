@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NClientV3 Modern 4.7.1: main-list source choice (values match EhFeed.MODE_*). -->
+<resources>
+    <string-array name="gallery_sources_entries">
+        <item>@string/source_mode_nh</item>
+        <item>@string/source_mode_eh</item>
+        <item>@string/source_mode_both</item>
+    </string-array>
+    <string-array name="gallery_sources_values" translatable="false">
+        <item>nh</item>
+        <item>eh</item>
+        <item>both</item>
+    </string-array>
+</resources>

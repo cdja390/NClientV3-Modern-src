@@ -20,6 +20,8 @@ import com.maxwai.nclientv3.api.components.GenericGallery;
 import com.maxwai.nclientv3.api.enums.Language;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.components.activities.BaseActivity;
+import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
+import com.maxwai.nclientv3.ehentai.EhUi;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.TagV2;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
@@ -64,6 +66,12 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
         try {
             if (Global.isDestroyed(context)) return;
 
+            if (ent instanceof EhSimpleGallery) {
+                // 4.7.1 merged list: e-hentai thumbnails need its UA/cookies (exhentai).
+                EhUi.loadThumb(holder.imgView, ((EhSimpleGallery) ent).info.thumb);
+                SafeMode.apply(holder.imgView);
+                return;
+            }
             ImageDownloadUtility.loadImage(context, ent.getThumbnail(), holder.imgView);
             SafeMode.apply(holder.imgView);
         } catch (VerifyError ignore) {
@@ -93,6 +101,12 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
         holder.overlay.setVisibility((queryString != null && ent.hasIgnoredTags(queryString)) ? View.VISIBLE : View.GONE);
         loadGallery(holder, ent);
         holder.pages.setVisibility(View.GONE);
+        boolean eh = ent instanceof EhSimpleGallery;
+        if (eh) {
+            // Source badge for the mixed nhentai + e-hentai list.
+            holder.pages.setText(context.getString(R.string.source_badge_eh_pages, ent.getPageCount()));
+            holder.pages.setVisibility(View.VISIBLE);
+        }
         holder.title.setText(ent.getTitle());
         holder.flag.setVisibility(View.VISIBLE);
         if (Global.getOnlyLanguage() == Language.ALL || context instanceof GalleryActivity) {
@@ -109,6 +123,10 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
               /*Intent intent = new Intent(context, GalleryActivity.class);
               intent.putExtra(context.getPackageName() + ".ID", ent.getId());
               context.startActivity(intent);*/
+            if (ent instanceof EhSimpleGallery) {
+                context.startActivity(((EhSimpleGallery) ent).open(context));
+                return;
+            }
             if (context instanceof MainActivity)
                 ((MainActivity) context).setIdOpenedGallery(ent.getId());
             downloadGallery(ent);
@@ -122,7 +140,7 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
             return true;
         });
         int statusColor = statuses.get(ent.getId(), 0);
-        if (statusColor == 0) {
+        if (statusColor == 0 && !eh) {
             statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
             statuses.put(ent.getId(), statusColor);
         }

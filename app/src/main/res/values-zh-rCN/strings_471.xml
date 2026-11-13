@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NClientV3 Modern 4.7.1 strings (Simplified Chinese). -->
+<resources>
+    <string name="source_mode_title">图库来源</string>
+    <string name="source_mode_nh">仅 nhentai</string>
+    <string name="source_mode_eh">仅 e-hentai</string>
+    <string name="source_mode_both">nhentai + e-hentai（混合列表）</string>
+    <string name="source_badge_eh_pages">EH · %1$d 页</string>
+</resources>

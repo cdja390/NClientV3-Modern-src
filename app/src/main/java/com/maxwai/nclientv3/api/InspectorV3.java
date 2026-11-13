@@ -20,6 +20,8 @@ import com.maxwai.nclientv3.api.enums.TagStatus;
 import com.maxwai.nclientv3.api.enums.TagType;
 import com.maxwai.nclientv3.api.local.LocalGallery;
 import com.maxwai.nclientv3.async.database.Queries;
+import com.maxwai.nclientv3.ehentai.EhFeed;
+import com.maxwai.nclientv3.ehentai.EhSimpleGallery;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
@@ -226,10 +228,17 @@ public class InspectorV3 extends Thread implements Parcelable {
         dest.writeString(query);
         dest.writeString(url);
         dest.writeByte(requestType.ordinal());
-        if (galleries == null || galleries.isEmpty())
+        // 4.7.1: e-hentai entries of a merged list are not parcelled (they would come back as
+        // nhentai galleries); the restored page shows the nhentai half until it is reloaded.
+        ArrayList<GenericGallery> saved = null;
+        if (galleries != null) {
+            saved = new ArrayList<>(galleries.size());
+            for (GenericGallery g : galleries) if (!(g instanceof EhSimpleGallery)) saved.add(g);
+        }
+        if (saved == null || saved.isEmpty())
             dest.writeByte((byte) GenericGallery.Type.SIMPLE.ordinal());
-        else dest.writeByte((byte) galleries.get(0).getType().ordinal());
-        dest.writeTypedList(galleries);
+        else dest.writeByte((byte) saved.get(0).getType().ordinal());
+        dest.writeTypedList(saved);
         dest.writeTypedList(new ArrayList<>(tags));
         dest.writeParcelable(ranges, flags);
     }
@@ -355,8 +364,7 @@ public class InspectorV3 extends Thread implements Parcelable {
         LogUtility.d("Starting download: " + url);
         if (response != null) response.onStart();
         try {
-            createDocument();
-            parseDocument();
+            loadGalleries();
             if (response != null) {
                 response.onSuccess(galleries);
             }
@@ -365,6 +373,32 @@ public class InspectorV3 extends Thread implements Parcelable {
         }
         if (response != null) response.onEnd();
         LogUtility.d("Finished download: " + url);
+    }
+
+    /**
+     * 4.7.1: the main list can show nhentai, e-hentai or both (Settings &gt; gallery sources).
+     * Mixed pages follow yosefario-dev/NClientV3's InspectorV3.mergeAcross: page N of each source,
+     * interleaved, page count = the larger one. If e-hentai fails the nhentai page still shows.
+     */
+    private void loadGalleries() throws IOException, InvalidResponseException {
+        Context ctx = context.get();
+        EhFeed.Mode mode = EhFeed.modeFor(ctx, requestType);
+        if (mode == EhFeed.Mode.EH && ctx != null) {
+            EhFeed.Result eh = EhFeed.load(ctx, query, tags, page);
+            galleries = EhFeed.wrap(eh.items);
+            pageCount = eh.pageCount(page);
+            return;
+        }
+        createDocument();
+        parseDocument();
+        if (mode != EhFeed.Mode.BOTH || ctx == null) return;
+        try {
+            EhFeed.Result eh = EhFeed.load(ctx, query, tags, page);
+            galleries = EhFeed.merge(galleries, eh.items);
+            pageCount = Math.max(pageCount, eh.pageCount(page));
+        } catch (IOException | RuntimeException e) {
+            LogUtility.e("Merged list: e-hentai page " + page + " failed: " + e.getMessage());
+        }
     }
 
     private void filterDocumentTags() {

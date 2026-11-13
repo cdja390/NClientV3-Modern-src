@@ -76,6 +76,14 @@ public class SimpleGallery extends GenericGallery {
         this.tags = tags;
     }
 
+    /**
+     * 4.7.1: for galleries of another source shown in the same list (see
+     * {@code ehentai.EhSimpleGallery}); no media id and no nhentai tags.
+     */
+    protected SimpleGallery(String title, int id, Uri thumbnail, Language language, int pageCount) {
+        this(title, id, 0, pageCount, thumbnail, language, new TagList());
+    }
+
     public SimpleGallery(Gallery gallery) {
         title = gallery.getTitle();
         mediaId = gallery.getMediaId();
