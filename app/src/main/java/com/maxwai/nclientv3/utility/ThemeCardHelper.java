@@ -10,6 +10,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -19,6 +20,8 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import androidx.annotation.Nullable;
 
 import com.maxwai.nclientv3.R;
 
@@ -38,6 +41,24 @@ public final class ThemeCardHelper {
             this.primaryContainer = primaryContainer;
             this.tertiaryContainer = tertiaryContainer;
         }
+
+        /** True for the wallpaper-based preset; its card gets a small sparkle mark. */
+        public boolean isDynamic() {
+            return ThemeColors.DYNAMIC.equals(key);
+        }
+    }
+
+    /**
+     * 4.6.0: the "Dynamic" preset card, previewing the current wallpaper palette. Only offered on
+     * Android 12+, where the system exposes those colours.
+     */
+    @Nullable
+    static Palette dynamicPalette(Context ctx) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null;
+        return new Palette(ThemeColors.DYNAMIC, ctx.getString(R.string.theme_color_dynamic),
+            ctx.getColor(android.R.color.system_accent1_600),
+            ctx.getColor(android.R.color.system_accent1_100),
+            ctx.getColor(android.R.color.system_accent3_100));
     }
 
     public static final Palette[] PALETTES = new Palette[] {
@@ -136,6 +157,26 @@ public final class ThemeCardHelper {
                 paintCheck.setStrokeWidth(2.2f * dp);
                 canvas.drawPath(checkPath, paintCheck);
             }
+
+            // 4.6.0: four-point sparkle in the top-right corner marks the dynamic preset.
+            if (palette.isDynamic()) {
+                float sx = b.right - 14f * dp;
+                float sy = b.top + 14f * dp;
+                float r = 6f * dp;
+                float w = 1.6f * dp;
+                checkPath.reset();
+                checkPath.moveTo(sx, sy - r);
+                checkPath.lineTo(sx + w, sy - w);
+                checkPath.lineTo(sx + r, sy);
+                checkPath.lineTo(sx + w, sy + w);
+                checkPath.lineTo(sx, sy + r);
+                checkPath.lineTo(sx - w, sy + w);
+                checkPath.lineTo(sx - r, sy);
+                checkPath.lineTo(sx - w, sy - w);
+                checkPath.close();
+                paintFill.setColor(palette.primary);
+                canvas.drawPath(checkPath, paintFill);
+            }
         }
 
         @Override
@@ -182,8 +223,12 @@ public final class ThemeCardHelper {
 
         colorGroup.removeAllViews();
 
-        for (int i = 0; i < PALETTES.length; i++) {
-            final Palette p = PALETTES[i];
+        java.util.List<Palette> palettes = new java.util.ArrayList<>(java.util.Arrays.asList(PALETTES));
+        Palette dynamic = dynamicPalette(ctx);
+        if (dynamic != null) palettes.add(dynamic);
+
+        for (int i = 0; i < palettes.size(); i++) {
+            final Palette p = palettes.get(i);
             final boolean isSelected = p.key.equals(selectedKey);
 
             View card = new View(ctx);
@@ -196,6 +241,7 @@ public final class ThemeCardHelper {
 
             card.setTag(p.key);
             card.setContentDescription(p.title);
+            card.setTooltipText(p.title);
             card.setClickable(true);
             card.setFocusable(true);
             card.setBackground(new ColorCardDrawable(ctx, p, isSelected, surfaceColor));

@@ -2,4 +2,6 @@
 <resources>
 
     <attr name="navHeaderGradient" format="reference|color"/>
+    <!-- True on themes whose surfaces must not follow the dynamic (wallpaper) palette, e.g. the reader. -->
+    <attr name="nclientFixedSurfaces" format="boolean"/>
 </resources>

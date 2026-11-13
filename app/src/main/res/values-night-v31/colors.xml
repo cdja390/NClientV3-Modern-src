@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dynamic colour preset (4.6.0): aliases to Material's wallpaper-derived system colours (dark). -->
+    <color name="dyn_primary">@color/m3_sys_color_dynamic_dark_primary</color>
+    <color name="dyn_on_primary">@color/m3_sys_color_dynamic_dark_on_primary</color>
+    <color name="dyn_primary_container">@color/m3_sys_color_dynamic_dark_primary_container</color>
+    <color name="dyn_on_primary_container">@color/m3_sys_color_dynamic_dark_on_primary_container</color>
+    <color name="dyn_secondary">@color/m3_sys_color_dynamic_dark_secondary</color>
+    <color name="dyn_on_secondary">@color/m3_sys_color_dynamic_dark_on_secondary</color>
+    <color name="dyn_secondary_container">@color/m3_sys_color_dynamic_dark_secondary_container</color>
+    <color name="dyn_on_secondary_container">@color/m3_sys_color_dynamic_dark_on_secondary_container</color>
+    <color name="dyn_tertiary">@color/m3_sys_color_dynamic_dark_tertiary</color>
+    <color name="dyn_on_tertiary">@color/m3_sys_color_dynamic_dark_on_tertiary</color>
+    <color name="dyn_tertiary_container">@color/m3_sys_color_dynamic_dark_tertiary_container</color>
+    <color name="dyn_on_tertiary_container">@color/m3_sys_color_dynamic_dark_on_tertiary_container</color>
+    <color name="dyn_inverse_primary">@color/m3_sys_color_dynamic_dark_inverse_primary</color>
+    <color name="dyn_background">@color/m3_sys_color_dynamic_dark_background</color>
+    <color name="dyn_on_background">@color/m3_sys_color_dynamic_dark_on_background</color>
+    <color name="dyn_surface">@color/m3_sys_color_dynamic_dark_surface</color>
+    <color name="dyn_on_surface">@color/m3_sys_color_dynamic_dark_on_surface</color>
+    <color name="dyn_surface_variant">@color/m3_sys_color_dynamic_dark_surface_variant</color>
+    <color name="dyn_on_surface_variant">@color/m3_sys_color_dynamic_dark_on_surface_variant</color>
+    <color name="dyn_outline">@color/m3_sys_color_dynamic_dark_outline</color>
+    <color name="dyn_outline_variant">@color/m3_sys_color_dynamic_dark_outline_variant</color>
+    <color name="dyn_inverse_surface">@color/m3_sys_color_dynamic_dark_inverse_surface</color>
+    <color name="dyn_inverse_on_surface">@color/m3_sys_color_dynamic_dark_inverse_on_surface</color>
+    <color name="dyn_surface_container">@color/m3_sys_color_dynamic_dark_surface_container</color>
+    <color name="dyn_surface_container_high">@color/m3_sys_color_dynamic_dark_surface_container_high</color>
+    <color name="dyn_surface_container_highest">@color/m3_sys_color_dynamic_dark_surface_container_highest</color>
+    <color name="dyn_surface_container_low">@color/m3_sys_color_dynamic_dark_surface_container_low</color>
+    <color name="dyn_surface_container_lowest">@color/m3_sys_color_dynamic_dark_surface_container_lowest</color>
+</resources>

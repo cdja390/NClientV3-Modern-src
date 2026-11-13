@@ -525,4 +525,6 @@
     <string name="clear_reading_stats_summary">Only clears reading time and count. History, favorites, downloads, status and resume progress are not affected</string>
     <!-- Share receiver (4.6.0) -->
     <string name="nothing_shared">Nothing to open</string>
+    <!-- Dynamic colour preset (4.6.0) -->
+    <string name="theme_color_dynamic">Dynamic (wallpaper)</string>
 </resources>

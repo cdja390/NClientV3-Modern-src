@@ -272,6 +272,10 @@
         <item name="colorSecondaryContainer">@color/theme_brown_container</item>
         <item name="navHeaderGradient">@color/theme_brown_container</item>
     </style>
+    <!-- Dynamic (wallpaper) colours. Real values live in values-v31; below Android 12 these stay
+         empty so the theme falls back to the default Ink palette. -->
+    <style name="ThemeOverlay.NClient.Dynamic" parent="" />
+    <style name="ThemeOverlay.NClient.Dynamic.Surface" parent="" />
     <style name="ThemeOverlay.NClient.Ocean" parent="">
         <item name="colorAccent">@color/theme_ocean_primary</item>
         <item name="colorControlActivated">@color/theme_ocean_primary</item>
@@ -367,6 +371,7 @@
         <item name="colorOnBackground">#ffffffff</item>
         <item name="seekBarStyle">@style/Widget.NClient.SeekBar</item>
         <item name="android:seekBarStyle">@style/Widget.NClient.SeekBar</item>
+        <item name="nclientFixedSurfaces">true</item>
     </style>
     <style name="TextAppearance.NClient.BarLabel" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:textSize">10.0sp</item>

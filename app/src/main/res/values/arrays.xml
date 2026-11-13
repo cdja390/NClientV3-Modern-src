@@ -15,6 +15,7 @@
         <item>pink</item>
         <item>brown</item>
         <item>ocean</item>
+        <item>dynamic</item>
     </string-array>
     <array name="theme_color_styles">
         <item>@style/ThemeOverlay.NClient.Blue</item>
@@ -31,6 +32,7 @@
         <item>@style/ThemeOverlay.NClient.Pink</item>
         <item>@style/ThemeOverlay.NClient.Brown</item>
         <item>@style/ThemeOverlay.NClient.Ocean</item>
+        <item>@style/ThemeOverlay.NClient.Dynamic</item>
     </array>
     <string-array name="swipe_mode_entries">
         <item>@string/swipe_mode_page</item>

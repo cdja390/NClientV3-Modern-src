@@ -3,4 +3,45 @@
     <style name="AppTheme" parent="Base.AppTheme">
         <item name="android:windowSplashScreenBackground">@color/md_theme_surfaceContainer</item>
     </style>
+    <!-- Dynamic colour preset (4.6.0): accents from the wallpaper palette. Same attribute set as
+         the fixed ThemeOverlay.NClient.* presets so it layers the same way. -->
+    <style name="ThemeOverlay.NClient.Dynamic" parent="">
+        <item name="colorAccent">@color/dyn_secondary</item>
+        <item name="colorControlActivated">@color/dyn_primary</item>
+        <item name="colorOnPrimary">@color/dyn_on_primary</item>
+        <item name="colorOnPrimaryContainer">@color/dyn_on_primary_container</item>
+        <item name="colorOnSecondary">@color/dyn_on_secondary</item>
+        <item name="colorOnSecondaryContainer">@color/dyn_on_secondary_container</item>
+        <item name="colorOnTertiary">@color/dyn_on_tertiary</item>
+        <item name="colorOnTertiaryContainer">@color/dyn_on_tertiary_container</item>
+        <item name="colorPrimary">@color/dyn_primary</item>
+        <item name="colorPrimaryContainer">@color/dyn_primary_container</item>
+        <item name="colorPrimaryInverse">@color/dyn_inverse_primary</item>
+        <item name="colorPrimaryVariant">@color/dyn_primary</item>
+        <item name="colorSecondary">@color/dyn_secondary</item>
+        <item name="colorSecondaryContainer">@color/dyn_secondary_container</item>
+        <item name="colorTertiary">@color/dyn_tertiary</item>
+        <item name="colorTertiaryContainer">@color/dyn_tertiary_container</item>
+        <item name="navHeaderGradient">@color/dyn_primary_container</item>
+    </style>
+    <!-- Dynamic surfaces and backgrounds. Applied by ThemeColors only when the pure-black (AMOLED)
+         mode is off and the theme does not set nclientFixedSurfaces (the reader). -->
+    <style name="ThemeOverlay.NClient.Dynamic.Surface" parent="">
+        <item name="android:colorBackground">@color/dyn_surface_container</item>
+        <item name="android:windowBackground">@color/dyn_surface_container</item>
+        <item name="colorOnBackground">@color/dyn_on_background</item>
+        <item name="colorOnSurface">@color/dyn_on_surface</item>
+        <item name="colorOnSurfaceInverse">@color/dyn_inverse_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/dyn_on_surface_variant</item>
+        <item name="colorOutline">@color/dyn_outline</item>
+        <item name="colorOutlineVariant">@color/dyn_outline_variant</item>
+        <item name="colorSurface">@color/dyn_surface</item>
+        <item name="colorSurfaceContainer">@color/dyn_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/dyn_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/dyn_surface_container_highest</item>
+        <item name="colorSurfaceContainerLow">@color/dyn_surface_container_low</item>
+        <item name="colorSurfaceContainerLowest">@color/dyn_surface_container_lowest</item>
+        <item name="colorSurfaceInverse">@color/dyn_inverse_surface</item>
+        <item name="colorSurfaceVariant">@color/dyn_surface_variant</item>
+    </style>
 </resources>
