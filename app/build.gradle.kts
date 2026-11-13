@@ -63,7 +63,7 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            resValue("string", "app_name", "NClientV3 2")
+            resValue("string", "app_name", "NClientV3 Modern")
             if (hasReleaseKeystore) {
                 signingConfig = signingConfigs.getByName("release")
             }

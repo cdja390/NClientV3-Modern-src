@@ -89,6 +89,12 @@
 - Release `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\release\NClientV3_4.7.2.apk`，18119993 字节，SHA-256 `8F11901AD7EC8B127A4E0E33791EC95AA5A38AE52E290261DCE36A45DAB678B7`。核验包名 `com.IlFforever.nclientv3.clone`、`470200`、`4.7.2-Modern`，未签名。
 - Debug `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\debug\NClientV3_4.7.2-Modern_debug.apk`，24096491 字节，SHA-256 `5041C77E220FFD3C01FD89FB52086D8C734A51A389B24ED26523C3EB938FB911`。核验包名 `com.IlFforever.nclientv3.clone.debug`、`470200` 和既有 Debug 证书。覆盖更新和真机结果见 10.4。
 
+## 正式版名称复验（2026-11-14，Asia/Shanghai）
+
+- 经用户确认，正式版应用标签使用 `NClientV3 Modern`。包名为 `com.IlFforever.nclientv3.clone`，版本为 `4.7.2-Modern` / `470200`。Debug 标签为 `NClientV3 Debug`。
+- 指定三个离线任务成功，随后强制重跑 `testPost28DebugUnitTest`。26 份新 XML 共 146 项，0 失败、0 错误、0 跳过，本地化 3/3。Debug APK 与 10.4、10.5 已测 APK 的 SHA-256 一致。
+- 改名后未签名 Release 为 18120001 字节，SHA-256 `DC126157B2B389315BAF7981DDE5D80E63EE7F3ED36E6C086436D25507A1B7BC`。与改名前的热门正式包对比，1276 个 APK 内容项中仅资源表和构建的版本控制元数据有变化。用户签名后核对同证书与内容，再验收覆盖升级。
+
 ## 逐项状态
 
 | ID | 本次状态 | 证据/限制 |
