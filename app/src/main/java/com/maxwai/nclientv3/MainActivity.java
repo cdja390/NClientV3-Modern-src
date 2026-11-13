@@ -824,6 +824,8 @@ public class MainActivity extends BaseActivity
         } else if (item.getItemId() == R.id.status_manager) {
             intent = new Intent(this, StatusViewerActivity.class);
             startActivity(intent);
+       } else if (item.getItemId() == R.id.eh_source) {
+            startActivity(new Intent(this, com.maxwai.nclientv3.ehentai.EhBrowseActivity.class));
         }
         //drawerLayout.closeDrawer(GravityCompat.START);
         return true;

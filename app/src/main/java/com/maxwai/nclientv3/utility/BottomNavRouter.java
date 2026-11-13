@@ -369,6 +369,10 @@ public class BottomNavRouter implements
                     startTargetActivity(activity, "com.maxwai.nclientv3.StatusViewerActivity");
                     return true;
                 }
+                if (id == R.id.eh_source) {
+                    startTargetActivity(activity, "com.maxwai.nclientv3.ehentai.EhBrowseActivity");
+                    return true;
+                }
                 if (id == R.id.action_settings) {
                     startTargetActivity(activity, "com.maxwai.nclientv3.SettingsActivity");
                     return true;

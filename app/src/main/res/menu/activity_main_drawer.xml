@@ -13,6 +13,10 @@
             android:icon="@drawable/ic_file"
             android:title="@string/downloaded_manga" />
         <item
+            android:id="@+id/eh_source"
+            android:icon="@drawable/ic_world"
+            android:title="@string/eh_drawer" />
+        <item
             android:id="@+id/random"
             android:icon="@drawable/ic_shuffle"
             android:title="@string/random_manga" />

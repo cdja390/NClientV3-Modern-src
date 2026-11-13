@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/eh_action_rtl"
+        android:checkable="true"
+        android:title="@string/eh_reader_rtl"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/eh_action_reload_page"
+        android:title="@string/eh_reload_page"
+        app:showAsAction="never" />
+</menu>

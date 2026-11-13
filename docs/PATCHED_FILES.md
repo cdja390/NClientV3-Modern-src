@@ -18,6 +18,7 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 | `app/src/main/java/com/maxwai/nclientv3/components/views/TurnstileDialog.java` | `components/views/TurnstileDialog.java` | system WebView User-Agent, navigation limited to Cloudflare's challenge frames, load timeout (4.7.0) |
 | `app/src/main/res/layout/dialog_turnstile.xml` | `res/layout/dialog_turnstile.xml` | unchanged (4.7.0) |
 | `app/src/main/java/com/maxwai/nclientv3/LoginActivity.java` | flow of `LoginActivity.java` | native form added in front of the existing WebView login, which stays as a 60 s fallback; optional API-key button (4.7.0) |
+| `app/src/main/java/com/maxwai/nclientv3/ehentai/Eh*Parser.java`, `EhUrls.java`, `EhCategory.java`, `EhGalleryKey.java`, `EhGalleryDetail.java`, `EhAuth.java` | `api/source/ehentai/EHentaiSearchParser.java`, `EHentaiGalleryPageParser.java`, `EHentaiViewerLoader.java`, `EHentaiUrls.java`, `EHentaiCategory.java`, `EHentaiFavorites.java`, `EHentaiAuth.java` | rewritten on OkHttp + jsoup without GeckoView; only selectors, URL shapes and cookie names are reused (4.7.0) |
 
 ## Files modified in 4.6.0
 
@@ -39,3 +40,8 @@ Source: https://github.com/yosefario-dev/NClientV3 (studied at commit b2ee7ed).
 - Turnstile login: `LoginActivity.java` and `res/layout/activity_login.xml` (rewritten), new
   `loginapi/AuthApi.java`, `loginapi/PowSolver.java`, `components/views/TurnstileDialog.java`,
   `utility/MiniJson.java`, `res/layout/dialog_turnstile.xml`; strings in `res/values*/strings_47.xml`.
+- e-hentai source, P1 (browse, search, gallery, reader): new package `ehentai/` with its own
+  OkHttp client (paced, 509 / ban / rate-limit aware), `res/layout/*eh*`, `res/menu/eh_*.xml`,
+  `res/drawable/eh_chip_background.xml`. Hooks in existing classes: one drawer item in
+  `res/menu/activity_main_drawer.xml`, one branch each in `MainActivity.onNavigationItemSelected`
+  and `BottomNavRouter.setupNavigationView`, and three activities in `AndroidManifest.xml`.

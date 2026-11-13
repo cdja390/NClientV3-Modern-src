@@ -192,6 +192,23 @@
         <activity
             android:name=".LoginActivity"
             android:label="@string/title_activity_login" />
+        <!-- 4.7.0: e-hentai source -->
+        <activity
+            android:name=".ehentai.EhBrowseActivity"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/eh_title"
+            android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".ehentai.EhGalleryActivity"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/eh_title"
+            android:parentActivityName=".ehentai.EhBrowseActivity" />
+        <activity
+            android:name=".ehentai.EhReaderActivity"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/eh_title"
+            android:parentActivityName=".ehentai.EhGalleryActivity"
+            android:theme="@style/Theme.NClient.Reader" />
         <activity
             android:name=".ShareReceiverActivity"
             android:excludeFromRecents="true"
