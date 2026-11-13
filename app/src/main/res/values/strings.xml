@@ -523,4 +523,6 @@
     <string name="view_reading_stats_summary">Reading time and count of every gallery</string>
     <string name="clear_reading_stats">Clear reading stats</string>
     <string name="clear_reading_stats_summary">Only clears reading time and count. History, favorites, downloads, status and resume progress are not affected</string>
+    <!-- Share receiver (4.6.0) -->
+    <string name="nothing_shared">Nothing to open</string>
 </resources>

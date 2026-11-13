@@ -338,4 +338,6 @@
     <string name="view_reading_stats_summary">按作品查看閱讀次數和累計時長</string>
     <string name="clear_reading_stats">清空閱讀統計</string>
     <string name="clear_reading_stats_summary">只清空閱讀次數與時長統計，不影響閱讀歷史、收藏、已下載、閱讀狀態和斷點續讀</string>
+    <!-- Share receiver (4.6.0) -->
+    <string name="nothing_shared">没有可打开的内容</string>
 </resources>
