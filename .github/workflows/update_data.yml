@@ -1,38 +1,39 @@
-name: Update Data
+name: Prepare tag data update
 
 on:
-  schedule:
-    - cron: "42 1 * * 0"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-
+    timeout-minutes: 15
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v7
+      - name: Check out the source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
-          python-version: "3.13"
+          python-version: '3.13'
 
-      - name: Install dependencies
-        run: |
-          pip install -r scripts/requirements.txt
+      - name: Install script requirements
+        run: python -m pip install -r scripts/requirements.txt
 
-      - name: Run update script
+      - name: Generate candidate tag data
         run: python scripts/update_tags.py
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v8
+      - name: Upload candidate files for review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          commit-message: Update tags.json
-          branch: ci/update-tags
-          title: 'Update tags'
-          body: 'Changed files in data directory'
-          reviewers: maxwai
+          name: tag-data
+          path: |
+            data/tags.json
+            data/tagsPretty.json
+            data/tagsVersion
+          if-no-files-found: error
+          retention-days: 7

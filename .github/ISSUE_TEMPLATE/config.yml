@@ -1,1 +1,8 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Installation, upgrades and backups · 安装、升级与备份
+    url: https://github.com/cdja390/NClientV3-Modern-src#下载与升级
+    about: Find the signed APK, verification details and backup instructions.
+  - name: Private security report · 私密安全报告
+    url: https://github.com/cdja390/NClientV3-Modern-src/security/advisories/new
+    about: Report a security issue privately.

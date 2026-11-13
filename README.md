@@ -1,91 +1,81 @@
 # NClientV3 Modern
 
-[English](README.en.md) · [下载 4.7.2](https://github.com/cdja390/NClientV3-Modern-src/releases/tag/v4.7.2-modern) · [发行说明](docs/releases/v4.7.2-modern.md) · [源码构建](docs/BUILD.md)
+> [!IMPORTANT]
+> **此项目几乎全程由ai开发**
 
-NClientV3 的非官方 Android 分支。支持 nhentai（NH）和 e-hentai（EH）混排，也可在已有访问权限的账号下使用 ExHentai（EX）。保留中文标签、毛玻璃界面、续读与按作品统计。
+[English](README.en.md) · [下载 4.7.2 APK](https://github.com/cdja390/NClientV3-Modern-src/releases/download/v4.7.2-modern/NClientV3-Modern-v4.7.2.apk) · [所有版本](https://github.com/cdja390/NClientV3-Modern-src/releases)
 
-当前正式版为 **4.7.2-Modern**（`470200`），应用名 **NClientV3 Modern**。包名 `com.IlFforever.nclientv3.clone` 使用独立的应用数据空间。
-
-本仓库是 [ILFforever/NClientV3](https://github.com/ILFforever/NClientV3) 的非官方衍生分支，上游可继续追溯到 [maxwai/NClientV3](https://github.com/maxwai/NClientV3) 与 [Dar9586/NClientV2](https://github.com/Dar9586/NClientV2)。它不替换上游：源码分三层保留，便于对照。
-
-- 上游代码：以 `ILFforever/NClientV3` 为基线，保持可追溯。
-- DSH 层：中文本地化与数据库 v16。
-- Modern 层：只补阅读和列表上缺的能力，以及界面现代化。
-
-## 设计灵感来源
-
-界面没有另找一套漫画客户端来仿。底栏和对话框沿用 Material 3。抽屉顶栏按当前主题的 Material 3 色（`colorSurfaceContainerHigh`、`colorPrimaryContainer` 等）做动态调和，文档里称为 Material You 调和色。
-
-毛玻璃、液态玻璃和底栏的设计，主要参考了 [FlClash](https://github.com/chen08209/FlClash) 的物理凸透镜水滴美学（含 64dp 胶囊尺度）和 [SukiSU-Ultra](https://github.com/sukisu-ultra/SukiSU-Ultra) 的悬浮胶囊底栏交互。对照的是交互与外观，没有把这些项目的源码抄进本仓库。毛玻璃是为阅读加上的：底栏做成可透视的胶囊；关闭后改为不透明实心胶囊，避免栏位变透明。
-
-中文使用是另一层缺口：原版界面和标签以英文为主。标签中文名 `name_zh` 来自 DSH 层的中文本地化（DB v16），数据源是 [EhTagTranslation](https://github.com/EhTagTranslation/DatabaseReleases) 的标签翻译库。收藏同步最初来自上游 ILFforever/NClientV3 v4.5.0 的本地与网站双向同步，本分支保留，并补了同步页数选择等能力。
-
-## 设计初衷
-
-这个分支不替换上游。上游代码保持可追溯，DSH 做中文本地化和 DB v16，Modern 只补阅读和列表上缺的能力。包名与应用名标明这是独立安装，数据不与原版混用。
-
-要接上的是使用中会断掉的几步：冷启动或从收藏打开时回到第一页，历史清空后整页发黑，阅读器菜单白底白字，以及搜索时返回键和输入法抢焦点。读完没有状态，读了多久也没有数。自动翻页、边看边下、续读、阅读状态自动标记，还有按漫画统计的时长和次数，都是为了从打开到下次接着读，少靠记忆。
-
-## 主要特性
-
-- **浏览与搜索**。在主页菜单或设置选 NH 和 EH／EX。两站结果保留各自的顺序，交替显示并标注来源。
-- **热门（日榜）**。无关键词、标签、语言或范围筛选时，第一页混排 NH 日榜和 EH／EX 热门榜，后续页读取 NH 日榜。仅选 EH／EX 时显示单页热门榜。
-- **收藏、历史与下载**。本地收藏和历史汇总各来源，批量下载按来源分流。EH／EX 作品继续使用独立的详情和阅读器。
-- **毛玻璃与胶囊底栏**：可透视的悬浮胶囊底栏；关闭毛玻璃后降为实心 Material 3 胶囊，栏位不再变透明。
-- **Material 3 界面**：底栏、对话框和主题色沿用 Material 3；抽屉顶栏做主题色动态调和。
-- **中文标签**：标签可显示 `name_zh`，本地过滤同时匹配英文名与中文名。
-- **收藏同步**：本地收藏与网站收藏双向同步，可选择同步页数或全部同步。
-- **续读**：再次打开已读作品时，可询问、自动跳转或记住选择，从上次阅读页接着读。
-- **自动翻页**：阅读器内可按间隔自动翻页，并可改音量键方向。
-- **边看边下**：阅读过程中按设置触发后台下载，方便稍后离线接着看。
-- **阅读状态自动标记**：可按翻页进度自动升为「正在阅读」或「已完成」（默认关闭）。
-- **按作品阅读统计**：记录每本的阅读时长与次数，可在应用内查看。
-- **搜索与空状态修复**：搜索时回车收起输入法，返回键先收键盘再退出搜索；清空历史前会确认，并显示空状态，不再整页发黑。
+NClientV3 的非官方 Android 分支。在同一列表浏览 nhentai（NH）和 E-Hentai（EH），支持中文标签、离线下载、续读与按作品统计。已有 ExHentai（EX）访问权限的用户也可以使用 EX。
 
 ## 下载与升级
 
-GitHub Release 提供签名的 `post28` APK，需要 **Android 9（API 28）或以上**。源码也提供面向 API 26／27 的 `pre28` 构建选项。[正式下载](https://github.com/cdja390/NClientV3-Modern-src/releases/tag/v4.7.2-modern)
+| 项目 | 4.7.2 正式版 |
+| --- | --- |
+| 应用名称 | NClientV3 Modern |
+| 版本 | `4.7.2-Modern`（`470200`） |
+| 包名 | `com.IlFforever.nclientv3.clone` |
+| 系统要求 | Android 9（API 28）或以上 |
 
-1. 在旧版打开 **设置 → 导出数据**，保存 ZIP 备份。离线图片文件单独保留。 [备份格式](docs/BACKUP_FORMAT.md)
-2. 核对 APK 的 SHA-256 和签名证书，安装 Release 中的 `NClientV3-Modern-v4.7.2.apk`。旧版包名和证书均匹配时，Android 可原位升级。[APK 校验](docs/releases/v4.7.2-modern.md#apk-校验)
-3. 升级后打开应用，确认显示新版本，检查收藏、历史、下载记录和续读。遇到证书不匹配时保留旧版和备份。
+1. 已有旧版时，先打开 **设置 → 导出数据**，保存 ZIP。已下载的图片文件需要单独保留。 [备份格式](docs/BACKUP_FORMAT.md)
+2. 下载签名 APK，并核对文件与签名证书的 SHA-256。包名和签名证书都匹配时，Android 可以原位升级。遇到签名冲突时，保留已安装的应用和数据。 [发行说明与 APK 校验](docs/releases/v4.7.2-modern.md)
+3. 升级后核对应用版本，并打开收藏、历史、下载记录和已阅读的作品，确认数据和续读页。
 
-小米 13 已用正式签名包从 4.7.0 原位升级，前后 11 张主库表逐行一致，正式包热门首屏通过。华为核验的是并存 Debug 的热门混排。EX 联网和含数据的 EH 库迁移仍待实测。[验收记录](docs/MERGE_ACCEPTANCE_472.md)
+## 混排与热门榜
 
-## 构建与反馈
+1. 在主页菜单选择 **画廊来源**，或从设置打开同一个选择框。勾选 **NH** 和 **EH**。已有 EX 权限时，从侧边栏进入 **E-Hentai**，登录后在该页菜单打开 **使用 ExHentai**，来源选择框里的 EH 会切换为 EX。
+2. 清除搜索关键词和筛选，在主页排序菜单选择 **热门（日榜）**。
+3. 第一页按各站的榜单顺序交替显示 NH 和 EH／EX 条目。后续页加载 NH 日榜。只选 EH／EX 时，热门榜为单页。
 
-本地使用 JDK 21 和 Android SDK Platform 36 构建、运行单测。未配置本地签名时，Gradle 生成未签名 Release。 [构建步骤](docs/BUILD.md)
+带关键词或筛选的双站查询使用「最近」。只选 NH 时可使用 NH 的排序选项。本地收藏和历史汇总各来源，在线收藏按所选来源查询，本页批量下载按来源分流。EH／EX 作品使用独立的详情和阅读器。
 
-普通问题请附应用版本、Android 版本、使用的来源和复现步骤。上传日志前先移除 Cookie、令牌、账号和个人路径。 [问题反馈](https://github.com/cdja390/NClientV3-Modern-src/issues/new/choose) · [安全报告](SECURITY.md)
+## 主要功能
+
+- **阅读与续读**。按设置询问、自动跳到上次阅读页或记住选择。EH／EX 阅读器支持水平、垂直和条漫模式，也支持边缘点击、音量键和定时翻页。
+- **离线下载**。可在阅读时触发后台下载，稍后离线继续阅读。
+- **阅读状态与统计**。可按翻页进度自动标记「正在阅读」或「已完成」，默认关闭。按作品记录阅读时间与次数。
+- **中文标签与收藏同步**。本地标签过滤匹配英文名与中文名。支持本地收藏与网站收藏双向同步，可选择同步页数。
+- **Material 3 与 AMOLED**。悬浮胶囊底栏可启用毛玻璃，关闭后显示实心底栏。抽屉顶栏跟随主题色，阅读背景支持 AMOLED 纯黑。
+- **搜索与历史**。确认搜索时收起键盘，返回键先收键盘。清空历史前会要求确认，清空后显示空状态。
+
+## 验证范围
+
+4.7.2 正式版通过 146 项 JVM 测试。在小米 13 上用正式签名包从 4.7.0 原位升级，前后导出的 11 张主库表逐行一致，正式包通过热门首屏混排验证。华为测试使用与旧版并存的 Debug 包。EX 联网和有既有记录的 EH 库迁移仍待真机验证。 [4.7.2 验收记录](docs/MERGE_ACCEPTANCE_472.md)
+
+源码分支的构建、单测结果和 lint 报告可在 GitHub Actions 查看。 [Android CI](https://github.com/cdja390/NClientV3-Modern-src/actions/workflows/android.yml)
+
+## 从源码构建
+
+使用 JDK 21、Android SDK Platform 36 和 Build Tools 36.0.0。先配置 `JAVA_HOME` 和 Android SDK 路径，再从仓库根目录运行。
+
+```powershell
+.\gradlew.bat assemblePost28Debug testPost28DebugUnitTest assemblePost28Release
+```
+
+Linux 和 macOS 使用 `./gradlew`。Debug 有独立包名，可以并存安装。源码也提供面向 API 26／27 的 `pre28` 构建。 [环境配置、产物和测试报告](docs/BUILD.md)
+
+## 贡献与反馈
+
+- 提交问题时附应用版本、Android 版本、使用的来源和复现步骤。上传日志前，移除 Cookie、令牌、账号和个人路径。 [问题反馈](https://github.com/cdja390/NClientV3-Modern-src/issues/new/choose)
+- 代码、翻译和文档修改均可通过 Pull Request 提交。 [贡献指南](CONTRIBUTING.md)
+- 安全问题通过 GitHub 私密报告提交。 [安全政策](SECURITY.md)
+- 版本变化、已验证范围和下载入口。 [变更记录](CHANGELOG.md)
+
+## 项目沿革与设计
+
+项目以 ILFforever/NClientV3 为上游基线，向前可追溯到 maxwai/NClientV3 与 Dar9586/NClientV2。DSH 层提供中文本地化和 DB v16，Modern 在此基础上完善浏览、搜索、阅读和界面。独立包名提供独立的应用数据空间。 [ILFforever/NClientV3](https://github.com/ILFforever/NClientV3) · [maxwai/NClientV3](https://github.com/maxwai/NClientV3) · [Dar9586/NClientV2](https://github.com/Dar9586/NClientV2)
+
+底栏和对话框采用 Material 3。抽屉顶栏用 `colorSurfaceContainerHigh` 和 `colorPrimaryContainer` 等主题色动态调和。悬浮底栏参考 FlClash 的 64dp 胶囊、凸透镜与水滴效果，以及 SukiSU-Ultra 的胶囊交互。本地与网站收藏的双向同步沿用上游 v4.5.0，本分支增加了同步页数选择。 [适配文件与署名](docs/PATCHED_FILES.md)
 
 ## 致谢
 
-- [@Dar9586](https://github.com/Dar9586) 的原始项目 [NClientV2](https://github.com/Dar9586/NClientV2)
-- [@maxwai](https://github.com/maxwai) 的 [NClientV3](https://github.com/maxwai/NClientV3)，以及继续维护本项目的贡献者
-- [@ILFforever](https://github.com/ILFforever) 的 [NClientV3](https://github.com/ILFforever/NClientV3)，本分支以此为上游基线
-- [yosefario-dev/NClientV3](https://github.com/yosefario-dev/NClientV3)，4.7.2 来源合并行为的参考和适配来源。 [修改与署名](docs/PATCHED_FILES.md)
-- [EhTagTranslation](https://github.com/EhTagTranslation/DatabaseReleases)，标签中文名数据源
-- [FlClash](https://github.com/chen08209/FlClash)、[SukiSU-Ultra](https://github.com/sukisu-ultra/SukiSU-Ultra)，毛玻璃、液态玻璃与底栏的设计参照（仅对照交互与外观，未使用其源码）
-- [Han1meViewer](https://github.com/misaka10032w/Han1meViewer)，早期主题与导航的界面参考（只作界面参考，未移植其业务代码）
+- Dar9586、maxwai 和 ILFforever 提供原始项目和上游实现。 [Dar9586](https://github.com/Dar9586) · [maxwai](https://github.com/maxwai) · [ILFforever](https://github.com/ILFforever)
+- yosefario-dev/NClientV3 提供 4.7.2 来源合并的行为参考和适配来源。 [yosefario-dev/NClientV3](https://github.com/yosefario-dev/NClientV3)
+- EhTagTranslation 提供标签中文名（`name_zh`）数据。 [EhTagTranslation](https://github.com/EhTagTranslation/DatabaseReleases)
+- FlClash 和 SukiSU-Ultra 提供毛玻璃、液态玻璃与胶囊底栏的视觉和交互参考。 [FlClash](https://github.com/chen08209/FlClash) · [SukiSU-Ultra](https://github.com/sukisu-ultra/SukiSU-Ultra)
+- Han1meViewer 提供早期主题与导航的界面参考。 [Han1meViewer](https://github.com/misaka10032w/Han1meViewer)
 
-上游 README 中列出的翻译与修复贡献者仍然适用，完整名单见历史版本说明。
+感谢上游的翻译、修复和维护贡献者。 [NClientV3 贡献者](https://github.com/ILFforever/NClientV3#contributors) · [原始项目贡献者](https://github.com/ILFforever/NClientV3#contributors-of-original-project)
 
 ## 许可证
 
-本项目基于上游 NClientV3，遵循 **Apache License 2.0**。完整协议见 [LICENSE](LICENSE)。
-
-```text
-Copyright 2024 maxwai
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
+本项目沿用上游的 **Apache License 2.0**。Copyright 2024 maxwai。 [完整许可证](LICENSE)

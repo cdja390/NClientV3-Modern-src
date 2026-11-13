@@ -1,35 +1,28 @@
-name: Feature request
-description: Suggest an idea for this project
-labels: [ "enhancement" ]
+name: Feature request · 功能建议
+description: Suggest a change to the app or its documentation
+labels: [enhancement]
 body:
-  - type: checkboxes
+  - type: markdown
     attributes:
-      label: Checklist
-      description: Please confirm that you have done following steps.
-      options:
-        - label: I have searched the existing issues for the same feature
-          required: true
+      value: |
+        Suggestions in English or Chinese are welcome. 欢迎用中文或英文提建议。
+        [Search existing issues](https://github.com/cdja390/NClientV3-Modern-src/issues)
   - type: textarea
+    id: workflow
     attributes:
-      label: Is your feature request related to a problem? Please describe
-      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+      label: Workflow · 使用场景
+      description: Describe what you are trying to do and where you get stuck.
     validations:
-      required: false
+      required: true
   - type: textarea
+    id: proposal
     attributes:
-      label: Describe the solution you'd like
-      description: A clear and concise description of what you want to happen.
+      label: Proposed behavior · 建议的行为
+      description: Describe what you would like the app to do.
     validations:
-      required: false
+      required: true
   - type: textarea
+    id: context
     attributes:
-      label: Describe alternatives you've considered
-      description: A clear and concise description of any alternative solutions or features you've considered.
-    validations:
-      required: false
-  - type: textarea
-    attributes:
-      label: Additional context
-      description: Add any other context about the problem here.
-    validations:
-      required: false
+      label: Context · 补充信息
+      description: Add examples, affected sources, or workarounds if relevant.

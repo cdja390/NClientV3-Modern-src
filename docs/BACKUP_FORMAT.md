@@ -1,6 +1,8 @@
 # Backup format
 
-A backup (Settings → Backup → Export) is a zip archive.
+A backup is a ZIP archive. Create it with **Settings → Export data** (设置 → 导出数据). To restore it, use **Settings → Import data** (设置 → 导入数据).
+
+Keep downloaded images separately when moving to another device. The archive contains the download records and excludes the image files.
 
 | Entry | Since | Content |
 |-------|-------|---------|

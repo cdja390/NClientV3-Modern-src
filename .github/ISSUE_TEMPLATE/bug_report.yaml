@@ -1,62 +1,50 @@
-name: Bug Report
-description: Create a report to help us improve
-labels: [ "bug" ]
+name: Bug report · 问题反馈
+description: Report a problem with the Android app or its documentation
+labels: [bug]
 body:
-  - type: checkboxes
+  - type: markdown
     attributes:
-      label: Checklist
-      description: Please confirm that you have done following steps.
+      value: |
+        Reports in English or Chinese are welcome. 欢迎用中文或英文反馈。
+        [Search existing issues](https://github.com/cdja390/NClientV3-Modern-src/issues) · [Installation and upgrade](https://github.com/cdja390/NClientV3-Modern-src#下载与升级) · [Private security reports](https://github.com/cdja390/NClientV3-Modern-src/security/advisories/new)
+  - type: input
+    id: app-version
+    attributes:
+      label: App version · 应用版本
+      description: For app issues, use the version shown in Settings.
+      placeholder: 4.7.2-Modern (470200)
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version · 机型和系统版本
+      description: Include your device and Android version for an app issue.
+      placeholder: Xiaomi 13, Android 15
+  - type: dropdown
+    id: sources
+    attributes:
+      label: Selected sources · 已选来源
       options:
-        - label: I have checked the installation and upgrade steps in the project README
-          required: true
-        - label: I have searched the existing issues for the same bug
-          required: true
+        - NH
+        - EH
+        - EX
+        - NH + EH
+        - NH + EX
+        - Unknown or unrelated · 不确定或无关
   - type: textarea
+    id: reproduction
     attributes:
-      label: Describe the bug
-      description: A clear and concise description of what the bug is.
+      label: Steps and observed result · 复现步骤与实际结果
+      description: Include the screen, sort order or filters, and what happens after each relevant step.
     validations:
       required: true
   - type: textarea
+    id: expected
     attributes:
-      label: Steps To Reproduce
-      description: Steps to reproduce the behavior.
-      placeholder: |
-        1. Go to '...'
-        2. Click on '....'
-        3. Scroll down to '....'
-        4. See error
+      label: Expected result · 预期结果
     validations:
       required: true
   - type: textarea
+    id: evidence
     attributes:
-      label: Expected behavior
-      description: A clear and concise description of what you expected to happen.
-    validations:
-      required: true
-  - type: textarea
-    attributes:
-      label: Screenshots
-      description: If applicable, add screenshots to help explain your problem.
-    validations:
-      required: false
-  - type: input
-    attributes:
-      label: Android Version
-      description: Android Version of the phone where the App is installed
-      placeholder: "14"
-    validations:
-      required: true
-  - type: input
-    attributes:
-      label: App Version
-      description: App Version where the bug happens
-      placeholder: "4.0.9"
-    validations:
-      required: true
-  - type: textarea
-    attributes:
-      label: Additional context
-      description: Include the selected sources and any relevant log excerpt. Remove cookies, tokens, account details, and personal paths before attaching logs.
-    validations:
-      required: false
+      label: Screenshots and logs · 截图与日志
+      description: Remove cookies, tokens, account details, and personal paths before attaching files.
