@@ -14,7 +14,6 @@ import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 
 import androidx.activity.OnBackPressedCallback;
@@ -80,6 +79,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -118,7 +118,6 @@ public class MainActivity extends BaseActivity
     private ModeType modeType = ModeType.UNKNOWN;
     private SourceKey openedGallery;
     private boolean inspecting = false, filteringTag = false;
-    private SortType temporaryType;
     private Snackbar snackbar = null;
     private PageSwitcher pageSwitcher;
     BottomNavigationView bottomNavigationView;
@@ -146,6 +145,7 @@ public class MainActivity extends BaseActivity
             useNormalMode();
         }
         inspector.start();
+        invalidateOptionsMenu();
     };
     private DrawerLayout drawerLayout;
     private Toolbar toolbar;
@@ -632,7 +632,7 @@ public class MainActivity extends BaseActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
-        popularItemDispay(menu.findItem(R.id.by_popular));
+        displaySort(menu.findItem(R.id.by_popular));
 
         showLanguageIcon(menu.findItem(R.id.only_language));
 
@@ -677,10 +677,21 @@ public class MainActivity extends BaseActivity
         }
     }
 
-    private void popularItemDispay(MenuItem item) {
-        item.setTitle(getString(R.string.sort_type_title_format, getString(
-            SourceCapabilities.effectiveSort(SourcePreferences.enabled(this), Global.getSortType()).getNameId())));
+    private void displaySort(MenuItem item) {
+        Set<GallerySource> sources = SourcePreferences.enabled(this);
+        SortType current = inspector == null ? Global.getSortType() : inspector.getSortType();
+        SortType sort = SourceCapabilities.effectiveSort(sources, current, canSortPopularBrowse());
+        item.setTitle(getString(R.string.sort_type_title_format, getString(sortLabel(sort, sources))));
         Global.setTint(this, item.getIcon());
+    }
+
+    private boolean canSortPopularBrowse() {
+        return inspector != null && inspector.isUnfilteredBrowse();
+    }
+
+    private int sortLabel(SortType sort, Set<GallerySource> sources) {
+        return sort == SortType.POPULAR_DAILY && !SourceCapabilities.isNhOnly(sources)
+            ? R.string.sort_popular_mixed_daily : sort.getNameId();
     }
 
     private void showLanguageIcon(MenuItem item) {
@@ -729,7 +740,8 @@ public class MainActivity extends BaseActivity
             return true;
         }
         if (item.getItemId() == R.id.by_popular) {
-            updateSortType(item);
+            updateSortType();
+            return true;
         } else if (item.getItemId() == R.id.only_language) {
             updateLanguageAndIcon(item);
         } else if (item.getItemId() == R.id.search) {
@@ -760,48 +772,50 @@ public class MainActivity extends BaseActivity
     }
 
     private void reloadSources() {
-        sourceSignature = SourcePolicy.serialize(SourcePreferences.enabled(this));
+        Set<GallerySource> sources = SourcePreferences.enabled(this);
+        sourceSignature = SourcePolicy.serialize(sources);
         if (inspector == null) return;
+        SortType sort = canSortPopularBrowse() ? SourcePreferences.browseSort(this, sources) : Global.getSortType();
+        restartList(sort);
+    }
+
+    private void restartList(SortType sort) {
         inspector = inspector.cloneInspector(this, resetDataset);
+        inspector.setSortType(sort);
         inspector.setPage(1);
-        inspector.setSortType(Global.getSortType());
         displayedPage = null;
-        adapter.restartDataset(new ArrayList<>());
         showPageSwitcher(1, 1);
+        adapter.restartDataset(new ArrayList<>());
         inspector.start();
         invalidateOptionsMenu();
     }
 
-    private void updateSortType(MenuItem item) {
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.select_dialog_singlechoice);
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
-        List<SortType> options = SourceCapabilities.sortOptions(SourcePreferences.enabled(this));
-        for (SortType type : options)
-            adapter.add(getString(type.getNameId()));
-        temporaryType = SourceCapabilities.effectiveSort(SourcePreferences.enabled(this), Global.getSortType());
-        builder.setIcon(R.drawable.ic_sort).setTitle(R.string.sort_select_type);
-        builder.setSingleChoiceItems(adapter, options.indexOf(temporaryType), (dialog, which) -> temporaryType = options.get(which));
-        builder.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                temporaryType = options.get(position);
-                parent.setSelection(position);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        builder.setPositiveButton(R.string.ok, (dialog, which) -> {
-            if (SourcePreferences.enabled(this).equals(java.util.EnumSet.of(GallerySource.NHENTAI)))
-                Global.updateSortType(MainActivity.this, temporaryType);
-            popularItemDispay(item);
-            inspector = inspector.cloneInspector(MainActivity.this, resetDataset);
-            inspector.setSortType(temporaryType);
-            inspector.start();
-        });
-        builder.setNegativeButton(R.string.cancel, null);
-        builder.show();
+    private void updateSortType() {
+        if (inspector == null) return;
+        Set<GallerySource> sources = SourcePreferences.enabled(this);
+        boolean unfilteredBrowse = canSortPopularBrowse();
+        List<SortType> options = SourceCapabilities.sortOptions(sources, unfilteredBrowse);
+        SortType current = SourceCapabilities.effectiveSort(sources, inspector.getSortType(), unfilteredBrowse);
+        String[] labels = new String[options.size()];
+        for (int i = 0; i < options.size(); i++) {
+            labels[i] = getString(sortLabel(options.get(i), sources));
+        }
+        AtomicReference<SortType> selection = new AtomicReference<>(current);
+        new MaterialAlertDialogBuilder(this)
+            .setIcon(R.drawable.ic_sort)
+            .setTitle(R.string.sort_select_type)
+            .setSingleChoiceItems(labels, options.indexOf(current), (dialog, which) -> selection.set(options.get(which)))
+            .setPositiveButton(R.string.ok, (dialog, which) -> {
+                SortType sort = selection.get();
+                if (SourceCapabilities.isNhOnly(sources)) {
+                    Global.updateSortType(this, sort);
+                } else if (unfilteredBrowse && !sources.isEmpty()) {
+                    SourcePreferences.saveEhBrowseSort(this, sort);
+                }
+                if (sort != current) restartList(sort);
+            })
+            .setNegativeButton(R.string.cancel, null)
+            .show();
     }
 
     private void updateLanguageAndIcon(MenuItem item) {

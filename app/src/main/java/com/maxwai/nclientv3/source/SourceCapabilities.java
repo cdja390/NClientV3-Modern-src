@@ -15,18 +15,21 @@ public final class SourceCapabilities {
     private SourceCapabilities() {
     }
 
-    /** EH and EX only support recent; the user's saved NH sort is left untouched. */
-    public static List<SortType> sortOptions(Collection<GallerySource> sources) {
-        for (GallerySource source : sources) {
-            if (source != GallerySource.NHENTAI) {
-                return Collections.singletonList(SortType.RECENT_ALL_TIME);
-            }
-        }
-        return Collections.unmodifiableList(Arrays.asList(SortType.values()));
+    public static boolean isNhOnly(Collection<GallerySource> sources) {
+        return sources.size() == 1 && sources.contains(GallerySource.NHENTAI);
     }
 
-    public static SortType effectiveSort(Collection<GallerySource> sources, SortType requested) {
-        return requested != null && sortOptions(sources).contains(requested)
+    public static List<SortType> sortOptions(Collection<GallerySource> sources, boolean unfilteredBrowse) {
+        if (isNhOnly(sources)) return Collections.unmodifiableList(Arrays.asList(SortType.values()));
+        if (unfilteredBrowse && !sources.isEmpty()) {
+            return Arrays.asList(SortType.RECENT_ALL_TIME, SortType.POPULAR_DAILY);
+        }
+        return Collections.singletonList(SortType.RECENT_ALL_TIME);
+    }
+
+    public static SortType effectiveSort(Collection<GallerySource> sources, SortType requested,
+                                         boolean unfilteredBrowse) {
+        return requested != null && sortOptions(sources, unfilteredBrowse).contains(requested)
             ? requested : SortType.RECENT_ALL_TIME;
     }
 }

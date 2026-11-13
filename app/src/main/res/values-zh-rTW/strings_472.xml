@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- NClientV3 Modern 4.7.2 source merging. -->
 <resources>
+    <string name="sort_popular_mixed_daily">熱門（日榜）</string>
     <string name="gallery_sources_title">畫廊來源</string>
     <string name="source_name_nh">nhentai</string>
     <string name="source_name_eh">e-hentai</string>

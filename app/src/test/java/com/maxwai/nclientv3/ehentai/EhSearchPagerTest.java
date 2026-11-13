@@ -12,6 +12,7 @@ import com.maxwai.nclientv3.api.enums.TagType;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -93,6 +94,40 @@ public class EhSearchPagerTest {
         assertFalse(ranges.isDefault());
         assertEquals("", ranges.toQuery());
         assertEquals(4, ranges.getMinRating());
+    }
+
+    @Test
+    public void popularUsesSelectedHostAndHasOnlyOnePage() throws IOException {
+        EhGalleryInfo eh = new EhGalleryInfo(new EhGalleryKey(1, "abcdef0123", false));
+        EhGalleryInfo ex = new EhGalleryInfo(new EhGalleryKey(2, "abcdef0123", true));
+        EhFeed.Fetcher fetcher = url -> {
+            calls.add(url);
+            return new EhListParser.Page(Collections.singletonList(calls.size() == 1 ? eh : ex), "ignored", false);
+        };
+        assertEquals(Collections.singletonList(eh), EhFeed.popularPage(false, 1, 0, 0, fetcher));
+        assertEquals(Collections.singletonList(ex), EhFeed.popularPage(true, 1, 0, 0, fetcher));
+        assertTrue(EhFeed.popularPage(true, 2, 0, 0, fetcher).isEmpty());
+        assertEquals(Arrays.asList("https://e-hentai.org/popular", "https://exhentai.org/popular"), calls);
+    }
+
+    @Test
+    public void popularAppliesGlobalFiltersInTheSitesRankOrder() throws IOException {
+        EhGalleryInfo first = popularGallery(100, EhCategory.MANGA, 4);
+        EhGalleryInfo wrongCategory = popularGallery(200, EhCategory.DOUJINSHI, 5);
+        EhGalleryInfo wrongRating = popularGallery(300, EhCategory.MANGA, 3.5f);
+        EhGalleryInfo unknown = popularGallery(400, EhCategory.UNKNOWN, -1);
+        EhGalleryInfo last = popularGallery(500, EhCategory.MANGA, 5);
+        List<EhGalleryInfo> ranked = Arrays.asList(first, wrongCategory, wrongRating, unknown, last);
+        EhFeed.Fetcher fetcher = url -> new EhListParser.Page(ranked, null, false);
+        assertEquals(Arrays.asList(first, last), EhFeed.popularPage(false, 1, EhCategory.MANGA.bit, 4, fetcher));
+        assertEquals(ranked, EhFeed.popularPage(false, 1, EhCategory.ALL, 0, fetcher));
+    }
+
+    private static EhGalleryInfo popularGallery(long id, EhCategory category, float rating) {
+        EhGalleryInfo gallery = new EhGalleryInfo(new EhGalleryKey(id, "abcdef0123", false));
+        gallery.category = category;
+        gallery.rating = rating;
+        return gallery;
     }
 
     private EhListParser.Page fetch(String url) {

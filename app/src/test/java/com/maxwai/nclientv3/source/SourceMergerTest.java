@@ -35,7 +35,7 @@ public class SourceMergerTest {
     }
 
     private MergePage<String> merge(MergeSource<String> a, MergeSource<String> b) throws IOException {
-        return merger().merge(Arrays.asList(a, b), SortType.POPULAR_ALL_TIME, 1,
+        return merger().merge(Arrays.asList(a, b), SortType.RECENT_ALL_TIME, 1,
             (source, error) -> failures.add(source));
     }
 
@@ -45,18 +45,45 @@ public class SourceMergerTest {
         List<MergeSource<String>> sources = Arrays.asList(
             SourceMerger.source(NH, sort -> { actual.add(sort); return new MergePage<>(Collections.emptyList(), 1); }),
             SourceMerger.source(EH, sort -> { actual.add(sort); return new MergePage<>(Collections.emptyList(), 1); }));
-        SortType requested = SortType.POPULAR_ALL_TIME;
-        merger().merge(sources, requested, 1, (source, error) -> fail());
+        SortType requested = SortType.POPULAR_DAILY;
+        SortType effective = SourceCapabilities.effectiveSort(Arrays.asList(NH, EH), requested, false);
+        merger().merge(sources, effective, 1, (source, error) -> fail());
         assertEquals(Arrays.asList(SortType.RECENT_ALL_TIME, SortType.RECENT_ALL_TIME), actual);
-        assertEquals(SortType.POPULAR_ALL_TIME, requested);
-        assertEquals(requested, SourceCapabilities.effectiveSort(Collections.singletonList(NH), requested));
+        assertEquals(SortType.POPULAR_DAILY, requested);
+        assertEquals(requested, SourceCapabilities.effectiveSort(Collections.singletonList(NH), requested, false));
     }
 
     @Test
     public void sortOptionsAreTheSourceIntersection() {
-        assertEquals(Arrays.asList(SortType.values()), SourceCapabilities.sortOptions(Collections.singletonList(NH)));
-        assertEquals(Collections.singletonList(SortType.RECENT_ALL_TIME), SourceCapabilities.sortOptions(Arrays.asList(NH, EH)));
-        assertEquals(Collections.singletonList(SortType.RECENT_ALL_TIME), SourceCapabilities.sortOptions(Arrays.asList(NH, GallerySource.EXHENTAI)));
+        List<SortType> recent = Collections.singletonList(SortType.RECENT_ALL_TIME);
+        List<SortType> recentAndDaily = Arrays.asList(SortType.RECENT_ALL_TIME, SortType.POPULAR_DAILY);
+        GallerySource ex = GallerySource.EXHENTAI;
+        assertEquals(Arrays.asList(SortType.values()), SourceCapabilities.sortOptions(Collections.singletonList(NH), true));
+        assertEquals(recent, SourceCapabilities.sortOptions(Arrays.asList(NH, EH), false));
+        assertEquals(recent, SourceCapabilities.sortOptions(Arrays.asList(NH, ex), false));
+        assertEquals(recentAndDaily, SourceCapabilities.sortOptions(Arrays.asList(NH, EH), true));
+        assertEquals(recentAndDaily, SourceCapabilities.sortOptions(Arrays.asList(NH, ex), true));
+        assertEquals(recentAndDaily, SourceCapabilities.sortOptions(Collections.singletonList(EH), true));
+        assertEquals(recentAndDaily, SourceCapabilities.sortOptions(Collections.singletonList(ex), true));
+        assertEquals(SortType.RECENT_ALL_TIME,
+            SourceCapabilities.effectiveSort(Arrays.asList(NH, EH), SortType.POPULAR_WEEKLY, true));
+    }
+
+    @Test
+    public void mixedDailySortReachesBothSourcesInTheirRankOrder() throws IOException {
+        List<MergeSource<String>> sources = Arrays.asList(
+            SourceMerger.source(NH, sort -> {
+                assertEquals(SortType.POPULAR_DAILY, sort);
+                return new MergePage<>(Arrays.asList("n1", "n2"), 4);
+            }),
+            SourceMerger.source(EH, sort -> {
+                assertEquals(SortType.POPULAR_DAILY, sort);
+                return new MergePage<>(Arrays.asList("e1", "e2", "e3"), 1);
+            }));
+        SortType daily = SourceCapabilities.effectiveSort(Arrays.asList(NH, EH), SortType.POPULAR_DAILY, true);
+        MergePage<String> merged = merger().merge(sources, daily, 1, (source, error) -> fail());
+        assertEquals(Arrays.asList("n1", "e1", "n2", "e2", "e3"), merged.items);
+        assertEquals(4, merged.pageCount);
     }
 
     @Test

@@ -39,6 +39,7 @@ import com.maxwai.nclientv3.utility.LogUtility;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -58,7 +59,7 @@ public final class EhFeed {
     public static final String MODE_EH = "eh";
     public static final String MODE_BOTH = "both";
     static final int MAX_WALK = 8;
-    /** Query nhentai's "popular" home page is rewritten to (InspectorV3.tryByAllPopular). */
+    /** Placeholder from nhentai popular URLs, including older bookmarks. */
     private static final String NH_POPULAR_PLACEHOLDER = "-nclientv3";
 
     public enum Mode {NH, EH, BOTH, NONE}
@@ -222,6 +223,30 @@ public final class EhFeed {
             url -> EhRepository.loadList(app, url));
         LogUtility.d("EhFeed: page " + page + " '" + search + "' -> " + r.items.size() + " galleries");
         return r;
+    }
+
+    /** The popular list has a single page. The site's rank is preserved after filtering. */
+    @NonNull
+    public static List<EhGalleryInfo> loadPopular(@NonNull Context context, boolean ex, int page) throws IOException {
+        Context app = context.getApplicationContext();
+        return popularPage(ex, page, EhSettings.shownCategories(context), EhSettings.minRating(context),
+            url -> EhRepository.loadList(app, url));
+    }
+
+    @NonNull
+    static List<EhGalleryInfo> popularPage(boolean ex, int page, int shown, int minRating,
+                                           @NonNull Fetcher fetcher) throws IOException {
+        if (page > 1) return Collections.emptyList();
+        List<EhGalleryInfo> ranked = fetcher.fetch(EhUrls.popularUrl(ex)).items;
+        int excluded = EhCategory.excludeMaskForShown(shown);
+        List<EhGalleryInfo> filtered = new ArrayList<>(ranked.size());
+        for (EhGalleryInfo gallery : ranked) {
+            int category = gallery.category.bit;
+            if (excluded != 0 && (category == 0 || (category & excluded) != 0)) continue;
+            if (minRating > 0 && minRating <= 5 && gallery.rating < minRating) continue;
+            filtered.add(gallery);
+        }
+        return filtered;
     }
 
     // ---- merge ----

@@ -6,9 +6,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.maxwai.nclientv3.R;
+import com.maxwai.nclientv3.api.enums.SortType;
 import com.maxwai.nclientv3.ehentai.EhFeed;
 import com.maxwai.nclientv3.ehentai.EhRepository;
 import com.maxwai.nclientv3.ehentai.EhSettings;
+import com.maxwai.nclientv3.settings.Global;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -16,12 +18,23 @@ import java.util.EnumSet;
 public final class SourcePreferences {
     public static final String ENABLED = "enabled_sources";
     public static final String FAVORITE = "favorite_source";
+    private static final String EH_BROWSE_POPULAR = "eh_browse_popular";
 
     private SourcePreferences() {
     }
 
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences("Settings", Context.MODE_PRIVATE);
+    }
+
+    public static SortType browseSort(Context context, Collection<GallerySource> sources) {
+        if (SourceCapabilities.isNhOnly(sources)) return Global.getSortType();
+        return prefs(context).getBoolean(EH_BROWSE_POPULAR, false)
+            ? SortType.POPULAR_DAILY : SortType.RECENT_ALL_TIME;
+    }
+
+    public static void saveEhBrowseSort(Context context, SortType sort) {
+        prefs(context).edit().putBoolean(EH_BROWSE_POPULAR, sort == SortType.POPULAR_DAILY).apply();
     }
 
     public static synchronized EnumSet<GallerySource> enabled(Context context) {

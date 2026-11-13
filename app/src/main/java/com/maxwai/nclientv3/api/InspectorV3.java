@@ -27,6 +27,7 @@ import com.maxwai.nclientv3.source.GalleryIdentity;
 import com.maxwai.nclientv3.source.GallerySource;
 import com.maxwai.nclientv3.source.MergePage;
 import com.maxwai.nclientv3.source.MergeSource;
+import com.maxwai.nclientv3.source.SourceCapabilities;
 import com.maxwai.nclientv3.source.SourceMerger;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.source.GalleryListParcel;
@@ -56,6 +57,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class InspectorV3 extends Thread implements Parcelable {
+    private static final String NH_POPULAR_PLACEHOLDER = "-nclientv3";
     public static final Creator<InspectorV3> CREATOR = new Creator<>() {
         @Override
         public InspectorV3 createFromParcel(Parcel in) {
@@ -159,7 +161,8 @@ public class InspectorV3 extends Thread implements Parcelable {
     }
 
     public static InspectorV3 basicInspector(Context context, int page, InspectorResponse response) {
-        return searchInspector(context, null, null, page, Global.getSortType(), null, response);
+        Set<GallerySource> enabled = SourcePreferences.enabled(context);
+        return searchInspector(context, null, null, page, SourcePreferences.browseSort(context, enabled), null, response);
     }
 
     public static InspectorV3 tagInspector(Context context, Tag tag, int page, SortType sortType, InspectorResponse response) {
@@ -187,7 +190,6 @@ public class InspectorV3 extends Thread implements Parcelable {
             switch (inspector.tags.size()) {
                 case 0:
                     inspector.requestType = ApiRequestType.BYALL;
-                    inspector.tryByAllPopular();
                     break;
                 case 1:
                     inspector.requestType = ApiRequestType.BYTAG;
@@ -307,14 +309,16 @@ public class InspectorV3 extends Thread implements Parcelable {
         return saved;
     }
 
-    private void tryByAllPopular() {
-        if (sortType != SortType.RECENT_ALL_TIME) {
-            requestType = ApiRequestType.BYSEARCH;
-            query = "-nclientv3";
-        }
+    public boolean isUnfilteredBrowse() {
+        // Older NH popular bookmarks and parcels stored the transport placeholder as a query.
+        return requestType == ApiRequestType.BYALL
+            || (requestType == ApiRequestType.BYSEARCH && NH_POPULAR_PLACEHOLDER.equals(query)
+                && tags.isEmpty() && (ranges == null || ranges.isDefault()));
     }
 
     private void createUrl() {
+        boolean browse = isUnfilteredBrowse();
+        boolean popularBrowse = browse && sortType != null && sortType.getUrlAddition() != null;
         String query;
         try {
             query = this.query == null ? null : URLEncoder.encode(this.query, Charset.defaultCharset().name());
@@ -322,7 +326,7 @@ public class InspectorV3 extends Thread implements Parcelable {
             query = this.query;
         }
         StringBuilder builder = new StringBuilder(Utility.getBaseUrl()).append("api/v2/");
-        if (requestType == ApiRequestType.BYALL) {
+        if (browse && !popularBrowse) {
             builder.append("galleries?page=").append(page);
         } else if (requestType == ApiRequestType.RANDOM) {
             builder.append("galleries/random");
@@ -334,8 +338,8 @@ public class InspectorV3 extends Thread implements Parcelable {
             builder.append("favorites?page=").append(page);
             if (query != null && !query.isEmpty())
                 builder.append("&q=").append(query);
-        } else if (requestType == ApiRequestType.BYSEARCH || requestType == ApiRequestType.BYTAG) {
-            builder.append("search?query=").append(query);
+        } else if (popularBrowse || requestType == ApiRequestType.BYSEARCH || requestType == ApiRequestType.BYTAG) {
+            builder.append("search?query=").append(popularBrowse ? NH_POPULAR_PLACEHOLDER : query);
             for (Tag tt : tags) {
                 if (builder.toString().contains(tt.toQueryTag(TagStatus.ACCEPTED))) continue;
                 builder.append('+');
@@ -351,7 +355,7 @@ public class InspectorV3 extends Thread implements Parcelable {
                     }
                 }
             }
-            if (ranges != null)
+            if (ranges != null && !ranges.isDefault())
                 builder.append('+').append(ranges.toQuery());
             builder.append("&page=").append(page);
             if (sortType != null && sortType.getUrlAddition() != null) {
@@ -414,15 +418,17 @@ public class InspectorV3 extends Thread implements Parcelable {
         Set<GallerySource> enabled = SourcePreferences.enabled(ctx);
         EhFeed.Mode mode = EhFeed.modeFor(enabled, requestType);
         boolean ex = enabled.contains(GallerySource.EXHENTAI);
+        SortType effectiveSort = SourceCapabilities.effectiveSort(enabled, sortType, isUnfilteredBrowse());
         if (mode == EhFeed.Mode.NONE) {
             galleries = new ArrayList<>();
             pageCount = 1;
             return;
         }
         if (mode == EhFeed.Mode.EH && ctx != null) {
-            EhFeed.Result eh = EhFeed.load(ctx, ex, query, tags, ranges, page);
-            galleries = EhFeed.wrap(eh.items);
-            pageCount = eh.pageCount(page);
+            if (effectiveSort == SortType.POPULAR_DAILY && page > 1) setPage(1);
+            MergePage<GenericGallery> eh = loadEh(ctx, ex, effectiveSort);
+            galleries = new ArrayList<>(eh.items);
+            pageCount = eh.pageCount;
             return;
         }
         if (mode != EhFeed.Mode.BOTH || ctx == null) {
@@ -431,23 +437,31 @@ public class InspectorV3 extends Thread implements Parcelable {
             return;
         }
         List<MergeSource<GenericGallery>> sources = new ArrayList<>(2);
-        sources.add(SourceMerger.source(GallerySource.NHENTAI, effectiveSort -> {
+        sources.add(SourceMerger.source(GallerySource.NHENTAI, sort -> {
             // Use the original NH transport/parser and isolate any partially parsed failure.
             InspectorV3 nh = cloneInspector(ctx, null);
-            nh.sortType = effectiveSort;
+            nh.sortType = sort;
             nh.createUrl();
             if (!nh.createDocument()) throw new IOException("nhentai list request failed");
             nh.parseDocument();
             return new MergePage<>(nh.galleries, nh.pageCount);
         }));
-        sources.add(SourceMerger.source(ex ? GallerySource.EXHENTAI : GallerySource.EHENTAI, effectiveSort -> {
-            EhFeed.Result eh = EhFeed.load(ctx, ex, query, tags, ranges, page);
-            return new MergePage<>(EhFeed.wrap(eh.items), eh.pageCount(page));
-        }));
-        MergePage<GenericGallery> merged = sourceMerger.merge(sources, sortType, page,
+        if (effectiveSort != SortType.POPULAR_DAILY || page <= 1) {
+            sources.add(SourceMerger.source(ex ? GallerySource.EXHENTAI : GallerySource.EHENTAI,
+                sort -> loadEh(ctx, ex, sort)));
+        }
+        MergePage<GenericGallery> merged = sourceMerger.merge(sources, effectiveSort, page,
             (source, failure) -> LogUtility.e("Merged list: " + source + " page " + page + " failed", failure));
         galleries = new ArrayList<>(merged.items);
         pageCount = merged.pageCount;
+    }
+
+    private MergePage<GenericGallery> loadEh(Context context, boolean ex, SortType sort) throws IOException {
+        if (sort == SortType.POPULAR_DAILY) {
+            return new MergePage<>(EhFeed.wrap(EhFeed.loadPopular(context, ex, page)), 1);
+        }
+        EhFeed.Result eh = EhFeed.load(context, ex, query, tags, ranges, page);
+        return new MergePage<>(EhFeed.wrap(eh.items), eh.pageCount(page));
     }
 
     private void filterDocumentTags() {
@@ -529,9 +543,11 @@ public class InspectorV3 extends Thread implements Parcelable {
 
     public void setSortType(SortType sortType) {
         this.sortType = sortType;
-        if (this.requestType == ApiRequestType.BYALL)
-            tryByAllPopular();
         createUrl();
+    }
+
+    public SortType getSortType() {
+        return sortType;
     }
 
     public int getPage() {

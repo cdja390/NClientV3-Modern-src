@@ -114,3 +114,9 @@ yosefario-dev/NClientV3 in English, Simplified Chinese and Traditional Chinese.
 
 - `app/build.gradle.kts` uses patch version 2. The version row in settings credits upstream source
   merging. `MERGE_ACCEPTANCE_472.md` records the compiled APK and upgrade acceptance steps.
+
+## Popular browse for 4.7.2
+
+- `InspectorV3.java` uses the EH/EX Popular list and NH daily results for the first mixed page. Further mixed pages request only NH daily results. `EhFeed.java` applies the EH category and minimum rating settings while preserving the site's list order.
+- `MainActivity.java` exposes Popular (daily) on unfiltered browse when EH/EX is selected. `SourceCapabilities.java` resolves the sort for the request, and `SourcePreferences.java` stores the EH/EX browse choice alongside the existing NH preference.
+- `Bookmark.java` and `SortType.java` restore the bookmarked sort, including older NH popular URLs. New menu text uses all three `strings_472.xml` locale files.

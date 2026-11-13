@@ -40,11 +40,8 @@ public final class SourceMerger<T> {
         };
     }
 
-    public MergePage<T> merge(List<MergeSource<T>> sources, SortType requestedSort, int page,
+    public MergePage<T> merge(List<MergeSource<T>> sources, SortType effectiveSort, int page,
                               BiConsumer<GallerySource, Exception> onFailure) throws IOException {
-        List<GallerySource> ids = new ArrayList<>(sources.size());
-        for (MergeSource<T> source : sources) ids.add(source.id());
-        SortType effectiveSort = SourceCapabilities.effectiveSort(ids, requestedSort);
         List<MergePage<T>> successful = new ArrayList<>();
         Exception last = null;
         int pageCount = 1;

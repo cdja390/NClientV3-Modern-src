@@ -82,6 +82,13 @@
 - DatabaseHelper、主库 Database、依赖、minify 和既有 NH User-Agent 均与接手时一致。资源编译仍报告原有的 update_version_format 和 upload_date_format 位置参数提示。
 - 28 个 JVM 矩阵条目通过。T27–T29、T31 有部分证据，N01–N07 及真机功能验收待完成。华为当前版本仅通过只读 ADB 核对，见第 10 节。
 
+## 热门混排追加验证（2026-11-13，Asia/Shanghai）
+
+- 首页无关键词、标签、语言或范围筛选时，启用 EH/EX 可切换「最近」和「热门（日榜）」。双选热门时第一页交替显示 NH 日榜和 EH/EX 热门榜，后续页读取 NH 日榜。仅 EH/EX 热门榜共一页，并应用 EH 全局分类和最低评分。仅 NH 恢复独立保存的排序。
+- 指定三项离线任务全部成功。测试 XML 146 tests / 0 failures / 0 errors / 0 skipped，LocalizationCompletenessTest 3/3。新增覆盖 NH 传输 URL、旧书签、筛选边界、两站顺序、EH/EX 地址和单页与分类评分行为。
+- Release `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\release\NClientV3_4.7.2.apk`，18119993 字节，SHA-256 `8F11901AD7EC8B127A4E0E33791EC95AA5A38AE52E290261DCE36A45DAB678B7`。核验包名 `com.IlFforever.nclientv3.clone`、`470200`、`4.7.2-Modern`，未签名。
+- Debug `D:\workcache\NClientV3-Modern-src\app\build\outputs\apk\post28\debug\NClientV3_4.7.2-Modern_debug.apk`，24096491 字节，SHA-256 `5041C77E220FFD3C01FD89FB52086D8C734A51A389B24ED26523C3EB938FB911`。核验包名 `com.IlFforever.nclientv3.clone.debug`、`470200` 和既有 Debug 证书。华为已并存安装上一构建的 Debug；本次热门构建的联网和真机验收待执行。
+
 ## 逐项状态
 
 | ID | 本次状态 | 证据/限制 |
@@ -89,8 +96,8 @@
 | T01 | 通过（JVM） | P4 SourcePolicyTest，保留导入空串并忽略未知名称 |
 | T02 | 通过（JVM） | P4 SourcePolicyTest，覆盖三个旧选项和 EH/EX |
 | T03 | 通过（JVM） | P4 SourcePolicyTest，覆盖镜像推导与 NH 默认值 |
-| T04 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
-| T05 | 通过（JVM） | SourceMergerTest；P4 菜单使用同一交集方法，交互待验 |
+| T04 | 通过（JVM） | SourceMergerTest 覆盖筛选时回落、双站热门及切回 NH 的排序能力 |
+| T05 | 通过（JVM） | SourceMergerTest 覆盖主页及搜索的可用选项，菜单交互待验 |
 | T06 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T07 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
 | T08 | 通过（JVM） | P2 SourceMergerTest；T07 另含 EhFeedTest 空页边界 |
@@ -137,8 +144,8 @@
 | T01 | `enabled_sources` 解析：`NHENTAI,EHENTAI`、未知名称、空串 | 与上游 `loadEnabledSources` 一致 |
 | T02 | 迁移：`gallery_sources` 为 nh、eh（含 ex 开关）、both | 得到对应的集合 |
 | T03 | 无配置时按 mirror 推导，分别测试含 exhentai、含 e-hentai、其它非空、空 | 非空 mirror 与上游一致；**空 mirror 得到默认 NH**（经用户同意的偏差，不是上游空集合） |
-| T04 | 排序：NH+EH 且排序为 POPULAR | 请求降为 RECENT_ALL_TIME |
-| T05 | 排序菜单取交集：只有 NH / NH+EH | 全部 / 只有 RECENT |
+| T04 | 排序：NH+EH，主页日榜、周榜和带筛选的日榜 | 未筛选主页允许日榜；周榜及带筛选的日榜回落到最近 |
+| T05 | 排序菜单：仅 NH、仅 EH/EX、NH+EH/EX | 仅 NH 提供全部；含 EH/EX 的无筛选主页提供最近和热门（日榜），搜索保留最近 |
 | T06 | 轮流插入长度 3+5、0+5、5+0 | 顺序正确，保留尾部 |
 | T07 | pageCount 取最大值；EH 解析为 0 时 pageCount 等于当前页 | 一致 |
 | T08 | NH 失败、EH 成功 | 显示 EH，不抛异常 |
@@ -203,7 +210,7 @@
 |---|---|
 | D01 来源迁移 | 记录升级前配置。旧 nh、eh、both 各迁移到对应选择。无配置且 mirror 为空时为 NH。华为上不存在的升级起点留待另测。 |
 | D02 来源选择 | 分别从主页和设置打开。只选 NH、只选 EH、两者都选；双选轮流显示并给每行显示来源。全部取消时无法保存。EX 开关改变后第二项与结果同步并重载第一页。 |
-| D03 排序 | 双选菜单只显示最新，切回仅 NH 恢复原排序。 |
+| D03 排序 | 无关键词、标签、语言或范围筛选的主页，分别选择 NH+EH、NH+EX 和仅 EH/EX。选热门（日榜），核对两站各自榜单顺序和来源标签。热门的 EH/EX 只出现在第一页，单选 EH/EX 时共一页。切回最近从第一页加载；切回仅 NH 恢复原排序。关键词、标签和范围搜索在含 EH/EX 时只提供最近。 |
 | D04 游标 | 页码 1→2→3→2，结果连续，回翻命中缓存。 |
 | D05 搜索和路由 | 搜索关键词，带分类、页数和评分。分别点击 NH 与 EH 作者标签。从合并 EH 详情进入公共标签列表，独立 EH 详情进入 EH 搜索。 |
 | D06 单源错误 | 对照全部 N01–N07。断网检查错误和重试后恢复网络。无法取得单源失败条件的条目保留未测。 |

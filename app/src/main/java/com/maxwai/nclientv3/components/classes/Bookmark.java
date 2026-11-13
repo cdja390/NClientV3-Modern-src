@@ -52,9 +52,9 @@ public class Bookmark {
         if (requestType == ApiRequestType.BYSEARCH)
             return InspectorV3.searchInspector(context, query, null, page, popular, null, response);
         if (requestType == ApiRequestType.BYALL)
-            return InspectorV3.searchInspector(context, "", null, page, SortType.RECENT_ALL_TIME, null, response);
+            return InspectorV3.searchInspector(context, "", null, page, popular, null, response);
         if (requestType == ApiRequestType.BYTAG) return InspectorV3.searchInspector(context, "",
-            Collections.singleton(tagVal), page, SortType.findFromAddition(this.url), null, response);
+            Collections.singleton(tagVal), page, popular, null, response);
         return null;
     }
 
