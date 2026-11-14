@@ -2,6 +2,8 @@
 
 > [!IMPORTANT]
 > **This project was developed almost entirely with AI through vibe coding.**
+>
+> The maintainer, **QALAN**, defined the requirements, chose the implementation approach and acceptance criteria, coordinated testing on physical devices, personally signed the release APK, and approved its publication. Multiple AI models collaborated on implementation, review, testing, and documentation.
 
 [简体中文](README.md) · [Download 4.7.2 APK](https://github.com/cdja390/NClientV3-Modern-src/releases/download/v4.7.2-modern/NClientV3-Modern-v4.7.2.apk) · [All releases](https://github.com/cdja390/NClientV3-Modern-src/releases)
 

@@ -2,6 +2,8 @@
 
 > [!IMPORTANT]
 > **此项目几乎全程由ai开发，主要采用 Vibe Coding。**
+>
+> 维护者 **QALAN** 提出需求，确定实现方案和验收标准，协调真机测试，并亲自签署正式 APK、确认发布。多个 AI 模型分工协作，参与代码实现、审查、测试和文档编写。
 
 [English](README.en.md) · [下载 4.7.2 APK](https://github.com/cdja390/NClientV3-Modern-src/releases/download/v4.7.2-modern/NClientV3-Modern-v4.7.2.apk) · [所有版本](https://github.com/cdja390/NClientV3-Modern-src/releases)
 
